@@ -13,7 +13,6 @@
 
   <ItemGroup>
     <Folder Include="Login\" />
-    <Folder Include="Roles\Admin\Layout\" />
     <Folder Include="Roles\Instructor\" />
     <Folder Include="Roles\Student\" />
   </ItemGroup>

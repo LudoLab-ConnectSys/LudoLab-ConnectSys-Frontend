@@ -1,0 +1,17 @@
+﻿@using Microsoft.AspNetCore.Components
+
+<div class="fondo">
+    <div class="rectangle4">
+        <div class="registro-de-usuario">@Title</div>
+        <div class="contenido-insertado">
+            @ChildContent
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string Title { get; set; }
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+}
