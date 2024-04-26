@@ -7,14 +7,22 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Login\**" />
+    <Content Remove="Login\**" />
+    <EmbeddedResource Remove="Login\**" />
+    <None Remove="Login\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.4" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="8.0.4" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Login\" />
-    <Folder Include="Roles\Instructor\" />
-    <Folder Include="Roles\Student\" />
+    <Folder Include="Areas\Administracion\Components\" />
+    <Folder Include="Areas\Administracion\Services\" />
+    <Folder Include="Shared\Utilities\" />
+    <Folder Include="Shared\Styles\" />
   </ItemGroup>
 
 </Project>
