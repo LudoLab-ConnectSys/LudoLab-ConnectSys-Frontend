@@ -10,15 +10,28 @@
 <div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
     <nav class="flex-column">
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Cursos
+            <NavLink class="nav-link" href="">
+                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Cursos
             </NavLink>
         </div>
+
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="estudiantes">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Estudiantes
-            </NavLink>
+            <a class="nav-link" href="#" @onclick="ToggleEstudiantesMenu">
+                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Estudiantes
+            </a>
+            @if (isEstudiantesMenuVisible)
+            {
+                <div class="sub-menu">
+                    <NavLink class="nav-link" href="estudiantes">Todos</NavLink>
+                </div>
+                <div class="sub-menu">
+                    <NavLink class="nav-link" href="inscripcion">Inscripcion</NavLink>
+                </div>
+            }
         </div>
+
+
+
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="weather">
                 <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Horarios
@@ -29,11 +42,17 @@
 
 @code {
     private bool collapseNavMenu = true;
+    private bool isEstudiantesMenuVisible = false;
 
     private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
 
     private void ToggleNavMenu()
     {
         collapseNavMenu = !collapseNavMenu;
+    }
+
+    private void ToggleEstudiantesMenu()
+    {
+        isEstudiantesMenuVisible = !isEstudiantesMenuVisible;
     }
 }

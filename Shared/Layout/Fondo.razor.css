@@ -1,35 +1,45 @@
-﻿.fondo {
+﻿/* */
+.fondo {
     position: relative;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    overflow: hidden;
+    overflow: visible;
 }
+/**/
 
 
-
+/* Añadir estilos para el contenido insertado */
 .rectangle4 {
-    position: relative; /* Esto ya está establecido, es correcto */
-    left: 10px;
-    top: 10px;
-    width: 1150px;
-    height: 833px;
+    position: relative;
+    left: 1vw; /* 1% del ancho de la ventana del navegador */
+    top: 1vh; /* 1% de la altura de la ventana del navegador */
+    width: 77vw; /* 80% del ancho de la ventana del navegador */
+    min-height: 88vh; /* 60% de la altura de la ventana del navegador */
     outline: solid 1px #000;
     outline-style: dashed;
     border-radius: 50px;
     background-color: #fff;
-    z-index: 1; /* Asegúrate de que este es el nivel base */
+    z-index: 1;
+    overflow: auto; /* Añadir desplazamiento si el contenido es demasiado grande */
+    display: flex; /* Asegurar que los elementos hijos se comporten como flex */
+    flex-direction: column; /* Los elementos hijos se apilan verticalmente */
+    align-items: center; /* Centra los elementos hijos horizontalmente */
+    justify-content: flex-start; 
+
 }
 
+
+/* En Fondo.razor.css */
+
 .contenido-insertado {
-    position: absolute; /* Mantiene el contenido absolutamente posicionado */
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%); /* Centrado exacto */
-    width: 100%; /* Ocupa el ancho total del contenedor .rectangle4 */
-    height: auto; /* Altura según el contenido */
-    z-index: 2; /* Z-index para asegurar que está sobre el fondo pero debajo del título */
-    padding: 20px; /* Añadir algo de padding si es necesario */
+    display: flex; /* Asegura que los elementos hijos se comporten como flex */
+    flex-direction: column; /* Los elementos hijos se apilan verticalmente */
+    align-items: flex-start; /* Alinea los elementos hijos al inicio del contenedor */
+    justify-content: center; /* Centra los elementos hijos verticalmente */
+    width: 100%; /* El contenido insertado ocupará el 100% del ancho de .rectangle4 */
+    padding: 20px; /* Añade un poco de espacio alrededor del contenido insertado */
+    box-sizing: border-box; /* Asegura que el padding se incluya en el ancho y la altura del contenido insertado */
 }
 
 .registro-de-usuario {
@@ -37,13 +47,10 @@
     font-size: 24px;
     line-height: 18px;
     font-weight: 500;
-    font-family: Poppins, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif;
+    font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif;
     letter-spacing: 0.03em;
-    position: absolute;
-    left: 50%; /* Centrar horizontalmente */
+    position: relative; /* Posiciona el título en relación con .rectangle4 */
     top: 20px; /* Posicionar en la parte superior dentro de .rectangle4 */
-    transform: translateX(-50%); /* Ajuste fino para centrar exactamente */
-    z-index: 3; /* Asegúrate de que el título esté sobre el contenido */
     width: 268px;
     height: 47px;
     text-align: center;
@@ -51,4 +58,3 @@
     justify-content: center;
     flex-direction: column;
 }
-
