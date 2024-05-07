@@ -1,0 +1,14 @@
+﻿@inject HttpClient Http
+@using LudoLab_ConnectSys_Frontend.Areas.Administracion.Components
+@using System.ComponentModel.DataAnnotations
+@page "/inscripcion"
+
+<Fondo Title="Registrar Estudiante">
+    <Formulario Modelo="modeloFormulario" />
+</Fondo>
+
+@code {
+    private Formulario.ModeloFormulario modeloFormulario = new Formulario.ModeloFormulario();
+
+    // Resto del código
+}

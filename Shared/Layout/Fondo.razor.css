@@ -1,0 +1,60 @@
+﻿/* */
+.fondo {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    overflow: visible;
+}
+/**/
+
+
+/* Añadir estilos para el contenido insertado */
+.rectangle4 {
+    position: relative;
+    left: 1vw; /* 1% del ancho de la ventana del navegador */
+    top: 1vh; /* 1% de la altura de la ventana del navegador */
+    width: 77vw; /* 80% del ancho de la ventana del navegador */
+    min-height: 88vh; /* 60% de la altura de la ventana del navegador */
+    outline: solid 1px #000;
+    outline-style: dashed;
+    border-radius: 50px;
+    background-color: #fff;
+    z-index: 1;
+    overflow: auto; /* Añadir desplazamiento si el contenido es demasiado grande */
+    display: flex; /* Asegurar que los elementos hijos se comporten como flex */
+    flex-direction: column; /* Los elementos hijos se apilan verticalmente */
+    align-items: center; /* Centra los elementos hijos horizontalmente */
+    justify-content: flex-start; 
+
+}
+
+
+/* En Fondo.razor.css */
+
+.contenido-insertado {
+    display: flex; /* Asegura que los elementos hijos se comporten como flex */
+    flex-direction: column; /* Los elementos hijos se apilan verticalmente */
+    align-items: flex-start; /* Alinea los elementos hijos al inicio del contenedor */
+    justify-content: center; /* Centra los elementos hijos verticalmente */
+    width: 100%; /* El contenido insertado ocupará el 100% del ancho de .rectangle4 */
+    padding: 20px; /* Añade un poco de espacio alrededor del contenido insertado */
+    box-sizing: border-box; /* Asegura que el padding se incluya en el ancho y la altura del contenido insertado */
+}
+
+.registro-de-usuario {
+    color: #000;
+    font-size: 24px;
+    line-height: 18px;
+    font-weight: 500;
+    font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif;
+    letter-spacing: 0.03em;
+    position: relative; /* Posiciona el título en relación con .rectangle4 */
+    top: 20px; /* Posicionar en la parte superior dentro de .rectangle4 */
+    width: 268px;
+    height: 47px;
+    text-align: center;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}

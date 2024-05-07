@@ -1,0 +1,67 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+
+
+<EditForm Model="Modelo">
+    <div class="form-group">
+        <label>Nombre</label>
+        <InputText class="form-control" @bind-Value="Modelo.Nombre" />
+    </div>
+
+    <div class="form-group">
+        <label>Apellido</label>
+        <InputText class="form-control" @bind-Value="Modelo.Apellido" style="" />
+    </div>
+
+    <div class="form-group">
+        <label>Número de Cédula</label>
+        <InputText class="form-control" @bind-Value="Modelo.Cedula" />
+    </div>
+
+    <div class="form-group">
+        <label>Fecha de Nacimiento</label>
+        <InputDate class="form-control" @bind-Value="Modelo.FechaNacimiento" />
+    </div>
+
+    <div class="form-group">
+        <label>Correo</label>
+        <InputText class="form-control" @bind-Value="Modelo.Mail" />
+    </div>
+
+    <div class="form-group">
+        <label>Correo Secundario</label>
+        <InputText class="form-control" @bind-Value="Modelo.MailSecundario" style="border-radius=50px" />
+    </div>
+
+    <div class="form-group">
+        <label>Número Teléfono</label>
+        <InputText class="form-control" @bind-Value="Modelo.Telefono" />
+    </div>
+
+    <div class="form-group">
+        <label>Rol</label>
+        <InputSelect class="form-control" @bind-Value="Modelo.Rol" />
+    </div>
+
+    <div class="btn-center">
+        <button type="submit" class="btn btn-primary">Guardar</button>
+    </div>
+    <!-- Añade más campos según sea necesario -->
+</EditForm>
+
+@code {
+    [Parameter]
+    public ModeloFormulario Modelo { get; set; }
+
+    public class ModeloFormulario
+    {
+        public string Nombre { get; set; }
+        public string Apellido { get; set; }
+        public DateTime FechaNacimiento { get; set; }
+        public string Cedula { get; set; }
+        public string Mail { get; set; }
+        public string MailSecundario { get; set; }
+        public string Telefono { get; set; }
+        public string Rol { get; set; }
+        // Añade más propiedades según sea necesario
+    }
+}
