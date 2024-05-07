@@ -16,6 +16,18 @@
         </div>
 
         <div class="nav-item px-3">
+            <a class="nav-link" href="#" @onclick="ToggleCursosMenu">
+                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Cursos
+            </a>
+            @if (isCursosMenuVisible)
+            {
+                <div class="sub-menu">
+                    <NavLink class="nav-link" href="cursos">Todos los Cursos</NavLink>
+                </div>
+            }
+        </div>
+
+        <div class="nav-item px-3">
             <a class="nav-link" href="#" @onclick="ToggleEstudiantesMenu">
                 <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Estudiantes
             </a>
@@ -30,6 +42,8 @@
             }
         </div>
 
+       
+
 
 
         <div class="nav-item px-3">
@@ -43,6 +57,7 @@
 @code {
     private bool collapseNavMenu = true;
     private bool isEstudiantesMenuVisible = false;
+    private bool isCursosMenuVisible = false;
 
     private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
 
@@ -54,5 +69,10 @@
     private void ToggleEstudiantesMenu()
     {
         isEstudiantesMenuVisible = !isEstudiantesMenuVisible;
+    }
+
+    private void ToggleCursosMenu()
+    {
+        isCursosMenuVisible = !isCursosMenuVisible;
     }
 }

@@ -1,0 +1,71 @@
+﻿@inject NavigationManager NavigationManager
+
+@page "/cursos"
+
+@if (cursos.Any())
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Número</th>
+                <th>Nombre</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var curso in cursos)
+            {
+                <tr>
+                    <td>@curso.Id</td>
+                    <td>@curso.Nombre</td>
+                    <td>
+                        <button class="btn btn-info" @onclick="() => LeerCurso(curso.Id)">Ver</button>
+                        <button class="btn btn-primary" @onclick="() => EditarCurso(curso.Id)">Editar</button>
+                        <button class="btn btn-danger" @onclick="() => EliminarCurso(curso.Id)">Eliminar</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>No hay cursos disponibles. ¿Desea <a href="crear-curso">crear un nuevo curso</a>?</p>
+}
+
+@code {
+
+    public class Curso
+    {
+        public int Id { get; set; }
+        public string Nombre { get; set; }
+        public string Periodo { get; set; }
+        public string Descripcion { get; set; }
+    }
+
+    private List<Curso> cursos = new List<Curso>
+    {
+        new Curso { Id = 1, Nombre = "Blazor para Principiantes", Descripcion = "Introducción a Blazor" },
+        new Curso { Id = 2, Nombre = "Blazor Avanzado", Descripcion = "Profundizando en Blazor" }
+    };
+
+    private void LeerCurso(int id)
+    {
+        // Implementa la lógica para leer detalles del curso
+        Console.WriteLine("Leer detalles del curso con ID: " + id);
+    }
+
+    private void EditarCurso(int id)
+    {
+        // Implementa la lógica para editar un curso
+        Console.WriteLine("Editar curso con ID: " + id);
+        NavigationManager.NavigateTo($"/editar-curso/{id}");
+    }
+
+    private void EliminarCurso(int id)
+    {
+        // Implementa la lógica para eliminar un curso
+        cursos.RemoveAll(x => x.Id == id);
+        Console.WriteLine("Curso eliminado con ID: " + id);
+    }
+}
