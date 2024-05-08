@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LudoLab ConnectSys Frontend
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LudoLab ConnectSys Server", "..\LudoLab ConnectSys Server\LudoLab ConnectSys Server.csproj", "{188C2751-003A-4BBD-ACAB-F579E1C0F392}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirectorioDeArchivos.Shared", "..\DirectorioDeArchivos.Shared\DirectorioDeArchivos.Shared.csproj", "{85BCA0CA-5671-4846-9BA1-141B211FB1CA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DirectorioDeArchivos.Shared", "..\DirectorioDeArchivos.Shared\DirectorioDeArchivos.Shared.csproj", "{85BCA0CA-5671-4846-9BA1-141B211FB1CA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
