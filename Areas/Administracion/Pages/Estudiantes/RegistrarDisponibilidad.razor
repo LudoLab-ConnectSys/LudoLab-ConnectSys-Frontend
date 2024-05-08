@@ -1,0 +1,50 @@
+﻿@using LudoLab_ConnectSys_Frontend.Areas.Administracion.Services
+
+@typeparam TItem where TItem : IAgendable
+@code {
+    [Parameter]
+    public TItem Persona { get; set; }
+
+    private Disponibilidad nuevaDisponibilidad = new Disponibilidad();
+
+    private void AgregarDisponibilidad()
+    {
+        Persona.HorariosDisponibles.Add(nuevaDisponibilidad);
+        nuevaDisponibilidad = new Disponibilidad(); // Reset para nuevos datos
+    }
+
+
+    public interface IAgendable
+    {
+        List<Disponibilidad> HorariosDisponibles { get; set; }
+    }
+
+    public class Profesor : IAgendable
+    {
+        public int Id { get; set; }
+        public string Nombre { get; set; }
+        public List<Disponibilidad> HorariosDisponibles { get; set; } = new List<Disponibilidad>();
+    }
+
+    public class Estudiante : IAgendable
+    {
+        public int Id { get; set; }
+        public string Nombre { get; set; }
+        public List<Disponibilidad> HorariosDisponibles { get; set; } = new List<Disponibilidad>();
+    }
+}
+
+<EditForm Model="nuevaDisponibilidad" OnValidSubmit="AgregarDisponibilidad">
+    <InputSelect @bind-Value="nuevaDisponibilidad.Dia">
+        <option value="0">Domingo</option>
+        <option value="1">Lunes</option>
+        <option value="2">Martes</option>
+        <option value="3">Miércoles</option>
+        <option value="4">Jueves</option>
+        <option value="5">Viernes</option>
+        <option value="6">Sábado</option>
+    </InputSelect>
+    <InputText @bind-Value="nuevaDisponibilidad.HoraInicio" type="time" />
+    <InputText @bind-Value="nuevaDisponibilidad.HoraFin" type="time" />
+    <button type="submit">Agregar Disponibilidad</button>
+</EditForm>

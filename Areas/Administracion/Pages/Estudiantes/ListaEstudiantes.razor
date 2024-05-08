@@ -1,7 +1,103 @@
 ﻿@page "/estudiantes"
 
-<h3>ListaEstudiantes</h3>
+<h3>Estudiantes por Curso</h3>
+
+<select @onchange="OnCursoChanged">
+    @foreach (var curso in cursos)
+    {
+        <option value="@curso.Id">@curso.Nombre</option>
+    }
+</select>
+
+@if (estudiantesFiltrados != null && estudiantesFiltrados.Any())
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Curso</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var estudiante in estudiantesFiltrados)
+            {
+                <tr>
+                    <td>@estudiante.Nombre</td>
+                    <td>@estudiante.Curso.Nombre</td>
+                    <td>
+                        <button class="btn btn-primary" @onclick="() => EditarEstudiante(estudiante)">Editar</button>
+                        <button class="btn btn-danger" @onclick="() => EliminarEstudiante(estudiante)">Eliminar</button>
+                        <button class="btn btn-info" @onclick="() => VerDetalles(estudiante)">Ver</button>
+                    </td>
+                </tr>
+            }
+            </tbody>
+    </table>
+}
+else
+{
+    <p>No hay estudiantes inscritos en el curso seleccionado.</p>
+}
 
 @code {
+    private List<Curso> cursos;
+    private List<Estudiante> estudiantes;
+    private List<Estudiante> estudiantesFiltrados;
 
+    protected override void OnInitialized()
+    {
+        // Simulación de datos
+        cursos = new List<Curso>
+        {
+            new Curso { Id = 1, Nombre = "Curso de Blazor" },
+            new Curso { Id = 2, Nombre = "Curso de ASP.NET Core" }
+        };
+
+        estudiantes = new List<Estudiante>
+        {
+            new Estudiante { Nombre = "Juan Perez", Curso = cursos[0] },
+            new Estudiante { Nombre = "Maria Lopez", Curso = cursos[0] },
+            new Estudiante { Nombre = "Carlos Jimenez", Curso = cursos[1] }
+        };
+    }
+
+    private void OnCursoChanged(ChangeEventArgs e)
+    {
+        var cursoId = Convert.ToInt32(e.Value.ToString());
+        estudiantesFiltrados = estudiantes.Where(est => est.Curso.Id == cursoId).ToList();
+    }
+
+    private void EditarEstudiante(Estudiante estudiante)
+    {
+        // Implementar la lógica para editar un estudiante
+    }
+
+    private void EliminarEstudiante(Estudiante estudiante)
+    {
+        // Implementar la lógica para eliminar un estudiante
+        estudiantes.Remove(estudiante);
+        estudiantesFiltrados = estudiantesFiltrados.Where(e => e != estudiante).ToList();
+    }
+
+    private void VerDetalles(Estudiante estudiante)
+    {
+        // Implementar la lógica para ver detalles de un estudiante
+    }
+
+
+    public class Estudiante
+    {
+        public string Nombre { get; set; }
+        public Curso Curso { get; set; }
+    }
+
+    public class Curso
+    {
+        public int Id { get; set; }
+        public string Nombre { get; set; }
+    }
 }
+
+
+

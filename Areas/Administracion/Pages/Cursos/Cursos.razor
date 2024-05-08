@@ -1,39 +1,77 @@
-﻿@inject NavigationManager NavigationManager
+﻿@page "/cursos"
+@inject NavigationManager NavigationManager
 
-@page "/cursos"
+<h3>Cursos Disponibles</h3>
 
-@if (cursos.Any())
-{
-    <table class="table">
-        <thead>
+<button class="btn btn-success" @onclick="() => CrearNuevoCurso()">Crear Nuevo Curso</button>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Número</th>
+            <th>Nombre</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var curso in cursos)
+        {
             <tr>
-                <th>Número</th>
-                <th>Nombre</th>
-                <th>Acciones</th>
+                <td>@curso.Id</td>
+                <td>@curso.Nombre</td>
+                <td>
+                    <button class="btn btn-info" @onclick="() => VerEdiciones(curso.Id)">Ver Ediciones</button>
+                    <button class="btn btn-primary" @onclick="() => EditarCurso(curso.Id)">Editar</button>
+                    <button class="btn btn-warning" @onclick="() => CrearEdicion(curso.Id)">Crear Edición</button>
+                    <button class="btn btn-danger" @onclick="() => EliminarCurso(curso.Id)">Eliminar</button>
+                </td>
             </tr>
-        </thead>
-        <tbody>
-            @foreach (var curso in cursos)
-            {
-                <tr>
-                    <td>@curso.Id</td>
-                    <td>@curso.Nombre</td>
-                    <td>
-                        <button class="btn btn-info" @onclick="() => LeerCurso(curso.Id)">Ver</button>
-                        <button class="btn btn-primary" @onclick="() => EditarCurso(curso.Id)">Editar</button>
-                        <button class="btn btn-danger" @onclick="() => EliminarCurso(curso.Id)">Eliminar</button>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
-else
+        }
+    </tbody>
+</table>
+
+@if (!cursos.Any())
 {
     <p>No hay cursos disponibles. ¿Desea <a href="crear-curso">crear un nuevo curso</a>?</p>
 }
 
 @code {
+    private List<Curso> cursos = new List<Curso>
+    {
+        new Curso { Id = 1, Nombre = "Blazor para Principiantes", Descripcion = "Introducción a Blazor" },
+        new Curso { Id = 2, Nombre = "Blazor Avanzado", Descripcion = "Profundizando en Blazor" }
+    };
+
+    private void VerEdiciones(int id)
+    {
+        // Redirige a la página de ediciones para el curso seleccionado
+        NavigationManager.NavigateTo($"/ediciones-del-curso/{id}");
+    }
+
+    private void CrearNuevoCurso()
+    {
+        // Redirige a la página para crear un nuevo curso
+        NavigationManager.NavigateTo("/crear-curso");
+    }
+
+    private void CrearEdicion(int id)
+    {
+        // Redirige a la página para crear una nueva edición para el curso seleccionado
+        NavigationManager.NavigateTo($"/crear-edicion/{id}");
+    }
+
+    private void EditarCurso(int id)
+    {
+        // Redirige a la página de edición del curso
+        NavigationManager.NavigateTo($"/editar-curso/{id}");
+    }
+
+    private void EliminarCurso(int id)
+    {
+        // Elimina el curso de la lista
+        cursos.RemoveAll(x => x.Id == id);
+        Console.WriteLine("Curso eliminado con ID: " + id);
+    }
 
     public class Curso
     {
@@ -41,31 +79,5 @@ else
         public string Nombre { get; set; }
         public string Periodo { get; set; }
         public string Descripcion { get; set; }
-    }
-
-    private List<Curso> cursos = new List<Curso>
-    {
-        new Curso { Id = 1, Nombre = "Blazor para Principiantes", Descripcion = "Introducción a Blazor" },
-        new Curso { Id = 2, Nombre = "Blazor Avanzado", Descripcion = "Profundizando en Blazor" }
-    };
-
-    private void LeerCurso(int id)
-    {
-        // Implementa la lógica para leer detalles del curso
-        Console.WriteLine("Leer detalles del curso con ID: " + id);
-    }
-
-    private void EditarCurso(int id)
-    {
-        // Implementa la lógica para editar un curso
-        Console.WriteLine("Editar curso con ID: " + id);
-        NavigationManager.NavigateTo($"/editar-curso/{id}");
-    }
-
-    private void EliminarCurso(int id)
-    {
-        // Implementa la lógica para eliminar un curso
-        cursos.RemoveAll(x => x.Id == id);
-        Console.WriteLine("Curso eliminado con ID: " + id);
     }
 }
