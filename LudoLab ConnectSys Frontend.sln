@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LudoLab ConnectSys Server",
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DirectorioDeArchivos.Shared", "..\DirectorioDeArchivos.Shared\DirectorioDeArchivos.Shared.csproj", "{85BCA0CA-5671-4846-9BA1-141B211FB1CA}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LudoLab-ConnectSys-Server", "..\LudoLab-ConnectSys-Server\LudoLab-ConnectSys-Server.csproj", "{B1B769AF-1474-44E3-9258-DA6F6701E97E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{85BCA0CA-5671-4846-9BA1-141B211FB1CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{85BCA0CA-5671-4846-9BA1-141B211FB1CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{85BCA0CA-5671-4846-9BA1-141B211FB1CA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B1B769AF-1474-44E3-9258-DA6F6701E97E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B1B769AF-1474-44E3-9258-DA6F6701E97E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B1B769AF-1474-44E3-9258-DA6F6701E97E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B1B769AF-1474-44E3-9258-DA6F6701E97E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
