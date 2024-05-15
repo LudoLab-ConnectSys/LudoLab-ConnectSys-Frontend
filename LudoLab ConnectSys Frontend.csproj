@@ -30,4 +30,8 @@
     <Folder Include="Shared\Styles\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\DirectorioDeArchivos.Shared\DirectorioDeArchivos.Shared.csproj" />
+  </ItemGroup>
+
 </Project>
