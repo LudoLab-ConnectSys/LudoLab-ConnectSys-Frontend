@@ -1,0 +1,149 @@
+﻿@page "/registrar-usuario"
+@inject NavigationManager NavigationManager
+
+<h3 class="text-center my-4">Crear Nuevo Usuario</h3>
+
+<EditForm Model="@nuevoUsuario" OnValidSubmit="HandleValidSubmit" class="container">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="form-group mb-3">
+                        <label for="cedula">Cédula:</label>
+                        <InputText id="cedula" class="form-control" @bind-Value="nuevoUsuario.Cedula" />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="nombre">Nombre:</label>
+                        <InputText id="nombre" class="form-control" @bind-Value="nuevoUsuario.Nombre" />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="apellidos">Apellidos:</label>
+                        <InputText id="apellidos" class="form-control" @bind-Value="nuevoUsuario.Apellidos" />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="edad">Edad:</label>
+                        <InputNumber id="edad" class="form-control" @bind-Value="nuevoUsuario.Edad" />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="correo">Correo Electrónico:</label>
+                        <InputText id="correo" class="form-control" @bind-Value="nuevoUsuario.Correo" />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="celular">Número de Celular:</label>
+                        <InputText id="celular" class="form-control" @bind-Value="nuevoUsuario.Celular" />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="telefono">Número de Teléfono:</label>
+                        <InputText id="telefono" class="form-control" @bind-Value="nuevoUsuario.Telefono" />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="tipoUsuario">Tipo de Usuario:</label>
+                        <InputSelect id="tipoUsuario" class="form-control" @bind-Value="tipoUsuario">
+                            <option value="">Seleccione un tipo</option>
+                            <option value="Estudiante">Estudiante</option>
+                            <option value="Instructor">Instructor</option>
+                        </InputSelect>
+                    </div>
+                    @if (tipoUsuario == "Estudiante")
+                    {
+                        <div class="form-group mb-3">
+                            <label for="tipoEstudiante">Tipo de Estudiante:</label>
+                            <InputSelect id="tipoEstudiante" class="form-control" @bind-Value="nuevoEstudiante.TipoEstudiante">
+                                <option value="">Seleccione un tipo</option>
+                                <option value="Docente">Docente</option>
+                                <option value="Grupo de atención prioritaria">Grupo de atención prioritaria</option>
+                            </InputSelect>
+                        </div>
+                    }
+                </div>
+                <div class="card-footer text-center">
+                    <button type="submit" class="btn btn-success me-2">Guardar</button>
+                    <button type="button" class="btn btn-secondary" @onclick="Regresar">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</EditForm>
+
+@code {
+    private Usuario nuevoUsuario = new Usuario();
+    private Estudiante nuevoEstudiante = new Estudiante();
+    private string tipoUsuario;
+
+    private async Task HandleValidSubmit()
+    {
+        // Guardar el usuario en la base de datos o servicio
+        if (tipoUsuario == "Estudiante")
+        {
+            await GuardarEstudiante();
+        }
+        else if (tipoUsuario == "Instructor")
+        {
+            await GuardarInstructor();
+        }
+        else
+        {
+            // Manejar el error: tipo de usuario no seleccionado
+        }
+
+        NavigationManager.NavigateTo("/usuarios");
+    }
+
+    private async Task GuardarEstudiante()
+    {
+        // Guardar el usuario
+        int userId = await GuardarUsuario();
+        nuevoEstudiante.IdUsuario = userId;
+        // Guardar el estudiante
+        // Código para guardar en la base de datos
+    }
+
+    private async Task GuardarInstructor()
+    {
+        // Guardar el usuario
+        int userId = await GuardarUsuario();
+        // Guardar el instructor
+        var nuevoInstructor = new Instructor { IdUsuario = userId };
+        // Código para guardar en la base de datos
+    }
+
+    private async Task<int> GuardarUsuario()
+    {
+        // Código para guardar el usuario en la base de datos
+        // Retornar el ID del usuario guardado
+        return 1; // Simulación del ID retornado
+    }
+
+    private void Regresar()
+    {
+        NavigationManager.NavigateTo("/usuarios");
+    }
+
+    public class Usuario
+    {
+        public int Id { get; set; }
+        public string Cedula { get; set; }
+        public string Nombre { get; set; }
+        public string Apellidos { get; set; }
+        public int Edad { get; set; }
+        public string Correo { get; set; }
+        public string Celular { get; set; }
+        public string Telefono { get; set; }
+    }
+
+    public class Estudiante
+    {
+        public int Id { get; set; }
+        public string TipoEstudiante { get; set; }
+        public int IdUsuario { get; set; }
+    }
+
+    public class Instructor
+    {
+        public int Id { get; set; }
+        public int IdUsuario { get; set; }
+    }
+}

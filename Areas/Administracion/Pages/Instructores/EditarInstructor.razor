@@ -1,0 +1,122 @@
+﻿@page "/editar-instructor/{InstructorId:int}"
+@inject NavigationManager NavigationManager
+
+<h3>Editar Instructor</h3>
+
+<EditForm Model="@instructor" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="container">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="form-group">
+                    <label for="apellido">Apellido:</label>
+                    <InputText id="apellido" class="form-control" @bind-Value="instructor.Apellido" />
+                </div>
+                <div class="form-group">
+                    <label for="nombre">Nombre:</label>
+                    <InputText id="nombre" class="form-control" @bind-Value="instructor.Nombre" />
+                </div>
+                <div class="form-group">
+                    <label for="fechaNacimiento">Fecha de Nacimiento:</label>
+                    <InputDate id="fechaNacimiento" class="form-control" @bind-Value="instructor.FechaNacimiento" />
+                </div>
+                <div class="form-group">
+                    <label for="especialidad">Especialidad:</label>
+                    <InputText id="especialidad" class="form-control" @bind-Value="instructor.Especialidad" />
+                </div>
+                <div class="form-group">
+                    <label for="correo">Correo Electrónico:</label>
+                    <InputText id="correo" class="form-control" @bind-Value="instructor.Correo" />
+                </div>
+                <div class="form-group">
+                    <label for="telefono">Número de Teléfono:</label>
+                    <InputText id="telefono" class="form-control" @bind-Value="instructor.Telefono" />
+                </div>
+                <div class="form-group">
+                    <label for="ubicacion">Ubicación:</label>
+                    <InputText id="ubicacion" class="form-control" @bind-Value="instructor.Ubicacion" />
+                </div>
+            </div>
+            <div class="col-md-4 text-center">
+                <div class="form-group">
+                    <label for="foto">Foto:</label>
+                    <InputFile id="foto" class="form-control" OnChange="OnInputFileChange" />
+                </div>
+                @if (!string.IsNullOrEmpty(instructor.FotoUrl))
+                {
+                    <div class="form-group">
+                        <img src="@instructor.FotoUrl" alt="Foto del instructor" class="img-fluid rounded" style="max-width: 150px; height: auto;" />
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-success">Guardar</button>
+    <button type="button" class="btn btn-secondary" @onclick="Regresar">Cancelar</button>
+</EditForm>
+
+@code {
+    [Parameter]
+    public int InstructorId { get; set; }
+
+    private Instructor instructor;
+    private IBrowserFile foto;
+
+    protected override void OnInitialized()
+    {
+        instructor = ObtenerInstructorPorId(InstructorId);
+    }
+
+    private void HandleValidSubmit()
+    {
+        // Guardar los cambios del instructor en la base de datos o servicio
+        Console.WriteLine($"Instructor editado: {instructor.Nombre}");
+        NavigationManager.NavigateTo("/instructores");
+    }
+
+    private void Regresar()
+    {
+        NavigationManager.NavigateTo("/instructores");
+    }
+
+    private async Task OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        foto = e.File;
+        var buffer = new byte[foto.Size];
+        await foto.OpenReadStream().ReadAsync(buffer);
+        instructor.FotoUrl = $"data:image/jpeg;base64,{Convert.ToBase64String(buffer)}";
+    }
+
+    private Instructor ObtenerInstructorPorId(int id)
+    {
+        // Simulación de obtención de instructor por ID
+        return new Instructor
+            {
+                Id = 1,
+                Apellido = "Sanchez",
+                Nombre = "Pedro",
+                FechaNacimiento = new DateTime(1980, 8, 15),
+                Especialidad = "Blazor",
+                Correo = "pedro.sanchez@example.com",
+                Telefono = "987654321",
+                Ubicacion = "Lima Sede Central > Aula 101",
+                FotoUrl = "https://example.com/foto.jpg"
+            };
+    }
+
+    public class Instructor
+    {
+        public int Id { get; set; }
+        public string Apellido { get; set; }
+        public string Nombre { get; set; }
+        public DateTime FechaNacimiento { get; set; }
+        public string Especialidad { get; set; }
+        public string Correo { get; set; }
+        public string Telefono { get; set; }
+        public string Ubicacion { get; set; }
+        public string FotoUrl { get; set; }
+    }
+}

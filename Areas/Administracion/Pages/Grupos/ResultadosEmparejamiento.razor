@@ -1,0 +1,228 @@
+﻿@page "/emparejar-horarios/{EdicionId:int}/{numEstudiantes:int}"
+@inject NavigationManager NavigationManager
+
+<h3>Resultados del Emparejamiento de Horarios</h3>
+
+<h4>Grupos Emparejados Automáticamente</h4>
+@if (grupos.Any())
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Instructor</th>
+                <th>Estudiantes</th>
+                <th>Día</th>
+                <th>Hora Inicio</th>
+                <th>Hora Fin</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var grupo in grupos)
+            {
+                <tr>
+                    <td>@grupo.Instructor.Nombre</td>
+                    <td>
+                        @foreach (var estudiante in grupo.Estudiantes)
+                        {
+                            <p>@estudiante.Nombre</p>
+                        }
+                    </td>
+                    <td>@grupo.Horario.Dia</td>
+                    <td>@grupo.Horario.HoraInicio</td>
+                    <td>@grupo.Horario.HoraFin</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <button class="btn btn-success" @onclick="CrearTodosLosGrupos">Crear Todos los Grupos</button>
+}
+else
+{
+    <p>No se encontraron grupos automáticos con los parámetros especificados.</p>
+}
+
+<h4>Estudiantes e Instructores No Emparejados</h4>
+@if (estudiantesNoEmparejados.Any() || instructoresNoEmparejados.Any())
+{
+    <div>
+        <h5>Estudiantes No Emparejados</h5>
+        <ul>
+            @foreach (var estudiante in estudiantesNoEmparejados)
+            {
+                <li>@estudiante.Nombre</li>
+            }
+        </ul>
+        <h5>Instructores No Emparejados</h5>
+        <ul>
+            @foreach (var instructor in instructoresNoEmparejados)
+            {
+                <li>@instructor.Nombre</li>
+            }
+        </ul>
+    </div>
+}
+else
+{
+    <p>Todos los estudiantes e instructores fueron emparejados.</p>
+}
+
+@code {
+    [Parameter]
+    public int EdicionId { get; set; }
+
+    [Parameter]
+    public int numEstudiantes { get; set; }
+
+    private List<Grupo> grupos = new List<Grupo>();
+    private List<Estudiante> estudiantesNoEmparejados = new List<Estudiante>();
+    private List<Instructor> instructoresNoEmparejados = new List<Instructor>();
+
+    protected override void OnInitialized()
+    {
+        var instructores = ObtenerInstructores();
+        var estudiantes = ObtenerEstudiantes();
+        var servicioHorarios = new HorarioService();
+
+        grupos = servicioHorarios.EmparejarHorarios(instructores, estudiantes, numEstudiantes);
+        estudiantesNoEmparejados = estudiantes;
+        instructoresNoEmparejados = instructores;
+    }
+
+    private List<Instructor> ObtenerInstructores()
+    {
+        // Simulación de datos de instructores
+        return new List<Instructor>
+        {
+            new Instructor
+            {
+                Id = 1,
+                Nombre = "Instructor A",
+                HorariosDisponibles = new List<HorarioDisponible>
+                {
+                    new HorarioDisponible { Dia = DayOfWeek.Monday, HoraInicio = new TimeSpan(8, 0, 0), HoraFin = new TimeSpan(10, 0, 0) },
+                    new HorarioDisponible { Dia = DayOfWeek.Wednesday, HoraInicio = new TimeSpan(10, 0, 0), HoraFin = new TimeSpan(12, 0, 0) }
+                }
+            },
+            new Instructor
+            {
+                Id = 2,
+                Nombre = "Instructor B",
+                HorariosDisponibles = new List<HorarioDisponible>
+                {
+                    new HorarioDisponible { Dia = DayOfWeek.Tuesday, HoraInicio = new TimeSpan(9, 0, 0), HoraFin = new TimeSpan(11, 0, 0) },
+                    new HorarioDisponible { Dia = DayOfWeek.Thursday, HoraInicio = new TimeSpan(14, 0, 0), HoraFin = new TimeSpan(16, 0, 0) }
+                }
+            }
+        };
+    }
+
+    private List<Estudiante> ObtenerEstudiantes()
+    {
+        // Simulación de datos de estudiantes
+        return new List<Estudiante>
+        {
+            new Estudiante
+            {
+                Id = 1,
+                Nombre = "Estudiante 1",
+                HorariosDisponibles = new List<HorarioDisponible>
+                {
+                    new HorarioDisponible { Dia = DayOfWeek.Monday, HoraInicio = new TimeSpan(8, 0, 0), HoraFin = new TimeSpan(10, 0, 0) },
+                    new HorarioDisponible { Dia = DayOfWeek.Wednesday, HoraInicio = new TimeSpan(10, 0, 0), HoraFin = new TimeSpan(12, 0, 0) }
+                }
+            },
+            new Estudiante
+            {
+                Id = 2,
+                Nombre = "Estudiante 2",
+                HorariosDisponibles = new List<HorarioDisponible>
+                {
+                    new HorarioDisponible { Dia = DayOfWeek.Tuesday, HoraInicio = new TimeSpan(9, 0, 0), HoraFin = new TimeSpan(11, 0, 0) },
+                    new HorarioDisponible { Dia = DayOfWeek.Thursday, HoraInicio = new TimeSpan(14, 0, 0), HoraFin = new TimeSpan(16, 0, 0) }
+                }
+            }
+        };
+    }
+
+    private void CrearTodosLosGrupos()
+    {
+        foreach (var grupo in grupos)
+        {
+            // Lógica para crear el grupo en la base de datos o servicio
+            Console.WriteLine($"Grupo creado: Instructor {grupo.Instructor.Nombre} con {grupo.Estudiantes.Count} estudiantes.");
+        }
+        // Navegar a la página de grupos de la edición o actualizar la lista de grupos
+        NavigationManager.NavigateTo($"/grupos-de-edicion/{EdicionId}");
+    }
+
+    private class Grupo
+    {
+        public int Id { get; set; }
+        public Instructor Instructor { get; set; }
+        public List<Estudiante> Estudiantes { get; set; }
+        public HorarioDisponible Horario { get; set; }
+    }
+
+    private class Instructor
+    {
+        public int Id { get; set; }
+        public string Nombre { get; set; }
+        public List<HorarioDisponible> HorariosDisponibles { get; set; }
+    }
+
+    private class Estudiante
+    {
+        public int Id { get; set; }
+        public string Nombre { get; set; }
+        public List<HorarioDisponible> HorariosDisponibles { get; set; }
+    }
+
+    private class HorarioDisponible
+    {
+        public DayOfWeek Dia { get; set; }
+        public TimeSpan HoraInicio { get; set; }
+        public TimeSpan HoraFin { get; set; }
+    }
+
+    private class HorarioService
+    {
+        public List<Grupo> EmparejarHorarios(List<Instructor> instructores, List<Estudiante> estudiantes, int numEstudiantesPorGrupo)
+        {
+            var grupos = new List<Grupo>();
+
+            foreach (var instructor in instructores)
+            {
+                foreach (var horarioInstructor in instructor.HorariosDisponibles)
+                {
+                    var estudiantesCoincidentes = estudiantes
+                        .Where(e => e.HorariosDisponibles.Any(h => HorarioCoincide(h, horarioInstructor)))
+                        .Take(numEstudiantesPorGrupo)
+                        .ToList();
+
+                    if (estudiantesCoincidentes.Count == numEstudiantesPorGrupo)
+                    {
+                        var grupo = new Grupo
+                            {
+                                Instructor = instructor,
+                                Estudiantes = estudiantesCoincidentes,
+                                Horario = horarioInstructor
+                            };
+                        grupos.Add(grupo);
+
+                        // Eliminar los estudiantes emparejados de la lista de estudiantes
+                        estudiantes = estudiantes.Except(estudiantesCoincidentes).ToList();
+                    }
+                }
+            }
+
+            return grupos;
+        }
+
+        private bool HorarioCoincide(HorarioDisponible horario1, HorarioDisponible horario2)
+        {
+            return horario1.Dia == horario2.Dia &&
+                   horario1.HoraInicio < horario2.HoraFin &&
+                   horario1.HoraFin > horario2.HoraInicio;
+        }
+    }
+}

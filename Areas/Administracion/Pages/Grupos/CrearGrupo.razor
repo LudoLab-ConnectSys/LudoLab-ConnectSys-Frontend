@@ -1,0 +1,205 @@
+﻿@page "/crear-grupo/{EdicionId:int}"
+@inject NavigationManager NavigationManager
+
+<h3>Crear Nuevo Grupo</h3>
+
+<EditForm Model="@nuevoGrupo" OnValidSubmit="@CrearNuevoGrupo">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label for="profesor">Profesor:</label>
+        <select id="profesor" class="form-control" @bind="nuevoGrupo.ProfesorId">
+            @foreach (var profesor in profesores)
+            {
+                <option value="@profesor.Id">@profesor.Nombre</option>
+            }
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="searchTerm">Buscar Estudiantes:</label>
+        <input type="text" id="searchTerm" @bind="searchTerm" @oninput="FiltrarEstudiantes" placeholder="Buscar..." class="form-control" />
+    </div>
+
+    <div class="form-group">
+        <label for="estudiantes">Estudiantes:</label>
+        <div class="estudiantes-container">
+            @foreach (var estudiante in estudiantesFiltrados)
+            {
+                <div class="estudiante-card @(estudianteSeleccionado[estudiantes.IndexOf(estudiante)] ? "selected" : "")" @onclick="() => SeleccionarEstudiante(estudiantes.IndexOf(estudiante))">
+                    <p>@estudiante.Nombre</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="horario">Horario:</label>
+        <select id="horario" class="form-control" @bind="nuevoGrupo.HorarioId">
+            @foreach (var horario in horarios)
+            {
+                <option value="@horario.Id">@horario.Dia - @horario.HoraInicio - @horario.HoraFin</option>
+            }
+        </select>
+    </div>
+
+    <button type="submit" class="btn btn-success">Crear Grupo</button>
+    <button type="button" class="btn btn-secondary" @onclick="Volver">Cancelar</button>
+</EditForm>
+
+<style>
+    .estudiantes-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        max-height: 400px; /* Limita la altura del contenedor */
+        overflow-y: auto; /* Hace que el contenedor sea desplazable verticalmente */
+    }
+
+    .estudiante-card {
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        width: calc(33.33% - 20px); /* 3 tarjetas por fila con espacio entre ellas */
+        height: 100px; /* Altura fija */
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+    }
+
+        .estudiante-card.selected {
+            background-color: #d1e7dd;
+            border-color: #0f5132;
+        }
+</style>
+
+@code {
+    [Parameter]
+    public int EdicionId { get; set; }
+
+    private GrupoModel nuevoGrupo = new GrupoModel();
+    private List<Profesor> profesores = new List<Profesor>();
+    private List<Estudiante> estudiantes = new List<Estudiante>();
+    private List<Estudiante> estudiantesFiltrados = new List<Estudiante>();
+    private List<Horario> horarios = new List<Horario>();
+    private bool[] estudianteSeleccionado;
+    private string searchTerm;
+
+    protected override void OnInitialized()
+    {
+        // Cargar datos iniciales desde la base de datos o servicio
+        profesores = ObtenerProfesores();
+        estudiantes = ObtenerEstudiantes();
+        estudiantesFiltrados = estudiantes;
+        horarios = ObtenerHorariosDisponibles();
+        estudianteSeleccionado = new bool[estudiantes.Count];
+    }
+
+    private void CrearNuevoGrupo()
+    {
+        // Asignar los IDs de los estudiantes seleccionados al modelo
+        nuevoGrupo.EstudiantesIds = estudiantes
+            .Where((estudiante, index) => estudianteSeleccionado[index])
+            .Select(estudiante => estudiante.Id)
+            .ToList();
+
+        // Aquí deberías guardar el nuevo grupo en la base de datos o servicio
+        GuardarGrupo(nuevoGrupo);
+        NavigationManager.NavigateTo($"/grupos-de-edicion/{EdicionId}");
+    }
+
+    private void Volver()
+    {
+        NavigationManager.NavigateTo($"/grupos-de-edicion/{EdicionId}");
+    }
+
+    private void FiltrarEstudiantes(ChangeEventArgs e)
+    {
+        searchTerm = e.Value.ToString();
+        if (string.IsNullOrEmpty(searchTerm))
+        {
+            estudiantesFiltrados = estudiantes;
+        }
+        else
+        {
+            estudiantesFiltrados = estudiantes
+                .Where(e => e.Nombre.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+    }
+
+    private void SeleccionarEstudiante(int index)
+    {
+        estudianteSeleccionado[index] = !estudianteSeleccionado[index];
+    }
+
+    private List<Profesor> ObtenerProfesores()
+    {
+        // Simulación de datos de profesores
+        return new List<Profesor>
+        {
+            new Profesor { Id = 1, Nombre = "Profesor A" },
+            new Profesor { Id = 2, Nombre = "Profesor B" }
+        };
+    }
+
+    private List<Estudiante> ObtenerEstudiantes()
+    {
+        // Simulación de datos de estudiantes
+        return new List<Estudiante>
+        {
+            new Estudiante { Id = 1, Nombre = "Estudiante 1" },
+            new Estudiante { Id = 2, Nombre = "Estudiante 2" },
+            new Estudiante { Id = 3, Nombre = "Estudiante 3" },
+            new Estudiante { Id = 4, Nombre = "Estudiante 4" }
+        };
+    }
+
+    private List<Horario> ObtenerHorariosDisponibles()
+    {
+        // Simulación de datos de horarios
+        return new List<Horario>
+        {
+            new Horario { Id = 1, Dia = DayOfWeek.Monday, HoraInicio = new TimeSpan(8, 0, 0), HoraFin = new TimeSpan(10, 0, 0) },
+            new Horario { Id = 2, Dia = DayOfWeek.Wednesday, HoraInicio = new TimeSpan(10, 0, 0), HoraFin = new TimeSpan(12, 0, 0) }
+        };
+    }
+
+    private void GuardarGrupo(GrupoModel grupo)
+    {
+        // Lógica para guardar el grupo
+        Console.WriteLine($"Grupo creado: {grupo.ProfesorId}, {string.Join(", ", grupo.EstudiantesIds)}, {grupo.HorarioId}");
+    }
+
+    public class GrupoModel
+    {
+        public int ProfesorId { get; set; }
+        public List<int> EstudiantesIds { get; set; } = new List<int>();
+        public int HorarioId { get; set; }
+    }
+
+    public class Profesor
+    {
+        public int Id { get; set; }
+        public string Nombre { get; set; }
+    }
+
+    public class Estudiante
+    {
+        public int Id { get; set; }
+        public string Nombre { get; set; }
+    }
+
+    public class Horario
+    {
+        public int Id { get; set; }
+        public DayOfWeek Dia { get; set; }
+        public TimeSpan HoraInicio { get; set; }
+        public TimeSpan HoraFin { get; set; }
+    }
+}

@@ -1,0 +1,70 @@
+﻿@page "/repositorio"
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using System.Net.Http.Headers
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<PageTitle>Repositorio</PageTitle>
+
+<h1>Subir Archivos a Sharepoint</h1>
+
+<AuthorizeView>
+    <NotAuthorized>
+        <div>Debe autenticarse para subir archivos</div>
+        <p>Haga clicl en <a href="authentication/login">Iniciar sesión</a> para autenticarse y subir archivos al sitio de SharePoint.</p>
+    </NotAuthorized>
+
+    <Authorized>
+        <InputFile OnChange="HandleSelected"/>
+        <button @onclick="UploadFile">Subir Archivo</button>
+        @if (uploadResult != null)
+        {
+            <p>Resultado de la carga: @uploadResult</p>
+        }
+        @code {
+        private IBrowserFile? selectedFile;
+        private string? uploadResult;
+
+        private void HandleSelected(InputFileChangeEventArgs e)
+        {
+            selectedFile = e.File;
+        }
+
+        private async Task UploadFile()
+        {
+            if (selectedFile != null)
+            {
+                try
+                {
+                    var tokenResult = await GetAccessToken();
+                    var request = new HttpRequestMessage(HttpMethod.Post, "https://epnecuador.sharepoint.com/sites/Ejemplo_2024A/documents")
+                    {
+                        Content = new StreamContent(selectedFile.OpenReadStream())
+                    };
+                    request.Content.Headers.ContentType = new MediaTypeHeaderValue(selectedFile.ContentType);
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenResult);
+
+                    var response = await Http.SendAsync(request);
+                    response.EnsureSuccessStatusCode();
+                    uploadResult = "Archivo subido exitosamente.";
+                }
+                catch (AccessTokenNotAvailableException exception)
+                {
+                    exception.Redirect();
+                }
+                catch (Exception ex)
+                {
+                    uploadResult = $"Error al subir el archivo: {ex.Message}";
+                }
+            }
+        }
+
+        private async Task<string> GetAccessToken()
+        {
+            var tokenResult = await Http.GetStringAsync("/auth/token");
+            return tokenResult;
+        }
+        }
+    </Authorized>
+</AuthorizeView>

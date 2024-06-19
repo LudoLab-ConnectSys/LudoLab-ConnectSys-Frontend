@@ -1,0 +1,87 @@
+﻿@page "/ediciones-del-curso/{CursoId:int}"
+@inject NavigationManager NavigationManager
+
+<h3>Ediciones del Curso</h3>
+
+<button class="btn btn-success" @onclick="() => CrearNuevaEdicion()">Añadir Nueva Edición</button>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Nombre de la Edición</th>
+            <th>Periodo</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var edicion in ediciones)
+        {
+            <tr>
+                <td>@edicion.Id</td>
+                <td>@edicion.Nombre</td>
+                <td>@edicion.Periodo</td>
+                <td>
+                    <button class="btn btn-info" @onclick="() => VerDetalles(edicion.Id)">Ver</button>
+                    <button class="btn btn-primary" @onclick="() => EditarEdicion(edicion.Id)">Editar</button>
+                    <button class="btn btn-danger" @onclick="() => EliminarEdicion(edicion.Id)">Eliminar</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@if (!ediciones.Any())
+{
+    <p>No hay ediciones disponibles para este curso. ¿Desea crear una nueva?</p>
+}
+
+@code {
+    [Parameter]
+    public int CursoId { get; set; }
+    private List<Edicion> ediciones = new List<Edicion>();
+
+    protected override void OnInitialized()
+    {
+        // Aquí deberías cargar las ediciones del curso desde la base de datos o servicio
+        ediciones = ObtenerEdicionesPorCursoId(CursoId);
+    }
+
+    private void VerDetalles(int id)
+    {
+        NavigationManager.NavigateTo($"/grupos-de-edicion/{id}");
+    }
+
+    private void CrearNuevaEdicion()
+    {
+        NavigationManager.NavigateTo($"/crear-edicion/{CursoId}");
+    }
+
+    private void EditarEdicion(int id)
+    {
+        NavigationManager.NavigateTo($"/editar-edicion/{id}");
+    }
+
+    private void EliminarEdicion(int id)
+    {
+        ediciones.RemoveAll(x => x.Id == id);
+    }
+
+    public class Edicion
+    {
+        public int Id { get; set; }
+        public string Nombre { get; set; }
+        public string Periodo { get; set; }
+    }
+
+    private List<Edicion> ObtenerEdicionesPorCursoId(int cursoId)
+    {
+        // Simulación de datos de ediciones
+        return new List<Edicion>
+        {
+            new Edicion { Id = 1, Nombre = "Edición 2024A", Periodo = "2024" },
+            new Edicion { Id = 2, Nombre = "Edición 2024B", Periodo = "2024" }
+        };
+    }
+}
+

@@ -1,0 +1,49 @@
+﻿@page "/crear-curso"
+@inject NavigationManager NavigationManager
+
+<h3>Crear Nuevo Curso</h3>
+
+<EditForm Model="nuevoCurso" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label for="nombre">Nombre del curso:</label>
+        <InputText id="nombre" class="form-control" @bind-Value="nuevoCurso.Nombre" />
+    </div>
+
+    <div class="form-group">
+        <label for="descripcion">Descripción:</label>
+        <InputTextArea id="descripcion" class="form-control" @bind-Value="nuevoCurso.Descripcion" />
+    </div>
+
+    <button type="submit" class="btn btn-success">Crear Curso</button>
+</EditForm>
+
+@if (cursoCreado)
+{
+    <p class="text-success">Curso creado con éxito!</p>
+}
+
+@code {
+    private Curso nuevoCurso = new Curso();
+    private bool cursoCreado = false;
+   List<Curso> cursos = new List<Curso>(); // Inicializa la lista aquí
+
+    private void HandleValidSubmit()
+    {
+        // Aquí agregarías el nuevo curso a tu base de datos o lista
+        // Simularemos la adición a la lista de cursos existente
+        cursos.Add(new Curso { Id = cursos.Max(c => c.Id) + 1, Nombre = nuevoCurso.Nombre, Descripcion = nuevoCurso.Descripcion });
+        cursoCreado = true;
+        nuevoCurso = new Curso(); // Reiniciar el formulario
+        NavigationManager.NavigateTo("/cursos"); // Opcional: redirigir al usuario a la lista de cursos
+    }
+
+    public class Curso
+    {
+        public int Id { get; set; }
+        public string Nombre { get; set; }
+        public string Descripcion { get; set; }
+    }
+}

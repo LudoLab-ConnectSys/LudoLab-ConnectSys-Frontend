@@ -1,0 +1,106 @@
+﻿@page "/ediciones"
+@inject NavigationManager NavigationManager
+
+<h3>Ediciones de Cursos</h3>
+
+<div class="form-group">
+    <label for="filtroCurso">Filtrar por Curso:</label>
+    <InputText id="filtroCurso" class="form-control" @bind-Value="filtroCurso" />
+</div>
+
+<div class="form-group">
+    <label for="filtroPeriodo">Filtrar por Periodo:</label>
+    <InputText id="filtroPeriodo" class="form-control" @bind-Value="filtroPeriodo" />
+</div>
+
+<button class="btn btn-primary" @onclick="FiltrarEdiciones">Filtrar</button>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Nombre de la Edición</th>
+            <th>Curso</th>
+            <th>Periodo</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var edicion in edicionesFiltradas)
+        {
+            <tr>
+                <td>@edicion.Id</td>
+                <td>@edicion.Nombre</td>
+                <td>@edicion.CursoNombre</td>
+                <td>@edicion.Periodo</td>
+                <td>
+                    <button class="btn btn-info" @onclick="() => VerDetalles(edicion.Id)">Ver</button>
+                    <button class="btn btn-primary" @onclick="() => EditarEdicion(edicion.Id)">Editar</button>
+                    <button class="btn btn-danger" @onclick="() => EliminarEdicion(edicion.Id)">Eliminar</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@if (!edicionesFiltradas.Any())
+{
+    <p>No hay ediciones disponibles.</p>
+}
+
+@code {
+    private string filtroCurso = string.Empty;
+    private string filtroPeriodo = string.Empty;
+    private List<Edicion> ediciones = new List<Edicion>();
+    private List<Edicion> edicionesFiltradas = new List<Edicion>();
+
+    protected override void OnInitialized()
+    {
+        // Aquí deberías cargar todas las ediciones desde la base de datos o servicio
+        ediciones = ObtenerTodasLasEdiciones();
+        edicionesFiltradas = ediciones;
+    }
+
+    private void FiltrarEdiciones()
+    {
+        edicionesFiltradas = ediciones.Where(e =>
+            (string.IsNullOrEmpty(filtroCurso) || e.CursoNombre.Contains(filtroCurso, StringComparison.OrdinalIgnoreCase)) &&
+            (string.IsNullOrEmpty(filtroPeriodo) || e.Periodo.Contains(filtroPeriodo, StringComparison.OrdinalIgnoreCase))
+        ).ToList();
+    }
+
+    private void VerDetalles(int id)
+    {
+        NavigationManager.NavigateTo($"/detalle-edicion/{id}");
+    }
+
+    private void EditarEdicion(int id)
+    {
+        NavigationManager.NavigateTo($"/editar-edicion/{id}");
+    }
+
+    private void EliminarEdicion(int id)
+    {
+        ediciones.RemoveAll(x => x.Id == id);
+        FiltrarEdiciones(); // Refrescar la lista filtrada
+    }
+
+    public class Edicion
+    {
+        public int Id { get; set; }
+        public string Nombre { get; set; }
+        public string CursoNombre { get; set; }
+        public string Periodo { get; set; }
+    }
+
+    private List<Edicion> ObtenerTodasLasEdiciones()
+    {
+        // Simulación de datos de ediciones
+        return new List<Edicion>
+        {
+            new Edicion { Id = 1, Nombre = "Edición 2024A", CursoNombre = "Blazor para Principiantes", Periodo = "2024" },
+            new Edicion { Id = 2, Nombre = "Edición 2024B", CursoNombre = "Blazor para Principiantes", Periodo = "2024" },
+            new Edicion { Id = 3, Nombre = "Edición 2024A", CursoNombre = "Blazor Avanzado", Periodo = "2024" }
+        };
+    }
+}

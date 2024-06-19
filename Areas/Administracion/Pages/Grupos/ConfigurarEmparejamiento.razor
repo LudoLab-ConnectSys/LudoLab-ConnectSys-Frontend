@@ -1,0 +1,36 @@
+﻿@page "/configurar-emparejamiento/{EdicionId:int}"
+@using System.ComponentModel.DataAnnotations
+@inject NavigationManager NavigationManager
+
+<h3>Configurar Emparejamiento de Grupos</h3>
+
+<EditForm Model="@configuracionEmparejamiento" OnValidSubmit="@IniciarEmparejamiento">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label for="numEstudiantes">Número de Estudiantes por Grupo:</label>
+        <InputNumber id="numEstudiantes" class="form-control" @bind-Value="configuracionEmparejamiento.NumeroEstudiantesPorGrupo" />
+    </div>
+
+    <button type="submit" class="btn btn-success">Iniciar Emparejamiento</button>
+</EditForm>
+
+@code {
+    [Parameter]
+    public int EdicionId { get; set; }
+
+    private ConfiguracionEmparejamiento configuracionEmparejamiento = new ConfiguracionEmparejamiento();
+
+    private void IniciarEmparejamiento()
+    {
+        NavigationManager.NavigateTo($"/emparejar-horarios/{EdicionId}/{configuracionEmparejamiento.NumeroEstudiantesPorGrupo}");
+    }
+
+    public class ConfiguracionEmparejamiento
+    {
+        [Required]
+        [Range(1, 10, ErrorMessage = "El número de estudiantes por grupo debe estar entre 1 y 10.")]
+        public int NumeroEstudiantesPorGrupo { get; set; }
+    }
+}

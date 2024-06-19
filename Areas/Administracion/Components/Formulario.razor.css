@@ -18,14 +18,14 @@ EditForm {
 }
 
 
-.form-control{
-    width: 100%; /* El control de formulario ocupará el 100% del ancho de su contenedor */
-    height: 2.5em; /* El control de formulario tendrá una altura de 2.5em */
-    padding: 0.5em; /* Añade un poco de espacio alrededor del control de formulario */
-    box-sizing: border-box; /* Asegura que el padding se incluya en el ancho y la altura del control de formulario */
-    border: 1px solid #ff0000; /* Añade un borde de 1px sólido de color */
+.form-control {
+    width: 100% !important; /* El control de formulario ocupará el 100% del ancho de su contenedor */
+    height: 2.5em !important; /* El control de formulario tendrá una altura de 2.5em */
+    padding: 0.5em !important; /* Añade un poco de espacio alrededor del control de formulario */
+    box-sizing: border-box !important; /* Asegura que el padding se incluya en el ancho y la altura del control de formulario */
+    border: 1px solid #ff0000 !important; /* Añade un borde de 1px sólido de color */
     border-radius: 50px !important; /* Añade un radio de borde de 5px */
-    flex-grow: 1; /* Permite que el control de formulario crezca para llenar el espacio disponible */
+    flex-grow: 1 !important; /* Permite que el control de formulario crezca para llenar el espacio disponible */
 }
 
     .form-group label {
@@ -47,7 +47,7 @@ EditForm {
     border: 1px solid red;
 }
 
-
+    
 
   
 
