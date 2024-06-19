@@ -1,8 +1,358 @@
 ﻿@inject NavigationManager NavigationManager
 @page "/student"
+@using System.Net.Http.Headers
+@using DirectorioDeArchivos.Shared
+@inject HttpClient Http
+@inject SweetAlertService Swal
+@inject IJSRuntime JSRuntime
+@using Microsoft.JSInterop
 
-<h3>Student</h3>
+<h3>Student</h3> 
+<EditForm Model="newCertificado">
+    <InputText @bind-Value = "@newCertificado.nombre_certificado"></InputText>
+    <button @onclick="(() => CrearCertificado(newCertificado))">Crear CERTIFICADO</button>
+</EditForm>
+<br/>
+<EditForm Model="newCertificado">
+    <InputNumber @bind-Value="@newCertificado.id_certificado"></InputNumber>
+    <button @onclick="(() => EliminarCertificado(newCertificado.id_certificado))">Eliminar CERTIFICADO</button>
+</EditForm>
+<br />
+<EditForm Model="newCertificado">
+    <InputNumber @bind-Value="@newCertificado.id_certificado"></InputNumber>
+    <InputText @bind-Value="@newCertificado.nombre_certificado"></InputText>
+
+    <button @onclick="(() => ActualizarCertificado(newCertificado))">Actualizar nombre del CERTIFICADO</button>
+</EditForm>
+
+<br/>
+<h3>Lista de cursos</h3>
+<EditForm Model="newCurso">
+    <div class="contenedor">
+        <label for="nombrePeriodo">Nombre del Periodo:</label>
+        <label for="nombreCurso">Nombre del Curso:</label>
+    </div>
+
+    <div>
+        <InputText @bind-Value="@newPeriodo.nombre_periodo"></InputText>
+        <InputText @bind-Value="@newCurso.nombre_curso"></InputText>
+        <button @onclick="(() => BuscarPeriodos(newPeriodo.nombre_periodo, newCurso.nombre_curso))" class="btn btn-primary">Buscar Curso</button>
+    </div>
+</EditForm>
+
+<button @onclick="(() => ListaPeriodos())" type="button" class="btn btn-primary">Listar Cursos</button>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th scope="col">Nombre Periodo</th>
+            <th scope="col">Inicio</th>
+            <th scope="col">Fin</th>
+            <th scope="col">Nombre Curso</th>
+            <th scope="col">Certificado</th>
+            <th scope="col">Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var en in Periodos)
+        {
+            var inputFileId = $"fileInput_{en.id_periodo}";
+
+            <tr>
+                <td>@en.nombre_periodo</td>
+                <td>@en.fecha_inicio_periodo</td>
+                <td>@en.fecha_fin_periodo</td>
+                <td>@en.nombre_curso</td>
+                <td>@(string.IsNullOrEmpty(en.nombre_certificado) ? "No asignado" : en.nombre_certificado)</td>
+                <td>
+                    <!--<button type="button" class="btn btn-success"></button>-->
+                        <label for="@inputFileId" class="btn btn-success">
+                            <i class="bi bi-cloud-upload-fill"></i>
+                        </label>
+                            <InputFile id="@inputFileId" OnChange="@(e => OnInputFileChange(e, en.id_periodo))" class="d-none" />
+                    
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" @onclick="(() => EstudiantesPorPeriodo(en.id_periodo))">
+                        <i class=" bi bi-person-lines-fill"></i>
+                    </button>
+                    <button type="button" class="btn btn-info" @onclick="(()=> OpenPdf(en.nombre_certificado))"><i class="bi bi-eye-fill"></i></button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<style>
+    .d-none {
+        display: none;
+    }
+</style>
+
+
+<!-- Modal para lista de ususarios-->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Lista de estudiantes</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Nombre</th>
+                            <th scope="col">Apellido</th>
+                            <th scope="col">CI</th>
+                            <th scope="col">Celular</th>
+                            <th scope="col">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var en in ListaEstudiantes)
+                        {
+                            <tr>
+                                <td>@en.NombreUsuario</td>
+                                <td>@en.ApellidosUsuario</td>
+                                <td>@en.CedulaUsuario</td>
+                                <td>@en.CelularUsuario</td>
+                                <td>
+                                    <button type="button" class="btn btn-warning" @onclick = "(()=> ImprimirCertificados(en.IdUsuario, en.NombreCertificado))">
+                                        <i class="bi bi-cloud-arrow-down-fill"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+
+                    </tbody>
+                </table>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary">Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 @code {
+    Certificado newCertificado = new Certificado();
 
+    public static List<Curso> Cursos = new List<Curso>();
+    Curso newCurso = new Curso();
+
+    public static List<PeriodoConNombreCurso> Periodos = new List<PeriodoConNombreCurso>();
+    Periodo newPeriodo = new Periodo();
+
+    public static List<UsuarioPeriodo> ListaEstudiantes = new List<UsuarioPeriodo>();
+
+    //carga de archivos
+    private int maxAllowedFiles = int.MaxValue;
+    private long maxFileSize = long.MaxValue;
+    private List<string> fileNames = new();
+    private List<UploadResult> uploadResults = new();
+
+    string NombreBuscado = "";
+    //FUNCIONES PARA Certificados
+    public async Task CrearCertificado(Certificado certificado)
+    {
+        var resultado = await Http.PostAsJsonAsync("http://localhost:5117/api/Certificado", certificado);
+
+    }
+    public async Task EliminarCertificado(int id_certificado)
+    {
+        var resul = await Http.DeleteAsync($"http://localhost:5117/api/Certificado/{id_certificado}");
+
+    }
+
+    public async Task ActualizarCertificado(Certificado certificado)
+    {
+        var result = await Http.PutAsJsonAsync($"http://localhost:5117/api/Certificado/{certificado.id_certificado}", certificado);
+    }
+    //FUNCIONES PARA CURSOS
+    public async Task ListaCursos()
+    {
+        Cursos = await Http.GetFromJsonAsync<List<Curso>>("http://localhost:5117/api/Curso");
+    }
+    public async Task BuscarCurso(string nombre_curso)
+    {
+        Cursos = await Http.GetFromJsonAsync<List<Curso>>($"http://localhost:5117/api/Curso/CursoByName/{nombre_curso}");
+
+    }
+
+    //FUNCIONES PARA Periodo
+    public async Task ListaPeriodos()
+    {
+        Periodos = await Http.GetFromJsonAsync<List<PeriodoConNombreCurso>>("http://localhost:5117/api/Periodo");
+    }
+    public async Task BuscarPeriodos(string nombre_periodo, string nombre_curso)
+    {
+        // Construir la URL con los parámetros de consulta
+        var url = $"http://localhost:5117/api/Periodo/PeriodoByName?nombre_periodo={nombre_periodo}&nombre_curso={nombre_curso}";
+
+        var response = await Http.GetAsync(url);
+
+        if (response.IsSuccessStatusCode)
+        {
+            Periodos = await response.Content.ReadFromJsonAsync<List<PeriodoConNombreCurso>>();
+        }
+        else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "No se encontraron coincidencias");
+            Periodos = new List<PeriodoConNombreCurso>();
+        }
+        else
+        {
+            Console.WriteLine("Error al buscar los periodos.");
+        }
+    }
+
+
+    public async Task ImprimirID(int id_periodo)
+    {
+        Console.WriteLine($"Imprimir el ID del periodo seleccionado: {id_periodo}");
+    }
+
+    //funcion para Carga de archivos
+    private async Task OnInputFileChange(InputFileChangeEventArgs e, int id_periodo)
+    {
+        var fileforNAME = e.File;
+
+        if (fileforNAME != null)
+        {
+            var fileName = fileforNAME.Name;
+            Console.WriteLine($"Nombre del archivo: {fileName}");
+
+            // Enviar solicitud al backend para actualizar el nombre del archivo en la tabla Certificado
+            var updateData = new
+            {
+                IdPeriodo = id_periodo,
+                NuevoNombreArchivo = fileName
+            };
+
+            var responsefile = await Http.PutAsJsonAsync("http://localhost:5117/api/File/ActualizarNombreArchivo", updateData);
+
+            if (responsefile.IsSuccessStatusCode)
+            {
+                Console.WriteLine("Nombre del archivo actualizado correctamente en la base de datos.");
+            }
+            else
+            {
+                Console.WriteLine("Error al actualizar el nombre del archivo en la base de datos.");
+            }
+        }
+
+        Console.WriteLine(id_periodo);
+        foreach (var file in e.GetMultipleFiles(maxAllowedFiles))
+        {
+            using var fileStream = file.OpenReadStream(maxFileSize);
+            using var memoryStream = new MemoryStream();
+            await fileStream.CopyToAsync(memoryStream);
+
+            //textos y sus posiciones para insertar en el pdf
+            var texts = new List<object>
+            {
+                new { content = "Nombre del Estudiante", x = 100, y = 150, size = 24 },
+                new { content = "Curso: Matemáticas", x = 100, y = 120, size = 18 },
+                new { content = "Fecha: 01/01/2024", x = 100, y = 90, size = 18 }
+            };
+            // Llamar a la función de JavaScript para modificar el PDF
+            var pdfBytes = await JSRuntime.InvokeAsync<byte[]>("modificarPDF", memoryStream.ToArray(), texts);
+
+            using var outputPdfStream = new MemoryStream(pdfBytes);
+
+            // Enviar el PDF modificado al backend
+            var fileContent = new StreamContent(outputPdfStream);
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/pdf");
+
+            using var content = new MultipartFormDataContent();
+            content.Add(fileContent, "files", file.Name);
+
+            var response = await Http.PostAsync("http://localhost:5117/api/File", content);
+            var newUploadResults = await response.Content.ReadFromJsonAsync<List<UploadResult>>();
+
+            if (newUploadResults is not null)
+            {
+                uploadResults = uploadResults.Concat(newUploadResults).ToList();
+            }
+        }
+        /*using var content = new MultipartFormDataContent();
+
+        foreach (var file in e.GetMultipleFiles(maxAllowedFiles))
+        {
+            var fileContent = new StreamContent(file.OpenReadStream(maxFileSize));
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
+
+            fileNames.Add(file.Name);
+
+            content.Add(
+                content: fileContent,
+                name: "\"files\"",
+                fileName: file.Name);
+
+        }
+
+        var response = await Http.PostAsync("http://localhost:5117/api/File", content);
+        var newUploadResults = await response.Content.ReadFromJsonAsync<List<UploadResult>>();
+
+        if (newUploadResults is not null)
+        {
+            uploadResults = uploadResults.Concat(newUploadResults).ToList();
+        }*/
+    }
+
+    private async Task ImprimirCertificados(int id_usuario, string nombre_certificado)
+    {
+        Console.WriteLine($"ID user: {id_usuario}");
+        Console.WriteLine($"Nombre Certificado: {nombre_certificado}");
+        var response = await Http.GetAsync($"http://localhost:5117/api/File/{nombre_certificado}");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "File not found.");
+        }
+        else
+        {
+            var fileStream = response.Content.ReadAsStream();
+            using var streamRef = new DotNetStreamReference(stream: fileStream);
+            await JSRuntime.InvokeVoidAsync("downloadFileFromStream", nombre_certificado, streamRef);
+        }
+    }
+
+    public async Task EstudiantesPorPeriodo(int id_periodo)
+    {
+        // Construir la URL con los parámetros de consulta
+        var url = $"http://localhost:5117/api/Grupo/{id_periodo}";
+
+        var response = await Http.GetAsync(url);
+
+        if (response.IsSuccessStatusCode)
+        {
+            ListaEstudiantes = await response.Content.ReadFromJsonAsync<List<UsuarioPeriodo>>();
+        }
+        else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "No se encontraron coincidencias");
+            ListaEstudiantes = new List<UsuarioPeriodo>();
+        }
+        else
+        {
+            Console.WriteLine("Error al buscar los periodos.");
+        }
+    }
+
+
+    private void OpenPdf(string fileName)//Pre-visualizar el pdf
+    {
+        if (string.IsNullOrEmpty(fileName))
+        {
+            JSRuntime.InvokeVoidAsync("alert", "Este curso no tiene asignado una plantilla para el certificado");
+        }
+        else
+        {
+            var url = $"http://localhost:5117/uploads/{fileName}";
+            JSRuntime.InvokeVoidAsync("open", url, "_blank");
+        }
+    }
 }

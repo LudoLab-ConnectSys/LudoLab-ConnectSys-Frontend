@@ -1,8 +1,92 @@
 ﻿@inject NavigationManager NavigationManager
 @page "/tutor"
+@using System.Net.Http.Headers
+@using DirectorioDeArchivos.Shared
+@inject HttpClient Http
+@inject IJSRuntime JS
 
-<h3>Tutor</h3>
+<PageTitle>Upload Files</PageTitle>
+
+<h1>Upload Files!</h1>
+
+<InputFile OnChange="@OnInputFileChange" multiple />
+
+<input type="text" placeholder="nombre" @bind-value=NombreBuscado />
+<button @onclick="(()=>DownloadFile(NombreBuscado))">Buscar y descargar</button>
+
+<h3>PowerPoint Add-in</h3>
+
+<iframe src="/powerpoint-addin/Home.html" width="100%" height="600px"></iframe>
+
+
+<h3>PDF Viewer</h3>
+<button @onclick="OpenPdf">Ver PDF</button>
 
 @code {
+    private int maxAllowedFiles = int.MaxValue;
+    private long maxFileSize = long.MaxValue;
+    private List<string> fileNames = new();
+    private List<UploadResult> uploadResults = new();
 
+    string NombreBuscado = "";
+
+    private async Task OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        Console.WriteLine("hola");
+        using var content = new MultipartFormDataContent();
+
+        foreach (var file in e.GetMultipleFiles(maxAllowedFiles))
+        {
+            var fileContent = new StreamContent(file.OpenReadStream(maxFileSize));
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
+
+            fileNames.Add(file.Name);
+
+            content.Add(
+                content: fileContent,
+                name: "\"files\"",
+                fileName: file.Name);
+        }
+
+        var response = await Http.PostAsync("http://localhost:5117/api/File", content);
+        var newUploadResults = await response.Content.ReadFromJsonAsync<List<UploadResult>>();
+
+        if (newUploadResults is not null)
+        {
+            uploadResults = uploadResults.Concat(newUploadResults).ToList();
+        }
+    }
+
+    private string? GetStoredFileName(string fileName)
+    {
+        var uploadResult = uploadResults.SingleOrDefault(f => f.Nombre == fileName);
+        if (uploadResult is not null)
+            return uploadResult.StoredFileName;
+
+        return "File not found.";
+    }
+
+    private async Task DownloadFile(string nombre)
+    {
+        var response = await Http.GetAsync($"http://localhost:5117/api/File/{nombre}");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            await JS.InvokeVoidAsync("alert", "File not found.");
+        }
+        else
+        {
+            var fileStream = response.Content.ReadAsStream();
+            using var streamRef = new DotNetStreamReference(stream: fileStream);
+            await JS.InvokeVoidAsync("downloadFileFromStream", NombreBuscado, streamRef);
+        }
+    }
+
+    private string fileName = "CI_Miguel-Muenala.pdf"; // Reemplaza con el nombre de tu archivo PDF
+
+    private void OpenPdf()
+    {
+        var url = $"http://localhost:5117/uploads/{fileName}";
+        JS.InvokeVoidAsync("open", url, "_blank");
+    }
 }

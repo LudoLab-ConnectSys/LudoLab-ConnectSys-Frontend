@@ -1,0 +1,136 @@
+﻿@inject NavigationManager NavigationManager
+@page "/informe-practicas"
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@using Microsoft.AspNetCore.Components.Forms
+@using OfficeOpenXml;
+
+<h3>Subir y mostrar archivo Excel</h3>
+
+<InputFile OnChange="HandleFileSelected" />
+
+@if (excelContent != null)
+{
+    <table>
+        @for (int rowIndex = 0; rowIndex < excelContent.Count; rowIndex++)
+        {
+            <tr>
+                @for (int colIndex = 0; colIndex < excelContent[rowIndex].Count; colIndex++)
+                {
+                    <td @onclick="@(e => SelectCell(rowIndex, colIndex))"
+                        style="border: 1px solid; padding: 5px;">
+                        @excelContent[rowIndex][colIndex]
+                    </td>
+                }
+            </tr>
+        }
+    </table>
+}
+
+@if (selectedCell != null)
+{
+    <p>Celda seleccionada: (@selectedCell.Value.Row, @selectedCell.Value.Col)</p>
+    <button @onclick="UpdateExcel">Actualizar y descargar Excel</button>
+}
+<!-- otra prueba  -->
+
+<h3>Cargar Archivo Excel</h3>
+
+<input type="file" @ref="fileInput" />
+
+<button @onclick="OpenExcel">Abrir Excel</button>
+
+@code {
+    private List<List<string>> excelContent;
+    private (int Row, int Col)? selectedCell;
+    private byte[] excelFileBytes;
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        using var stream = new MemoryStream();
+        await file.OpenReadStream().CopyToAsync(stream);
+        excelFileBytes = stream.ToArray();
+
+        // Establecer el contexto de licencia
+        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+
+        using var package = new ExcelPackage(new MemoryStream(excelFileBytes));
+        var worksheet = package.Workbook.Worksheets.FirstOrDefault();
+        if (worksheet == null)
+        {
+            throw new InvalidOperationException("La hoja de cálculo no existe.");
+        }
+
+        var rowCount = worksheet.Dimension.Rows;
+        var colCount = worksheet.Dimension.Columns;
+
+        excelContent = new List<List<string>>();
+        for (int row = 1; row <= rowCount; row++)
+        {
+            var rowData = new List<string>();
+            for (int col = 1; col <= colCount; col++)
+            {
+                rowData.Add(worksheet.Cells[row, col].Text);
+            }
+            excelContent.Add(rowData);
+        }
+    }
+
+    private void SelectCell(int row, int col)
+    {
+        selectedCell = (row, col);
+    }
+
+    private async Task UpdateExcel()
+    {
+        if (selectedCell != null)
+        {
+            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+
+            using var package = new ExcelPackage(new MemoryStream(excelFileBytes));
+            var worksheet = package.Workbook.Worksheets.FirstOrDefault();
+            if (worksheet == null)
+            {
+                throw new InvalidOperationException("La hoja de cálculo no existe.");
+            }
+
+            worksheet.Cells[selectedCell.Value.Row + 1, selectedCell.Value.Col + 1].Value = "Texto de prueba";
+
+            // Obtener el contenido del archivo actualizado
+            var updatedFile = package.GetAsByteArray();
+
+            // Invocar la función de JavaScript para guardar el archivo
+            await JSRuntime.InvokeVoidAsync("saveAsFile", "Informe_Actualizado.xlsx", Convert.ToBase64String(updatedFile));
+        }
+    }
+
+    // otra prueba
+    ElementReference fileInput;
+
+    async Task OpenExcel()
+    {
+        var fileInfo = await JSRuntime.InvokeAsync<Dictionary<string, object>>("openExcelFile", fileInput);
+
+        string fileName = fileInfo["fileName"].ToString();
+        string fileData = fileInfo["data"].ToString();
+
+        // Enviar los datos del archivo Excel al servidor Blazor para su procesamiento
+        await ProcessExcelFile(fileName, fileData);
+    }
+
+    async Task ProcessExcelFile(string fileName, string fileData)
+    {
+        // Llamar a un método del backend para procesar el archivo Excel
+        // Este método podría guardar el archivo en el servidor y devolver su URL
+        // Aquí un ejemplo simple para devolver los datos al cliente
+        var contentDisposition = $"attachment; filename=\"{fileName}\"";
+        var bytes = Convert.FromBase64String(fileData);
+        var base64Data = Convert.ToBase64String(bytes);
+        var contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        var responseContent = $"data:{contentType};base64,{base64Data}";
+
+        // Invocar JavaScript para abrir el archivo Excel en el cliente
+        await JSRuntime.InvokeVoidAsync("openExcelInNewTab", responseContent, contentDisposition);
+    }
+}

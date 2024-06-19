@@ -1,0 +1,205 @@
+﻿@inject NavigationManager NavigationManager
+@page "/generar-reportes"
+@inject IJSRuntime JSRuntime
+@using Microsoft.JSInterop
+@inject HttpClient Http
+@using ClosedXML.Excel;
+
+<h3>Generar reportes de curso</h3>
+<h3>Lista de cursos</h3>
+<EditForm Model="newCurso">
+    <div class="contenedor">
+        Nombre del Periodo:    Nombre del Curso:
+    </div>
+
+    <div>
+        <InputText @bind-Value="@newPeriodo.nombre_periodo"></InputText>
+        <InputText @bind-Value="@newCurso.nombre_curso"></InputText>
+        <button @onclick="(() => BuscarPeriodos(newPeriodo.nombre_periodo, newCurso.nombre_curso))" class="btn btn-primary">Buscar Curso</button>
+    </div>
+</EditForm>
+<button @onclick="(() => ListaPeriodos())" type="button" class="btn btn-primary">Listar Cursos</button>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th scope="col">Nombre Periodo</th>
+            <th scope="col">Inicio</th>
+            <th scope="col">Fin</th>
+            <th scope="col">Nombre Curso</th>
+            <th scope="col">Certificado</th>
+            <th scope="col">Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var en in Periodos)
+        {
+            var inputFileId = $"fileInput_{en.id_periodo}";
+
+            <tr>
+                <td>@en.nombre_periodo</td>
+                <td>@en.fecha_inicio_periodo</td>
+                <td>@en.fecha_fin_periodo</td>
+                <td>@en.nombre_curso</td>
+                <td>@(string.IsNullOrEmpty(en.nombre_certificado) ? "No asignado" : en.nombre_certificado)</td>
+                <td>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" @onclick="(() => EstudiantesPorPeriodo(en.id_periodo, en.nombre_curso, en.nombre_periodo))">
+                        <i class=" bi bi-person-lines-fill"></i>
+                    </button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<!-- Modal para lista de ususarios-->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Lista de estudiantes</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div>Curso: @nombreCurso</div>
+                <div>Perioro: @nombrePeriodo</div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Nombre</th>
+                            <th scope="col">Apellido</th>
+                            <th scope="col">CI</th>
+                            <th scope="col">Celular</th>
+                            <th scope="col">Correo</th>
+                            <th scope="col">Edad</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var en in ListaEstudiantes)
+                        {
+                            <tr>
+                                <td>@en.NombreUsuario</td>
+                                <td>@en.ApellidosUsuario</td>
+                                <td>@en.CedulaUsuario</td>
+                                <td>@en.CelularUsuario</td>
+                                <td>@en.CorreoUsuario</td>
+                                <td>@en.EdadUsuario</td>
+                            </tr>
+                        }
+
+                    </tbody>
+                </table>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" @onclick="ExportarExcel">Descargar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    Curso newCurso = new Curso();
+    public static List<PeriodoConNombreCurso> Periodos = new List<PeriodoConNombreCurso>();
+    Periodo newPeriodo = new Periodo();
+    public static List<UsuarioPeriodo> ListaEstudiantes = new List<UsuarioPeriodo>();
+    String nombreCurso;
+    String nombrePeriodo;
+
+
+    public async Task BuscarPeriodos(string nombre_periodo, string nombre_curso)
+    {
+        // Construir la URL con los parámetros de consulta
+        var url = $"http://localhost:5117/api/Periodo/PeriodoByName?nombre_periodo={nombre_periodo}&nombre_curso={nombre_curso}";
+
+        var response = await Http.GetAsync(url);
+
+        if (response.IsSuccessStatusCode)
+        {
+            Periodos = await response.Content.ReadFromJsonAsync<List<PeriodoConNombreCurso>>();
+        }
+        else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "No se encontraron coincidencias");
+            Periodos = new List<PeriodoConNombreCurso>();
+        }
+        else
+        {
+            Console.WriteLine("Error al buscar los periodos.");
+        }
+    }
+
+    //FUNCIONES PARA Periodo
+    public async Task ListaPeriodos()
+    {
+        Periodos = await Http.GetFromJsonAsync<List<PeriodoConNombreCurso>>("http://localhost:5117/api/Periodo");
+    }
+
+    public async Task EstudiantesPorPeriodo(int id_periodo, string curso, string periodo)
+    {
+        nombrePeriodo = periodo;
+        nombreCurso = curso;
+        // Construir la URL con los parámetros de consulta
+        var url = $"http://localhost:5117/api/Grupo/{id_periodo}";
+
+        var response = await Http.GetAsync(url);
+
+        if (response.IsSuccessStatusCode)
+        {
+            ListaEstudiantes = await response.Content.ReadFromJsonAsync<List<UsuarioPeriodo>>();
+        }
+        else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "No se encontraron coincidencias");
+            ListaEstudiantes = new List<UsuarioPeriodo>();
+        }
+        else
+        {
+            Console.WriteLine("Error al buscar los periodos.");
+        }
+    }
+
+    private async Task ExportarExcel()
+    {
+        using(var libro = new XLWorkbook())
+        {
+            int contador = 5;
+            IXLWorksheet hoja = libro.Worksheets.Add("empleado");
+            hoja.Cell(2, 1).Value = "Curso: " + nombreCurso;
+            hoja.Cell(3, 1).Value = "Peiodo: " + nombrePeriodo;
+
+            hoja.Cell(contador, 1).Value = "Nombre";
+            hoja.Cell(contador, 2).Value = "Apellido";
+            hoja.Cell(contador, 3).Value = "CI";
+            hoja.Cell(contador, 4).Value = "Celular";
+            hoja.Cell(contador, 5).Value = "Correo";
+            hoja.Cell(contador, 6).Value = "Edad";
+
+            for (int fila = 1; fila <= ListaEstudiantes.Count; fila++)
+            {
+                hoja.Cell(contador + 1, 1).Value = ListaEstudiantes[fila - 1].NombreUsuario;
+                hoja.Cell(contador + 1, 2).Value = ListaEstudiantes[fila - 1].ApellidosUsuario;
+                hoja.Cell(contador + 1, 3).Value = ListaEstudiantes[fila - 1].CedulaUsuario;
+                hoja.Cell(contador + 1, 4).Value = ListaEstudiantes[fila - 1].CelularUsuario;
+                hoja.Cell(contador + 1, 5).Value = ListaEstudiantes[fila - 1].CorreoUsuario;
+                hoja.Cell(contador + 1, 6).Value = ListaEstudiantes[fila - 1].EdadUsuario;
+                contador++;
+            }
+
+            using(var memoria = new MemoryStream())
+            {
+                libro.SaveAs(memoria);
+                var nombreExcel = string.Concat("Reporte", DateTime.Now.ToString(), ".xlsx");
+
+                await JSRuntime.InvokeAsync<object>(
+                    "DescargarExel",
+                    nombreExcel,
+                    Convert.ToBase64String(memoria.ToArray())
+                );
+            }
+        }
+    }
+
+
+}

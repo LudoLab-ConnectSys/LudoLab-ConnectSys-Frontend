@@ -11,6 +11,9 @@
     <link rel="icon" type="image/png" href="favicon.png" />
     <link href="LudoLab ConnectSys Frontend.styles.css" rel="stylesheet" />
     <script src="js/fileUpload.js"></script>
+
+    <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+
 </head>
 
 <body>
@@ -27,8 +30,94 @@
         <a href="" class="reload">Reload</a>
         <a class="dismiss">🗙</a>
     </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <script>
+        window.modificarPDF = async (arrayBuffer, texts) => {
+            const { PDFDocument, rgb } = PDFLib;
+
+            // Cargar el PDF existente desde un ArrayBuffer
+            const pdfDoc = await PDFDocument.load(arrayBuffer);
+
+            // Obtener la primera página
+            const pages = pdfDoc.getPages();
+            const firstPage = pages[0];
+
+            // Establecer las coordenadas para el texto
+            const { width, height } = firstPage.getSize();
+            console.log(`Page size: width=${width}, height=${height}`);
+            const textWidth = 200;
+            const textHeight = 100;
+            const x = 30;
+            const y = height - 30;
+
+            // Dibujar el texto
+            firstPage.drawText('Texto que quieres insertar', {
+                x,
+                y,
+                size: 20,
+                color: PDFLib.rgb(1, 1, 1)
+            });
+            // Dibujar cada texto en las posiciones especificadas
+            texts.forEach(text => {
+                console.log(`Inserting text: ${text.content} at x=${text.x}, y=${text.y}`);
+                firstPage.drawText(text.content, {
+                    x: text.x,
+                    y: text.y,
+                    size: text.size || 20,
+                    color: rgb(0, 0, 0)
+                });
+            });
+
+            // Serializar el PDF modificado a un ArrayBuffer
+            const pdfBytes = await pdfDoc.save();
+
+            return pdfBytes;
+        };
+    </script>
+
+
+    <script>
+        window.downloadFileFromStream = async (fileName, contentStreamReference) => {
+            const arrayBuffer = await contentStreamReference.arrayBuffer();
+            const blob = new Blob([arrayBuffer]);
+            const url = URL.createObjectURL(blob);
+            const anchorElement = document.createElement('a');
+            anchorElement.href = url;
+            anchorElement.download = fileName ?? '';
+            anchorElement.click();
+            anchorElement.remove();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+    <script>
+        window.showExcelContent = (element, content) => {
+            element.innerHTML = content;
+
+            const cells = element.querySelectorAll("td");
+            cells.forEach(cell => {
+                cell.addEventListener("click", () => {
+                    if (cell.style.backgroundColor === "yellow") {
+                        cell.style.backgroundColor = "";
+                    } else {
+                        cell.style.backgroundColor = "yellow";
+                    }
+                });
+            });
+        };
+    </script>
     <script src="_framework/blazor.webassembly.js"></script>
     <script>navigator.serviceWorker.register('service-worker.js');</script>
+
+    <!-- Vendor JS Files -->
+    <script src="assets/vendor/purecounter/purecounter_vanilla.js"></script>
+    <script src="assets/vendor/aos/aos.js"></script>
+    <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/vendor/glightbox/js/glightbox.min.js"></script>
+    <script src="assets/vendor/isotope-layout/isotope.pkgd.min.js"></script>
+    <script src="assets/vendor/swiper/swiper-bundle.min.js"></script>
+    <script src="assets/vendor/php-email-form/validate.js"></script>
+    <script src="js/descargaArchivos.js"></script>
 </body>
 
 </html>

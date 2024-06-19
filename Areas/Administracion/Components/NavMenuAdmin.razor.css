@@ -65,6 +65,10 @@
             color: white;
         }
 
+.menu-icon {
+    vertical-align: middle;
+    margin-right: 4px; /* Ajusta según tu preferencia */
+}
 @media (min-width: 641px) {
     .navbar-toggler {
         display: none;
