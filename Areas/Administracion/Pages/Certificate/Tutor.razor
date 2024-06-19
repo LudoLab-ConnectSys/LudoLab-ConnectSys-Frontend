@@ -13,6 +13,15 @@
 
 <input type="text" placeholder="nombre" @bind-value=NombreBuscado />
 <button @onclick="(()=>DownloadFile(NombreBuscado))">Buscar y descargar</button>
+
+<h3>PowerPoint Add-in</h3>
+
+<iframe src="/powerpoint-addin/Home.html" width="100%" height="600px"></iframe>
+
+
+<h3>PDF Viewer</h3>
+<button @onclick="OpenPdf">Ver PDF</button>
+
 @code {
     private int maxAllowedFiles = int.MaxValue;
     private long maxFileSize = long.MaxValue;
@@ -59,7 +68,6 @@
 
     private async Task DownloadFile(string nombre)
     {
-
         var response = await Http.GetAsync($"http://localhost:5117/api/File/{nombre}");
 
         if (!response.IsSuccessStatusCode)
@@ -72,5 +80,13 @@
             using var streamRef = new DotNetStreamReference(stream: fileStream);
             await JS.InvokeVoidAsync("downloadFileFromStream", NombreBuscado, streamRef);
         }
+    }
+
+    private string fileName = "CI_Miguel-Muenala.pdf"; // Reemplaza con el nombre de tu archivo PDF
+
+    private void OpenPdf()
+    {
+        var url = $"http://localhost:5117/uploads/{fileName}";
+        JS.InvokeVoidAsync("open", url, "_blank");
     }
 }

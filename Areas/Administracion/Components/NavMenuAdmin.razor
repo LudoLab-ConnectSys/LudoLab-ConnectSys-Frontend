@@ -44,7 +44,7 @@
 
         <div class="nav-item px-3">
             <a class="nav-link" href="#" @onclick="ToggleCertificateMenu">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Certificate
+                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Certificados
             </a>
             @if (isCertificateMenuVisible)
             {
@@ -56,17 +56,30 @@
                 </div>
             }
         </div>
-       
-
-
-
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="informe-practicas">
+                <span class="bi bi-file-earmark-text" aria-hidden="true"></span> Informes de Prácticas
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="generar-reportes">
+                <span class="bi bi-bar-chart " aria-hidden="true"></span> Reportes
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="resultados-encuestas">
+                <span class="bi bi-clipboard-check" aria-hidden="true"></span> Encuestas
+            </NavLink>
+        </div>
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="weather">
                 <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Horarios
             </NavLink>
         </div>
+
     </nav>
 </div>
+
 
 @code {
     private bool collapseNavMenu = true;

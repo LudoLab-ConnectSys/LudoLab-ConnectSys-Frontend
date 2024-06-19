@@ -1,0 +1,86 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>CV Complement</title>
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+    <script src="Home.js"></script>
+    <link rel="stylesheet" href="https://appsforoffice.microsoft.com/fabric/2.1.0/fabric.min.css">
+    <link rel="stylesheet" href="https://appsforoffice.microsoft.com/fabric/2.1.0/fabric.components.min.css">
+    <style>
+        body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+        }
+
+        .ms-MessageBanner {
+            display: none;
+        }
+
+            .ms-MessageBanner.is-visible {
+                display: block;
+            }
+    </style>
+</head>
+<body>
+    <h1>Bienvenida</h1>
+    <p>Este ejemplo leerá la selección actual del documento.</p>
+    <button id="get-data-from-selection" class="ms-Button">
+        <span class="ms-Button-label">Obtener datos de la selección</span>
+    </button>
+    <div class="MessageBanner ms-MessageBanner">
+        <div class="ms-MessageBanner-content">
+            <div class="ms-MessageBanner-text">
+                <p class="ms-MessageBanner-clipper">
+                    <span id="notificationHeader"></span>
+                    <span id="notificationBody"></span>
+                </p>
+            </div>
+            <button class="ms-MessageBanner-expand" title="See more"></button>
+            <button class="ms-MessageBanner-close" title="Close"></button>
+        </div>
+    </div>
+    <script>
+        (function () {
+            "use strict";
+
+            var messageBanner;
+
+            // La función de inicialización se debe ejecutar cada vez que se cargue una página nueva.
+            Office.initialize = function (reason) {
+                $(document).ready(function () {
+                    var element = document.querySelector('.ms-MessageBanner');
+                    messageBanner = new fabric.MessageBanner(element);
+                    messageBanner.hideBanner();
+
+                    $('#get-data-from-selection').click(getDataFromSelection);
+                });
+            };
+
+            // Lee datos de la selección actual del documento y muestra una notificación.
+            function getDataFromSelection() {
+                if (Office.context.document.getSelectedDataAsync) {
+                    Office.context.document.getSelectedDataAsync(Office.CoercionType.Text,
+                        function (result) {
+                            if (result.status === Office.AsyncResultStatus.Succeeded) {
+                                showNotification('El texto seleccionado es:', '"' + result.value + '"');
+                            } else {
+                                showNotification('Error:', result.error.message);
+                            }
+                        }
+                    );
+                } else {
+                    showNotification('Error:', 'Esta aplicación host no admite leer datos de la selección.');
+                }
+            }
+
+            // Función del asistente para mostrar notificaciones
+            function showNotification(header, content) {
+                $("#notificationHeader").text(header);
+                $("#notificationBody").text(content);
+                messageBanner.showBanner();
+                messageBanner.toggleExpansion();
+            }
+        })();
+    </script>
+</body>
+</html>
