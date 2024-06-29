@@ -13,9 +13,15 @@
     </div>
 
     <div>
-        <InputText @bind-Value="@newPeriodo.nombre_periodo"></InputText>
-        <InputText @bind-Value="@newCurso.nombre_curso"></InputText>
-        <button @onclick="(() => BuscarPeriodos(newPeriodo.nombre_periodo, newCurso.nombre_curso))" class="btn btn-primary">Buscar Curso</button>
+        <select @bind="selectedPeriodo">
+            <option value="">Seleccione un periodo</option>
+            @foreach (var periodo in listaPeriodos)
+            {
+                <option value="@periodo.id_lista_periodo">@periodo.nombre_periodo</option>
+            }
+        </select>
+        <InputText @bind-Value="@newPeriodocertificate"></InputText>
+        <button @onclick="(() => BuscarPeriodos(selectedPeriodo, newPeriodocertificate))" class="btn btn-primary">Buscar Curso</button>
     </div>
 </EditForm>
 <button @onclick="(() => ListaPeriodos())" type="button" class="btn btn-primary">Listar Cursos</button>
@@ -101,17 +107,22 @@
 
 @code {
     Curso newCurso = new Curso();
+    private List<ListaPeriodo> listaPeriodos = [];
     public static List<PeriodoConNombreCurso> Periodos = new List<PeriodoConNombreCurso>();
-    Periodo newPeriodo = new Periodo();
+    private int selectedPeriodo;
+    string newPeriodocertificate;
     public static List<UsuarioPeriodo> ListaEstudiantes = new List<UsuarioPeriodo>();
     String nombreCurso;
     String nombrePeriodo;
 
-
-    public async Task BuscarPeriodos(string nombre_periodo, string nombre_curso)
+    protected override async Task OnInitializedAsync()
+    {
+        await ListaNombresPeriodos();
+    }
+    public async Task BuscarPeriodos(int id_lista_periodo, string nombre_curso)
     {
         // Construir la URL con los parámetros de consulta
-        var url = $"http://localhost:5117/api/Periodo/PeriodoByName?nombre_periodo={nombre_periodo}&nombre_curso={nombre_curso}";
+        var url = $"http://localhost:5117/api/Periodo/PeriodoByName?id_lista_periodo={id_lista_periodo}&nombre_curso={nombre_curso}";
 
         var response = await Http.GetAsync(url);
 
@@ -135,7 +146,11 @@
     {
         Periodos = await Http.GetFromJsonAsync<List<PeriodoConNombreCurso>>("http://localhost:5117/api/Periodo");
     }
-
+    //FUNCIONES PARA Periodo
+    public async Task ListaNombresPeriodos()
+    {
+        listaPeriodos = await Http.GetFromJsonAsync<List<ListaPeriodo>>("http://localhost:5117/api/Periodo/getNamePeriodoList");
+    }
     public async Task EstudiantesPorPeriodo(int id_periodo, string curso, string periodo)
     {
         nombrePeriodo = periodo;
