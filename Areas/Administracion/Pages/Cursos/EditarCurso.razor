@@ -1,6 +1,6 @@
-﻿@inject NavigationManager NavigationManager
-
-@page "/editar-curso/{CursoId:int}"
+﻿@page "/editar-curso/{CursoId:int}"
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
 
 <h3>Editar Curso</h3>
 
@@ -15,20 +15,27 @@ else
         <ValidationSummary />
 
         <div class="form-group">
-            <label for="nombre">Nombre:</label>
-            <InputText id="nombre" class="form-control" @bind-Value="curso.Nombre" />
+            <label for="nombre">Nombre del curso:</label>
+            <InputText id="nombre" class="form-control" @bind-Value="curso.nombre_curso" />
         </div>
-
         <div class="form-group">
-            <label for="periodo">Periodo:</label>
-            <InputText id="periodo" class="form-control" @bind-Value="curso.Periodo" />
+            <label for="tipo">Tipo del curso:</label>
+            <InputText id="tipo" class="form-control" @bind-Value="curso.tipo_curso" />
         </div>
-
         <div class="form-group">
-            <label for="descripcion">Descripción:</label>
-            <InputTextArea id="descripcion" class="form-control" @bind-Value="curso.Descripcion" />
+            <label for="horas">Horas del curso:</label>
+            <InputNumber id="horas" class="form-control" @bind-Value="curso.horas" />
         </div>
-
+        <div class="form-group">
+            <label for="modalidad">Modalidad:</label>
+            <InputSelect id="modalidad" class="form-control" @bind-Value="curso.Modalidad_id_modalidad">
+                <option value="">Seleccione una modalidad</option>
+                @foreach (var modalidad in modalidades)
+                {
+                    <option value="@modalidad.id_modalidad">@modalidad.nombre_modalidad</option>
+                }
+            </InputSelect>
+        </div>
         <button type="submit" class="btn btn-success">Guardar</button>
     </EditForm>
 }
@@ -38,36 +45,24 @@ else
     public int CursoId { get; set; }
 
     private Curso curso;
+    private List<Modalidad> modalidades = new List<Modalidad>();
 
-    // Datos simulados para el ejemplo
-    private List<Curso> cursos = new List<Curso>
+    protected override async Task OnInitializedAsync()
     {
-        new Curso { Id = 1, Nombre = "Curso de Blazor", Periodo = "2023", Descripcion = "Aprende Blazor desde cero." },
-        new Curso { Id = 2, Nombre = "Curso Avanzado de ASP.NET Core", Periodo = "2023", Descripcion = "Profundiza en ASP.NET Core y técnicas avanzadas." }
-    };
-
-    protected override void OnInitialized()
-    {
-        curso = cursos.FirstOrDefault(c => c.Id == CursoId);
+        modalidades = await Http.GetFromJsonAsync<List<Modalidad>>("http://localhost:5117/api/Modalidad");
+        curso = await Http.GetFromJsonAsync<Curso>($"http://localhost:5117/api/Curso/{CursoId}");
     }
 
-    private void GuardarCambios()
+    private async Task GuardarCambios()
     {
-        // Aquí normalmente llamarías al backend para actualizar los datos
-        // Mostramos un mensaje simple por ahora
-        Console.WriteLine($"Curso actualizado: {curso.Nombre}");
-        // Simulamos la navegación
-        NavigationManager.NavigateTo("/cursos");
-    }
-
-
-    public class Curso
-    {
-        public int Id { get; set; }
-        public string Nombre { get; set; }
-        public string Periodo { get; set; }
-        public string Descripcion { get; set; }
+        var response = await Http.PutAsJsonAsync($"http://localhost:5117/api/Curso/{CursoId}", curso);
+        if (response.IsSuccessStatusCode)
+        {
+            NavigationManager.NavigateTo("/cursos");
+        }
+        else
+        {
+            // Manejar el error
+        }
     }
 }
-
-

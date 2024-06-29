@@ -1,5 +1,6 @@
 ﻿@page "/registrar-usuario"
 @inject NavigationManager NavigationManager
+@inject HttpClient Http
 
 <h3 class="text-center my-4">Crear Nuevo Usuario</h3>
 
@@ -13,45 +14,46 @@
                 <div class="card-body">
                     <div class="form-group mb-3">
                         <label for="cedula">Cédula:</label>
-                        <InputText id="cedula" class="form-control" @bind-Value="nuevoUsuario.Cedula" />
+                        <InputText id="cedula" class="form-control" @bind-Value="nuevoUsuario.cedula_usuario" />
                     </div>
                     <div class="form-group mb-3">
                         <label for="nombre">Nombre:</label>
-                        <InputText id="nombre" class="form-control" @bind-Value="nuevoUsuario.Nombre" />
+                        <InputText id="nombre" class="form-control" @bind-Value="nuevoUsuario.nombre_usuario" />
                     </div>
                     <div class="form-group mb-3">
                         <label for="apellidos">Apellidos:</label>
-                        <InputText id="apellidos" class="form-control" @bind-Value="nuevoUsuario.Apellidos" />
+                        <InputText id="apellidos" class="form-control" @bind-Value="nuevoUsuario.apellidos_usuario" />
                     </div>
                     <div class="form-group mb-3">
                         <label for="edad">Edad:</label>
-                        <InputNumber id="edad" class="form-control" @bind-Value="nuevoUsuario.Edad" />
+                        <InputNumber id="edad" class="form-control" @bind-Value="nuevoUsuario.edad_usuario" />
                     </div>
                     <div class="form-group mb-3">
                         <label for="correo">Correo Electrónico:</label>
-                        <InputText id="correo" class="form-control" @bind-Value="nuevoUsuario.Correo" />
+                        <InputText id="correo" class="form-control" @bind-Value="nuevoUsuario.correo_usuario" />
                     </div>
                     <div class="form-group mb-3">
                         <label for="celular">Número de Celular:</label>
-                        <InputText id="celular" class="form-control" @bind-Value="nuevoUsuario.Celular" />
+                        <InputText id="celular" class="form-control" @bind-Value="nuevoUsuario.celular_usuario" />
                     </div>
                     <div class="form-group mb-3">
                         <label for="telefono">Número de Teléfono:</label>
-                        <InputText id="telefono" class="form-control" @bind-Value="nuevoUsuario.Telefono" />
+                        <InputText id="telefono" class="form-control" @bind-Value="nuevoUsuario.telefono_usuario" />
                     </div>
                     <div class="form-group mb-3">
                         <label for="tipoUsuario">Tipo de Usuario:</label>
                         <InputSelect id="tipoUsuario" class="form-control" @bind-Value="tipoUsuario">
                             <option value="">Seleccione un tipo</option>
-                            <option value="Estudiante">Estudiante</option>
+                            <option value="Administrador">Administrador</option>
                             <option value="Instructor">Instructor</option>
+                            <option value="Estudiante">Estudiante</option>
                         </InputSelect>
                     </div>
                     @if (tipoUsuario == "Estudiante")
                     {
                         <div class="form-group mb-3">
                             <label for="tipoEstudiante">Tipo de Estudiante:</label>
-                            <InputSelect id="tipoEstudiante" class="form-control" @bind-Value="nuevoEstudiante.TipoEstudiante">
+                            <InputSelect id="tipoEstudiante" class="form-control" @bind-Value="nuevoEstudiante.tipo_estudiante">
                                 <option value="">Seleccione un tipo</option>
                                 <option value="Docente">Docente</option>
                                 <option value="Grupo de atención prioritaria">Grupo de atención prioritaria</option>
@@ -62,6 +64,10 @@
                 <div class="card-footer text-center">
                     <button type="submit" class="btn btn-success me-2">Guardar</button>
                     <button type="button" class="btn btn-secondary" @onclick="Regresar">Cancelar</button>
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger mt-2">@errorMessage</div>
+                    }
                 </div>
             </div>
         </div>
@@ -69,81 +75,77 @@
 </EditForm>
 
 @code {
-    private Usuario nuevoUsuario = new Usuario();
-    private Estudiante nuevoEstudiante = new Estudiante();
+    private DirectorioDeArchivos.Shared.Usuario nuevoUsuario = new DirectorioDeArchivos.Shared.Usuario();
+    private DirectorioDeArchivos.Shared.Estudiante nuevoEstudiante = new DirectorioDeArchivos.Shared.Estudiante();
     private string tipoUsuario;
+    private string errorMessage;
 
     private async Task HandleValidSubmit()
     {
-        // Guardar el usuario en la base de datos o servicio
-        if (tipoUsuario == "Estudiante")
+        try
         {
-            await GuardarEstudiante();
+            var usuarioId = await GuardarUsuario();
+
+            if (tipoUsuario == "Estudiante")
+            {
+                nuevoEstudiante.id_usuario = usuarioId;
+                await GuardarEstudiante(nuevoEstudiante);
+            }
+            else if (tipoUsuario == "Instructor")
+            {
+                var nuevoInstructor = new DirectorioDeArchivos.Shared.Instructor { id_usuario = usuarioId };
+                await GuardarInstructor(nuevoInstructor);
+            }
+            /*else if (tipoUsuario == "Administrador")
+            {
+                var nuevoAdministrador = new DirectorioDeArchivos.Shared.Administrador { id_usuario = usuarioId };
+                await GuardarAdministrador(nuevoAdministrador);
+            }*/
+
+            NavigationManager.NavigateTo("/");
         }
-        else if (tipoUsuario == "Instructor")
+        catch (HttpRequestException ex)
         {
-            await GuardarInstructor();
+            // Manejar el error de solicitud HTTP aquí
+            errorMessage = $"Error: {ex.Message}";
+            Console.WriteLine(errorMessage);
         }
-        else
+        catch (Exception ex)
         {
-            // Manejar el error: tipo de usuario no seleccionado
+            // Manejar cualquier otro error aquí
+            errorMessage = $"Error: {ex.Message}";
+            Console.WriteLine(errorMessage);
         }
-
-        NavigationManager.NavigateTo("/usuarios");
-    }
-
-    private async Task GuardarEstudiante()
-    {
-        // Guardar el usuario
-        int userId = await GuardarUsuario();
-        nuevoEstudiante.IdUsuario = userId;
-        // Guardar el estudiante
-        // Código para guardar en la base de datos
-    }
-
-    private async Task GuardarInstructor()
-    {
-        // Guardar el usuario
-        int userId = await GuardarUsuario();
-        // Guardar el instructor
-        var nuevoInstructor = new Instructor { IdUsuario = userId };
-        // Código para guardar en la base de datos
     }
 
     private async Task<int> GuardarUsuario()
     {
-        // Código para guardar el usuario en la base de datos
-        // Retornar el ID del usuario guardado
-        return 1; // Simulación del ID retornado
+        var response = await Http.PostAsJsonAsync("http://localhost:5117/api/Usuario", nuevoUsuario);
+        response.EnsureSuccessStatusCode();
+        var usuarioCreado = await response.Content.ReadFromJsonAsync<DirectorioDeArchivos.Shared.Usuario>();
+        return usuarioCreado.id_usuario;
     }
+
+    private async Task GuardarEstudiante(DirectorioDeArchivos.Shared.Estudiante estudiante)
+    {
+        var response = await Http.PostAsJsonAsync("http://localhost:5117/api/Estudiante", estudiante);
+        response.EnsureSuccessStatusCode();
+    }
+
+    private async Task GuardarInstructor(DirectorioDeArchivos.Shared.Instructor instructor)
+    {
+        var response = await Http.PostAsJsonAsync("http://localhost:5117/api/Instructor", instructor);
+        response.EnsureSuccessStatusCode();
+    }
+
+    /*private async Task GuardarAdministrador(DirectorioDeArchivos.Shared.Administrador administrador)
+    {
+        var response = await Http.PostAsJsonAsync("http://localhost:5117/api/Administrador", administrador);
+        response.EnsureSuccessStatusCode();
+    }*/
 
     private void Regresar()
     {
-        NavigationManager.NavigateTo("/usuarios");
-    }
-
-    public class Usuario
-    {
-        public int Id { get; set; }
-        public string Cedula { get; set; }
-        public string Nombre { get; set; }
-        public string Apellidos { get; set; }
-        public int Edad { get; set; }
-        public string Correo { get; set; }
-        public string Celular { get; set; }
-        public string Telefono { get; set; }
-    }
-
-    public class Estudiante
-    {
-        public int Id { get; set; }
-        public string TipoEstudiante { get; set; }
-        public int IdUsuario { get; set; }
-    }
-
-    public class Instructor
-    {
-        public int Id { get; set; }
-        public int IdUsuario { get; set; }
+        NavigationManager.NavigateTo("/");
     }
 }

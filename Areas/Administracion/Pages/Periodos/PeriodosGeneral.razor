@@ -1,0 +1,74 @@
+﻿@page "/cursos/{CursoId:int}/periodos"
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<h3>Periodos del Curso</h3>
+
+<button class="btn btn-success" @onclick="CrearNuevoPeriodo">Crear Nuevo Periodo</button>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Fecha de Inicio</th>
+            <th>Fecha de Fin</th>
+            <th>Horas</th>
+            <th>Lista de Periodo</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var periodo in periodos)
+        {
+            <tr>
+                <td>@periodo.id_periodo</td>
+                <td>@periodo.fecha_inicio_periodo</td>
+                <td>@periodo.fecha_fin_periodo</td>
+                <td>@periodo.duracion_periodo_horas</td>
+                <td>@listaPeriodos.FirstOrDefault(lp => lp.id_lista_periodo == periodo.id_ListaPeriodo)?.nombre_periodo</td>
+                <td>
+                    <button class="btn btn-primary" @onclick="() => EditarPeriodo(periodo.id_periodo)">Editar</button>
+                    <button class="btn btn-danger" @onclick="() => EliminarPeriodo(periodo.id_periodo)">Eliminar</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@if (!periodos.Any())
+{
+    <p>No hay periodos disponibles para este curso. ¿Desea <a href="crear-periodo">crear un nuevo periodo</a>?</p>
+}
+
+@code {
+    [Parameter]
+    public int CursoId { get; set; }
+
+    private List<Periodo> periodos = new List<Periodo>();
+    private List<ListaPeriodo> listaPeriodos = new List<ListaPeriodo>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        periodos = await Http.GetFromJsonAsync<List<Periodo>>($"http://localhost:5117/api/Periodo/Curso/{CursoId}");
+        listaPeriodos = await Http.GetFromJsonAsync<List<ListaPeriodo>>("http://localhost:5117/api/ListaPeriodo");
+    }
+
+    private void CrearNuevoPeriodo()
+    {
+        NavigationManager.NavigateTo($"/crear-periodo/{CursoId}");
+    }
+
+    private void EditarPeriodo(int id_periodo)
+    {
+        NavigationManager.NavigateTo($"/editar-periodo/{id_periodo}");
+    }
+
+    private async Task EliminarPeriodo(int id_periodo)
+    {
+        var response = await Http.DeleteAsync($"http://localhost:5117/api/Periodo/{id_periodo}");
+        if (response.IsSuccessStatusCode)
+        {
+            periodos.RemoveAll(p => p.id_periodo == id_periodo);
+        }
+    }
+}

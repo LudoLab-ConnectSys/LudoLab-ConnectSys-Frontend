@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-public class HorarioService
+/*public class HorarioService
 {
     public List<Grupo> EmparejarHorarios(List<Instructor> instructores, List<Estudiante> estudiantes, int numEstudiantesPorGrupo)
     {
@@ -68,6 +68,8 @@ public class Estudiante
     public int Id { get; set; }
     public string Nombre { get; set; }
     public List<HorarioDisponible> HorariosDisponibles { get; set; } = new List<HorarioDisponible>();
+    public object id_grupo { get; set; }
+    public object id_usuario { get; set; }
 }
 
 public class Grupo
@@ -75,6 +77,8 @@ public class Grupo
     public Instructor Instructor { get; set; }
     public List<Estudiante> Estudiantes { get; set; }
     public HorarioDisponible Horario { get; set; }
+    public int id_periodo { get; set; }
+    public object id_grupo { get; set; }
 }
 
 public class Emparejamiento
@@ -82,4 +86,4 @@ public class Emparejamiento
     public Instructor Instructor { get; set; }
     public Estudiante Estudiante { get; set; }
     public HorarioDisponible Horario { get; set; }
-}
+}*/

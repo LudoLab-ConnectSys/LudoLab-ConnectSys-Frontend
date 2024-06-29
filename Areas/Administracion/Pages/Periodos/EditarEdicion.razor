@@ -1,0 +1,68 @@
+﻿@page "/editar-periodo/{PeriodoId:int}"
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<h3>Editar Periodo</h3>
+
+@if (periodo == null)
+{
+    <p><em>Cargando...</em></p>
+}
+else
+{
+    <EditForm Model="periodo" OnValidSubmit="GuardarCambios">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="form-group">
+            <label for="fechaInicio">Fecha de Inicio:</label>
+            <InputText id="fechaInicio" class="form-control" @bind-Value="periodo.fecha_inicio_periodo" />
+        </div>
+        <div class="form-group">
+            <label for="fechaFin">Fecha de Fin:</label>
+            <InputText id="fechaFin" class="form-control" @bind-Value="periodo.fecha_fin_periodo" />
+        </div>
+        <div class="form-group">
+            <label for="duracionHoras">Duración en Horas:</label>
+            <InputNumber id="duracionHoras" class="form-control" @bind-Value="periodo.duracion_periodo_horas" />
+        </div>
+        <div class="form-group">
+            <label for="listaPeriodo">Lista de Periodos:</label>
+            <InputSelect id="listaPeriodo" class="form-control" @bind-Value="periodo.id_ListaPeriodo">
+                <option value="" disabled selected>Seleccione una lista de periodos</option>
+                @foreach (var listaPeriodo in listaPeriodos)
+                {
+                    <option value="@listaPeriodo.id_lista_periodo">@listaPeriodo.nombre_periodo</option>
+                }
+            </InputSelect>
+        </div>
+        <button type="submit" class="btn btn-success">Guardar</button>
+    </EditForm>
+}
+
+@code {
+    [Parameter]
+    public int PeriodoId { get; set; }
+
+    private Periodo periodo;
+    private List<ListaPeriodo> listaPeriodos = new List<ListaPeriodo>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        listaPeriodos = await Http.GetFromJsonAsync<List<ListaPeriodo>>("http://localhost:5117/api/ListaPeriodo");
+        periodo = await Http.GetFromJsonAsync<Periodo>($"http://localhost:5117/api/Periodo/{PeriodoId}");
+    }
+
+    private async Task GuardarCambios()
+    {
+        var response = await Http.PutAsJsonAsync($"http://localhost:5117/api/Periodo/{PeriodoId}", periodo);
+        if (response.IsSuccessStatusCode)
+        {
+            NavigationManager.NavigateTo($"/cursos/{periodo.id_curso}/periodos");
+        }
+        else
+        {
+            // Manejar el error
+        }
+    }
+}
