@@ -12,7 +12,8 @@
     <link href="LudoLab ConnectSys Frontend.styles.css" rel="stylesheet" />
 
     <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
-
+    <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+    <script src="https://unpkg.com/fontkit/browser/fontkit.min.js"></script>
 </head>
 
 <body>
@@ -51,7 +52,7 @@
             const y = height - 30;
 
             // Dibujar el texto
-            firstPage.drawText('Texto que quieres insertar', {
+            firstPage.drawText('Texto a quieres insertar', {
                 x,
                 y,
                 size: 20,
@@ -75,15 +76,42 @@
         };
     </script>
 
-
     <script>
-        window.downloadFileFromStream = async (fileName, contentStreamReference) => {
+        window.downloadFileFromStream = async (fileName, contentStreamReference, texts) => {
+            const { PDFDocument, rgb, StandardFonts } = PDFLib;
+
+
+            // Convertir el stream de contenido a un ArrayBuffer
             const arrayBuffer = await contentStreamReference.arrayBuffer();
-            const blob = new Blob([arrayBuffer]);
+            const pdfDoc = await PDFDocument.load(arrayBuffer);
+
+            // Embeber la fuente Times New Roman
+            const timesNewRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
+
+            // Obtener la primera página
+            const pages = pdfDoc.getPages();
+            const firstPage = pages[0];
+
+            // Dibujar cada texto en las posiciones especificadas
+            texts.forEach(text => {
+                firstPage.drawText(text.content, {
+                    x: text.x,
+                    y: text.y,
+                    size: text.size || 20,
+                    font: timesNewRomanFont,
+                    color: rgb(0, 0, 0)
+                });
+            });
+
+            // Serializar el PDF modificado a un ArrayBuffer
+            const pdfBytes = await pdfDoc.save();
+
+            // Crear un blob y descargar el archivo
+            const blob = new Blob([pdfBytes], { type: 'application/pdf' });
             const url = URL.createObjectURL(blob);
             const anchorElement = document.createElement('a');
             anchorElement.href = url;
-            anchorElement.download = fileName ?? '';
+            anchorElement.download = fileName ?? 'modified.pdf';
             anchorElement.click();
             anchorElement.remove();
             URL.revokeObjectURL(url);
@@ -105,6 +133,12 @@
             });
         };
     </script>
+    <script>
+        function confirmContinue(message) {
+            return confirm(message);
+        }
+    </script>
+
     <script src="_framework/blazor.webassembly.js"></script>
     <script>navigator.serviceWorker.register('service-worker.js');</script>
 

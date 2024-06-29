@@ -7,6 +7,7 @@
 @inject IJSRuntime JSRuntime
 @using Microsoft.JSInterop
 
+<h2>Generar Certificados para Estudiantes</h2>
 <h3>Student</h3> 
 <EditForm Model="newCertificado">
     <InputText @bind-Value = "@newCertificado.nombre_certificado"></InputText>
@@ -34,9 +35,15 @@
     </div>
 
     <div>
-        <InputText @bind-Value="@newPeriodo.nombre_periodo"></InputText>
-        <InputText @bind-Value="@newCurso.nombre_curso"></InputText>
-        <button @onclick="(() => BuscarPeriodos(newPeriodo.nombre_periodo, newCurso.nombre_curso))" class="btn btn-primary">Buscar Curso</button>
+        <select @bind="selectedPeriodo">
+            <option value="">Seleccione un periodo</option>
+            @foreach (var periodo in listaPeriodos)
+            {
+                <option value="@periodo.id_lista_periodo">@periodo.nombre_periodo</option>
+            }
+        </select>
+        <InputText @bind-Value="@newPeriodocertificate"></InputText>
+        <button @onclick="(() => BuscarPeriodos(selectedPeriodo, newPeriodocertificate))" class="btn btn-primary">Buscar Curso</button>
     </div>
 </EditForm>
 
@@ -68,9 +75,9 @@
                         <label for="@inputFileId" class="btn btn-success">
                             <i class="bi bi-cloud-upload-fill"></i>
                         </label>
-                            <InputFile id="@inputFileId" OnChange="@(e => OnInputFileChange(e, en.id_periodo))" class="d-none" />
+                    <InputFile id="@inputFileId" OnChange="@(e => OnInputFileChange(e, en.id_periodo, en.nombre_certificado))" class="d-none" accept=".pdf" />
                     
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" @onclick="(() => EstudiantesPorPeriodo(en.id_periodo))">
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" @onclick="(() => EstudiantesPorPeriodo(en.id_periodo, en.nombre_curso, en.nombre_periodo))">
                         <i class=" bi bi-person-lines-fill"></i>
                     </button>
                     <button type="button" class="btn btn-info" @onclick="(()=> OpenPdf(en.nombre_certificado))"><i class="bi bi-eye-fill"></i></button>
@@ -116,7 +123,7 @@
                                 <td>@en.CedulaUsuario</td>
                                 <td>@en.CelularUsuario</td>
                                 <td>
-                                    <button type="button" class="btn btn-warning" @onclick = "(()=> ImprimirCertificados(en.IdUsuario, en.NombreCertificado))">
+                                    <button type="button" class="btn btn-warning" @onclick="(()=> ImprimirCertificados(en.NombreUsuario +' '+ en.ApellidosUsuario, en.NombreCertificado, en.horas_asignadas_estudiante))">
                                         <i class="bi bi-cloud-arrow-down-fill"></i>
                                     </button>
                                 </td>
@@ -138,12 +145,14 @@
 
 @code {
     Certificado newCertificado = new Certificado();
+    private List<ListaPeriodo> listaPeriodos = [];
 
     public static List<Curso> Cursos = new List<Curso>();
     Curso newCurso = new Curso();
 
     public static List<PeriodoConNombreCurso> Periodos = new List<PeriodoConNombreCurso>();
-    Periodo newPeriodo = new Periodo();
+    private int selectedPeriodo;
+    string newPeriodocertificate;
 
     public static List<UsuarioPeriodo> ListaEstudiantes = new List<UsuarioPeriodo>();
 
@@ -154,6 +163,12 @@
     private List<UploadResult> uploadResults = new();
 
     string NombreBuscado = "";
+    string nombbreCurso;
+    string nombbrePeiodo;
+    protected override async Task OnInitializedAsync()
+    {
+        await ListaNombresPeriodos();
+    }
     //FUNCIONES PARA Certificados
     public async Task CrearCertificado(Certificado certificado)
     {
@@ -180,16 +195,20 @@
         Cursos = await Http.GetFromJsonAsync<List<Curso>>($"http://localhost:5117/api/Curso/CursoByName/{nombre_curso}");
 
     }
-
+    //FUNCIONES PARA Periodo
+    public async Task ListaNombresPeriodos()
+    {
+        listaPeriodos = await Http.GetFromJsonAsync<List<ListaPeriodo>>("http://localhost:5117/api/Periodo/getNamePeriodoList");
+    }
     //FUNCIONES PARA Periodo
     public async Task ListaPeriodos()
     {
         Periodos = await Http.GetFromJsonAsync<List<PeriodoConNombreCurso>>("http://localhost:5117/api/Periodo");
     }
-    public async Task BuscarPeriodos(string nombre_periodo, string nombre_curso)
+    public async Task BuscarPeriodos(int id_lista_periodo, string nombre_curso)
     {
         // Construir la URL con los parámetros de consulta
-        var url = $"http://localhost:5117/api/Periodo/PeriodoByName?nombre_periodo={nombre_periodo}&nombre_curso={nombre_curso}";
+        var url = $"http://localhost:5117/api/Periodo/PeriodoByName?id_lista_periodo={id_lista_periodo}&nombre_curso={nombre_curso}";
 
         var response = await Http.GetAsync(url);
 
@@ -215,8 +234,17 @@
     }
 
     //funcion para Carga de archivos
-    private async Task OnInputFileChange(InputFileChangeEventArgs e, int id_periodo)
+    private async Task OnInputFileChange(InputFileChangeEventArgs e, int id_periodo, string nombrecertificado)
     {
+        if (!string.IsNullOrEmpty(nombrecertificado))
+        {
+            var result = await JSRuntime.InvokeAsync<bool>("confirmContinue", $"Ya tiene asignado una plantilla en este Curso ¿Desea reemplazarlo?");
+
+            if (!result)
+            {
+                return; // Termina la ejecución de la función si el usuario selecciona "No"
+            }
+        }
         var fileforNAME = e.File;
 
         if (fileforNAME != null)
@@ -253,9 +281,10 @@
             //textos y sus posiciones para insertar en el pdf
             var texts = new List<object>
             {
-                new { content = "Nombre del Estudiante", x = 100, y = 150, size = 24 },
-                new { content = "Curso: Matemáticas", x = 100, y = 120, size = 18 },
-                new { content = "Fecha: 01/01/2024", x = 100, y = 90, size = 18 }
+                new { content = "Nombre del Estudiante:", x = 100, y = 150, size = 24 },
+                new { content = "Curso:", x = 100, y = 120, size = 18 },
+                new { content = "Periodo:", x = 100, y = 90, size = 18 },
+                new { content = "Horas Asignadas:", x = 100, y = 60, size = 18 }
             };
             // Llamar a la función de JavaScript para modificar el PDF
             var pdfBytes = await JSRuntime.InvokeAsync<byte[]>("modificarPDF", memoryStream.ToArray(), texts);
@@ -279,17 +308,17 @@
         }
         /*using var content = new MultipartFormDataContent();
 
-        foreach (var file in e.GetMultipleFiles(maxAllowedFiles))
-        {
+            foreach (var file in e.GetMultipleFiles(maxAllowedFiles))
+            {
             var fileContent = new StreamContent(file.OpenReadStream(maxFileSize));
             fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
 
-            fileNames.Add(file.Name);
+                fileNames.Add(file.Name);
 
-            content.Add(
+                content.Add(
                 content: fileContent,
-                name: "\"files\"",
-                fileName: file.Name);
+        name: "\"files\"",
+        fileName: file.Name);
 
         }
 
@@ -297,15 +326,18 @@
         var newUploadResults = await response.Content.ReadFromJsonAsync<List<UploadResult>>();
 
         if (newUploadResults is not null)
-        {
+            {
             uploadResults = uploadResults.Concat(newUploadResults).ToList();
         }*/
     }
 
-    private async Task ImprimirCertificados(int id_usuario, string nombre_certificado)
+    private async Task ImprimirCertificados(string fullname, string nombre_certificado, int horasAsignadas)
     {
-        Console.WriteLine($"ID user: {id_usuario}");
+        Console.WriteLine($"fullnameUser: {fullname}");
+        Console.WriteLine($"nombre periodo: {nombbrePeiodo}");
+        Console.WriteLine($"nombre curso: {nombbreCurso}");
         Console.WriteLine($"Nombre Certificado: {nombre_certificado}");
+        Console.WriteLine($"horas de estudiante: {horasAsignadas}");
         var response = await Http.GetAsync($"http://localhost:5117/api/File/{nombre_certificado}");
 
         if (!response.IsSuccessStatusCode)
@@ -314,14 +346,24 @@
         }
         else
         {
+            //textos y sus posiciones para insertar en el pdf
+            var texts = new List<object>
+            {
+                new { content = fullname, x = 400, y = 150, size = 24 },
+                new { content = nombbreCurso, x = 300, y = 120, size = 18 },
+                new { content = nombbrePeiodo, x = 300, y = 90, size = 18 },
+                new { content = Convert.ToString(horasAsignadas), x = 300, y = 60, size = 18 }
+            };
             var fileStream = response.Content.ReadAsStream();
             using var streamRef = new DotNetStreamReference(stream: fileStream);
-            await JSRuntime.InvokeVoidAsync("downloadFileFromStream", nombre_certificado, streamRef);
+            await JSRuntime.InvokeVoidAsync("downloadFileFromStream", nombre_certificado, streamRef, texts);
         }
     }
 
-    public async Task EstudiantesPorPeriodo(int id_periodo)
+    public async Task EstudiantesPorPeriodo(int id_periodo, string curso, string periodo)
     {
+        nombbreCurso = curso;
+        nombbrePeiodo = periodo;
         // Construir la URL con los parámetros de consulta
         var url = $"http://localhost:5117/api/Grupo/{id_periodo}";
 
