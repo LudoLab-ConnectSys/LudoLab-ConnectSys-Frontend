@@ -47,8 +47,15 @@
 
     protected override async Task OnInitializedAsync()
     {
-        cursos = await Http.GetFromJsonAsync<List<Curso>>("http://localhost:5117/api/Curso");
-        modalidades = await Http.GetFromJsonAsync<List<Modalidad>>("http://localhost:5117/api/Modalidad");
+        try
+        {
+            cursos = await Http.GetFromJsonAsync<List<Curso>>("http://localhost:5117/api/Curso");
+            modalidades = await Http.GetFromJsonAsync<List<Modalidad>>("http://localhost:5117/api/Modalidad");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching data: {ex.Message}");
+        }
     }
 
     private void CrearNuevoCurso()
