@@ -3,12 +3,17 @@
 @using System.Net.Http.Headers
 @using DirectorioDeArchivos.Shared
 @inject HttpClient Http
+@using CurrieTechnologies.Razor.SweetAlert2
 @inject SweetAlertService Swal
 @inject IJSRuntime JSRuntime
 @using Microsoft.JSInterop
 
 <h2>Generar Certificados para Instructores</h2>
 <h3>Lista de cursos</h3>
+@if (isLoading)
+{
+    <SpinnerPage />
+}
 <EditForm Model="newCurso">
     <div class="contenedor">
         <label for="nombrePeriodo">Nombre del Periodo:</label>
@@ -117,6 +122,7 @@
 </div>
 
 @code {
+    private bool isLoading = false;
     Curso newCurso = new Curso();
     private List<ListaPeriodo> listaPeriodos =[];
 
@@ -138,6 +144,8 @@
 
     public async Task BuscarPeriodos(int id_lista_periodo, string nombre_curso)
     {
+        isLoading = true;
+        StateHasChanged();
         Console.WriteLine($"ID Lista Periodo: {id_lista_periodo}, Nombre Curso: {nombre_curso}");
         // Construir la URL con los parámetros de consulta
         var url = $"http://localhost:5117/api/Periodo/PeriodoByName?id_lista_periodo={id_lista_periodo}&nombre_curso={nombre_curso}";
@@ -146,39 +154,66 @@
 
         if (response.IsSuccessStatusCode)
         {
+            isLoading = false;
+            StateHasChanged();
             Periodos = await response.Content.ReadFromJsonAsync<List<PeriodoConNombreCurso>>();
         }
         else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
-            await JSRuntime.InvokeVoidAsync("alert", "No se encontraron coincidencias");
+            isLoading = false;
+            StateHasChanged();
+            //await JSRuntime.InvokeVoidAsync("alert", "No se encontraron coincidencias");
+            sweetAletNotify("No se encontraron coincidencias", "info");
             Periodos = new List<PeriodoConNombreCurso>();
         }
         else
         {
+            isLoading = false;
+            StateHasChanged();
             Console.WriteLine("Error al buscar los periodos.");
+            sweetAletNotify("Error al buscar los periodos", "error");
         }
     }
     //FUNCIONES PARA Periodo
     public async Task ListaPeriodos()
     {
+        isLoading = true;
+        StateHasChanged();
         Periodos = await Http.GetFromJsonAsync<List<PeriodoConNombreCurso>>("http://localhost:5117/api/Periodo");
+        isLoading = false;
+        StateHasChanged();
     }
     //FUNCIONES PARA Periodo
     public async Task ListaNombresPeriodos()
     {
+        isLoading = true;
+        StateHasChanged();
         listaPeriodos = await Http.GetFromJsonAsync<List<ListaPeriodo>>("http://localhost:5117/api/Periodo/getNamePeriodoList");
+        isLoading = false;
+        StateHasChanged();
     }
     //funcion para Carga de archivos
     private async Task OnInputFileChange(InputFileChangeEventArgs e, int id_periodo, string nombrecertificado)
     {
         if (!string.IsNullOrEmpty(nombrecertificado))
         {
-            var result = await JSRuntime.InvokeAsync<bool>("confirmContinue", $"Ya tiene asignado una plantilla en este Curso ¿Desea reemplazarlo?");
+            var options = new
+            {
+                Title = "Ya tiene asignado una plantilla en este Curso",
+                Text = "¿Desea reemplazarlo?",
+                Icon = "question",
+                ShowCancelButton = true,
+                ConfirmButtonText = "Sí",
+                CancelButtonText = "No"
+            };
+            var result = await JSRuntime.InvokeAsync<bool>("FireSweetAlertConfirm", options);
 
             if (!result)
             {
                 return; // Termina la ejecución de la función si el usuario selecciona "No"
             }
+            isLoading = true;
+            StateHasChanged();
         }
         var fileforNAME = e.File;
 
@@ -198,11 +233,14 @@
 
             if (responsefile.IsSuccessStatusCode)
             {
-                Console.WriteLine("Nombre del archivo actualizado correctamente en la base de datos.");
+                Console.WriteLine("Nombre del archivo actualizado correctamente");
             }
             else
             {
-                Console.WriteLine("Error al actualizar el nombre del archivo en la base de datos.");
+                isLoading = false;
+                StateHasChanged();
+                Console.WriteLine("Error al actualizar el nombre del archivo");
+                sweetAletNotify("Error al actualizar el nombre del archivo", "error");
             }
         }
 
@@ -241,6 +279,9 @@
                 uploadResults = uploadResults.Concat(newUploadResults).ToList();
             }
         }
+        isLoading = false;
+        StateHasChanged();
+        sweetAletNotify("Archivo actualizado correctamente", "info");
         /*using var content = new MultipartFormDataContent();
 
             foreach (var file in e.GetMultipleFiles(maxAllowedFiles))
@@ -251,7 +292,7 @@
                 fileNames.Add(file.Name);
 
                 content.Add(
-                content: fileContent,
+        content: fileContent,
         name: "\"files\"",
         fileName: file.Name);
 
@@ -269,6 +310,8 @@
 
     public async Task InstructoresPorPeriodo(int id_periodo, string curso, string periodo)
     {
+        isLoading = true;
+        StateHasChanged();
         nombbreCurso = curso;
         nombbrePeiodo = periodo;
         // Construir la URL con los parámetros de consulta
@@ -278,25 +321,34 @@
 
         if (response.IsSuccessStatusCode)
         {
+            isLoading = false;
+            StateHasChanged();
             ListaTutores = await response.Content.ReadFromJsonAsync<List<InstructorPeriodo>>();
         }
         else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
-            await JSRuntime.InvokeVoidAsync("alert", "No se encontraron coincidencias");
+            isLoading = false;
+            StateHasChanged();
+            //await JSRuntime.InvokeVoidAsync("alert", "No se encontraron coincidencias");
+            sweetAletNotify("No se encontraron coincidencias", "info");
             ListaTutores = new List<InstructorPeriodo>();
         }
         else
         {
+            isLoading = false;
+            StateHasChanged();
             Console.WriteLine("Error al buscar los periodos.");
+            sweetAletNotify("Error al buscar los periodos.", "error");
         }
     }
 
-
-    private void OpenPdf(string fileName)//Pre-visualizar el pdf
+    private async Task OpenPdf(string fileName)//Pre-visualizar el pdf
     {
         if (string.IsNullOrEmpty(fileName))
         {
-            JSRuntime.InvokeVoidAsync("alert", "Este curso no tiene asignado una plantilla para el certificado");
+            //JSRuntime.InvokeVoidAsync("alert", "Este curso no tiene asignado una plantilla para el certificado");
+            sweetAletNotify("Este curso no tiene asignado una plantilla para el certificado", "info");
+
         }
         else
         {
@@ -304,8 +356,11 @@
             JSRuntime.InvokeVoidAsync("open", url, "_blank");
         }
     }
+
     private async Task ImprimirCertificados(string fullname, string nombre_certificado, int horasAsignadas)
     {
+        isLoading = true;
+        StateHasChanged();
         Console.WriteLine($"fullnameUser: {fullname}");
         Console.WriteLine($"nombre periodo: {nombbrePeiodo}");
         Console.WriteLine($"nombre curso: {nombbreCurso}");
@@ -315,7 +370,10 @@
 
         if (!response.IsSuccessStatusCode)
         {
-            await JSRuntime.InvokeVoidAsync("alert", "File not found.");
+            isLoading = false;
+            StateHasChanged();
+            //await JSRuntime.InvokeVoidAsync("alert", "File not found.");
+            sweetAletNotify("Archivo no encontrado", "info");
         }
         else
         {
@@ -330,7 +388,20 @@
             var fileStream = response.Content.ReadAsStream();
             using var streamRef = new DotNetStreamReference(stream: fileStream);
             await JSRuntime.InvokeVoidAsync("downloadFileFromStream", nombre_certificado, streamRef, texts);
+            isLoading = false;
+            StateHasChanged();
         }
+    }
+
+    private async Task sweetAletNotify(string texto, string tipo)
+    {
+        var options = new
+        {
+            Title = texto,
+            Icon = tipo,
+            ConfirmButtonText = "OK"
+        };
+        await JSRuntime.InvokeVoidAsync("FireSweetAlert", options);
     }
 
 }

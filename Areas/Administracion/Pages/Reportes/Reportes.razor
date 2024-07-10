@@ -4,9 +4,15 @@
 @using Microsoft.JSInterop
 @inject HttpClient Http
 @using ClosedXML.Excel;
+@using CurrieTechnologies.Razor.SweetAlert2
+@inject SweetAlertService Swal
 
 <h3>Generar reportes de curso</h3>
 <h3>Lista de cursos</h3>
+@if (isLoading)
+{
+    <SpinnerPage />
+}
 <EditForm Model="newCurso">
     <div class="contenedor">
         Nombre del Periodo:    Nombre del Curso:
@@ -106,6 +112,7 @@
 
 
 @code {
+    private bool isLoading = false;
     Curso newCurso = new Curso();
     private List<ListaPeriodo> listaPeriodos = [];
     public static List<PeriodoConNombreCurso> Periodos = new List<PeriodoConNombreCurso>();
@@ -121,6 +128,8 @@
     }
     public async Task BuscarPeriodos(int id_lista_periodo, string nombre_curso)
     {
+        isLoading = true;
+        StateHasChanged();
         // Construir la URL con los parámetros de consulta
         var url = $"http://localhost:5117/api/Periodo/PeriodoByName?id_lista_periodo={id_lista_periodo}&nombre_curso={nombre_curso}";
 
@@ -128,31 +137,61 @@
 
         if (response.IsSuccessStatusCode)
         {
+            isLoading = false;
+            StateHasChanged();
             Periodos = await response.Content.ReadFromJsonAsync<List<PeriodoConNombreCurso>>();
         }
         else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
-            await JSRuntime.InvokeVoidAsync("alert", "No se encontraron coincidencias");
+            //await JSRuntime.InvokeVoidAsync("alert", "No se encontraron coincidencias");
+            var options = new
+            {
+                Title = "No se encontraron coincidencias",
+                Icon = "info",
+                ConfirmButtonText = "OK"
+            };
+            await JSRuntime.InvokeVoidAsync("FireSweetAlert", options);
             Periodos = new List<PeriodoConNombreCurso>();
+            isLoading = false;
+            StateHasChanged();
         }
         else
         {
             Console.WriteLine("Error al buscar los periodos.");
+            var options = new
+            {
+                Title = "Error al buscar los periodos",
+                Icon = "error",
+                ConfirmButtonText = "OK"
+            };
+            isLoading = false;
+            StateHasChanged();
+            await JSRuntime.InvokeVoidAsync("FireSweetAlert", options);
         }
     }
 
     //FUNCIONES PARA Periodo
     public async Task ListaPeriodos()
     {
+        isLoading = true;
+        StateHasChanged();
         Periodos = await Http.GetFromJsonAsync<List<PeriodoConNombreCurso>>("http://localhost:5117/api/Periodo");
+        isLoading = false;
+        StateHasChanged();
     }
     //FUNCIONES PARA Periodo
     public async Task ListaNombresPeriodos()
     {
+        isLoading = true;
+        StateHasChanged();
         listaPeriodos = await Http.GetFromJsonAsync<List<ListaPeriodo>>("http://localhost:5117/api/Periodo/getNamePeriodoList");
+        isLoading = false;
+        StateHasChanged();
     }
     public async Task EstudiantesPorPeriodo(int id_periodo, string curso, string periodo)
     {
+        isLoading = true;
+        StateHasChanged();
         nombrePeriodo = periodo;
         nombreCurso = curso;
         // Construir la URL con los parámetros de consulta
@@ -162,21 +201,41 @@
 
         if (response.IsSuccessStatusCode)
         {
+            isLoading = false;
+            StateHasChanged();
             ListaEstudiantes = await response.Content.ReadFromJsonAsync<List<UsuarioPeriodo>>();
         }
         else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
-            await JSRuntime.InvokeVoidAsync("alert", "No se encontraron coincidencias");
+            isLoading = false;
+            StateHasChanged();
+            //await JSRuntime.InvokeVoidAsync("alert", "No se encontraron coincidencias");
+            sweetAletNotify("No se encontraron coincidencias", "info");
             ListaEstudiantes = new List<UsuarioPeriodo>();
         }
         else
         {
+            isLoading = false;
+            StateHasChanged();
             Console.WriteLine("Error al buscar los periodos.");
+            sweetAletNotify("Error al buscar los periodos.", "error");
         }
+    }
+
+    private async Task sweetAletNotify(string texto, string tipo){
+        var options = new
+        {
+            Title = texto,
+            Icon = tipo,
+            ConfirmButtonText = "OK"
+        };
+        await JSRuntime.InvokeVoidAsync("FireSweetAlert", options);
     }
 
     private async Task ExportarExcel()
     {
+        isLoading = true;
+        StateHasChanged();
         using(var libro = new XLWorkbook())
         {
             int contador = 5;
@@ -214,6 +273,8 @@
                 );
             }
         }
+        isLoading = false;
+        StateHasChanged();
     }
 
 

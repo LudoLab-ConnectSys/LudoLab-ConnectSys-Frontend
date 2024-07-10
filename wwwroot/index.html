@@ -15,6 +15,7 @@
     <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
     <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
     <script src="https://unpkg.com/fontkit/browser/fontkit.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 </head>
 
 <body>
@@ -31,6 +32,8 @@
         <a href="" class="reload">Reload</a>
         <a class="dismiss">🗙</a>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
     <script>
@@ -139,7 +142,20 @@
             return confirm(message);
         }
     </script>
-
+    <script>
+    //notificacines con formato - alertas
+        window.FireSweetAlert = function (options) {
+            return Swal.fire(options);
+        };
+    </script>
+    <script>
+        // Función para mostrar SweetAlert2 y devolver una respuesta booleana
+        window.FireSweetAlertConfirm = function (options) {
+            return Swal.fire(options).then((result) => {
+                return result.isConfirmed; // Retorna true si el usuario confirma, de lo contrario false
+            });
+        };
+    </script>
     <script src="_framework/blazor.webassembly.js"></script>
     <script>navigator.serviceWorker.register('service-worker.js');</script>
 

@@ -15,3 +15,7 @@ function DescargarExelnuevo(nombreArchivo, base64Archivo) {
     link.click();
     document.body.removeChild(link);
 }
+
+function refreshPage() {//refrescar la página
+    location.reload();
+}

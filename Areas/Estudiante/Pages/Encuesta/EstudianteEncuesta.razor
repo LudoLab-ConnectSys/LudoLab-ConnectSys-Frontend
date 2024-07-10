@@ -1,6 +1,167 @@
 ﻿@page "/encuesta-estudiante"
-<h3>Estudiante Encuesta</h3>
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject SweetAlertService Swal
+
+<h3>Encuesta de satisfacción</h3>
+@if (isLoading)
+{
+    <Spinner />
+}
+@if (!encuestaCompletada)
+{
+    @if (preguntas != null)
+    {
+        @foreach (var pregunta in preguntas)
+        {
+            <div class="pregunta-container">
+                <label class="pregunta-label">@pregunta.texto_pregunta</label>
+                <input type="text" class="pregunta-input" @bind="respuestas[pregunta.id_pregunta]" />
+            </div>
+        }
+        <button class="boton-enviar" @onclick="EnviarRespuestas">Enviar</button>
+        
+    }
+    else
+    {
+        <p>Cargando preguntas...</p>
+    }
+    <!---->
+}
+else
+{
+    <p>Ya ha completado el cuestionario</p>
+    @sweetAletNotify("Ya ha completado el cuestionario", "info")
+}
+
+<style>
+    .pregunta-container {
+        margin-bottom: 20px;
+    }
+
+    .pregunta-label {
+        font-weight: bold;
+        color: #333;
+        font-size: 16px;
+    }
+
+    .pregunta-input {
+        width: 100%;
+        padding: 8px;
+        font-size: 14px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+
+    .boton-enviar {
+        background-color: #007bff;
+        color: #fff;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+</style>
 
 @code {
+    private bool isLoading = false;
+    private int idEstudiante = 1;
+    private List<Pregunta> preguntas = new List<Pregunta>();
+    private Dictionary<int, string> respuestas = new Dictionary<int, string>();
+    private bool encuestaCompletada = false;
+    private bool BotonEnviarHabilitado = false;
 
+    protected override async Task OnInitializedAsync()
+    {
+        int initidEstudiante = 1;
+        idEstudiante = initidEstudiante;
+        await VerificarEncuestaCompletada();
+        if (!encuestaCompletada)
+        {
+            await RecibirPreguntas();
+        }
+    }
+
+    private async Task VerificarEncuestaCompletada()
+    {
+        var idEstudiante = 1; // Aquí deberías obtener el ID del estudiante actual
+        encuestaCompletada = await Http.GetFromJsonAsync<bool>($"http://localhost:5117/api/Encuesta/verificar-respuestas/{idEstudiante}");
+    }
+
+    private async Task RecibirPreguntas()
+    {
+        preguntas = await Http.GetFromJsonAsync<List<Pregunta>>("http://localhost:5117/api/Encuesta/preguntas");
+        // Inicializar el diccionario de respuestas para cada pregunta
+        foreach (var pregunta in preguntas)
+        {
+            if (!respuestas.ContainsKey(pregunta.id_pregunta))
+            {
+                respuestas[pregunta.id_pregunta] = string.Empty;
+            }
+        }
+    }
+
+    private async Task EnviarRespuestas()
+    {
+        var options = new
+        {
+            Title = "¿Desea enviar sus respuestas?",
+            Icon = "question",
+            ShowCancelButton = true,
+            ConfirmButtonText = "Sí",
+            CancelButtonText = "No"
+        };
+        var result = await JSRuntime.InvokeAsync<bool>("FireSweetAlertConfirm", options);
+
+        if (!result)
+        {
+            return; // Termina la ejecución de la función si el usuario selecciona "No"
+        }
+        isLoading = true;
+        StateHasChanged();
+        // Espera de 5 segundos para verificar si el Spinner aparece
+        //await Task.Delay(5000);
+        foreach (var pregunta in respuestas)
+        {
+            Console.WriteLine($"pos {pregunta.Key}, respuesta {pregunta.Value}");
+        }
+        var respuestasEnviar = respuestas.Select(r => new RespuestaDto
+            {
+                id_estudiante = idEstudiante,
+                id_pregunta = r.Key,
+                texto_respuesta = r.Value
+            }).ToList();
+
+        try
+        {
+            await Http.PostAsJsonAsync("http://localhost:5117/api/Encuesta/respuestas", respuestasEnviar);
+            sweetAletNotify("¡Respuestas registradas exitosamente!", "info");
+            //await JSRuntime.InvokeVoidAsync("refreshPage");
+
+        }
+        catch (Exception ex)
+        {
+            sweetAletNotify("Error al guardar respuestas", "error");
+        }
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task sweetAletNotify(string texto, string tipo)
+    {
+        var options = new
+        {
+            Title = texto,
+            Icon = tipo,
+            ConfirmButtonText = "OK"
+        };
+        await JSRuntime.InvokeVoidAsync("FireSweetAlert", options);
+    }
+
+    public class RespuestaDto
+    {
+        public int id_estudiante { get; set; }
+        public int id_pregunta { get; set; }
+        public string texto_respuesta { get; set; }
+    }
 }
