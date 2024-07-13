@@ -32,7 +32,9 @@
         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
             Editar Posiciones
         </button>
-
+        <button type="button" class="btn btn-success" @onclick="(()=> ImprimirTodosInformesPracticas())">
+            Descargar todos
+        </button>
         <!-- Modal -->
         <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-scrollable modal-lg">
@@ -205,7 +207,7 @@ else
     private int CurrentPage = 1;//datos para paginación
     private int PageSize = 3; // Tamaño de página
     private int TotalCount { get; set; }
-    
+
     private string uploadedFileName;
     private IBrowserFile file;
     private MemoryStream fileStream = new MemoryStream();
@@ -267,7 +269,7 @@ else
             isLoading = false;
             StateHasChanged();
             Console.WriteLine($"Error al cargar instructores: {ex.Message}");
-            sweetAletNotify("Error de servidor", "error");
+            await sweetAletNotify("Error de servidor", "error");
             // Manejar el error según sea necesario
         }
         isLoading = false;
@@ -316,8 +318,8 @@ else
         Console.WriteLine($"Total Horas Ganadas: {TotalHorasGanadas}");
         try
         {
-        isLoading = true;
-        StateHasChanged();
+            isLoading = true;
+            StateHasChanged();
             foreach (var horario in horarios)
             {
                 Console.WriteLine($"ID Horario: {horario.id_horario}");
@@ -407,7 +409,7 @@ else
                         workbook.SaveAs(outputStream);
                         outputStream.Position = 0;
 
-                        var nombreExcel = string.Concat("InformePractica", DateTime.Now.ToString("yyyyMMdd_HHmmss"), ".xlsx");
+                        var nombreExcel = string.Concat("InformePractica_" + fullname, DateTime.Now.ToString("yyyyMMdd_HHmmss"), ".xlsx");
 
                         await JSRuntime.InvokeVoidAsync(
                             "DescargarExelnuevo",
@@ -418,7 +420,7 @@ else
                 }
                 isLoading = false;
                 StateHasChanged();
-                sweetAletNotify("Textos insertados en el archivo Excel y archivo descargado correctamente.", "info");
+                //await sweetAletNotify("Textos insertados en el archivo Excel y archivo descargado correctamente.", "info");
             }
             else
             {
@@ -433,10 +435,37 @@ else
             isLoading = false;
             StateHasChanged();
             Console.WriteLine($"Error al insertar textos en el archivo Excel: {ex.Message}");
-            sweetAletNotify("Error al insertar textos en el archivo Excel", "error");
+            await sweetAletNotify($"Error al descargar el archivo de {fullname}", "error");
             // Manejo de errores aquí
         }
     }
+    private async Task ImprimirTodosInformesPracticas()
+    {
+        int currentPage = 1;
+        int pageSize = 3;  // Asumo que el tamaño de página es 3. Puedes ajustar este valor si es necesario.
+
+        while (currentPage <= TotalPages)
+        {
+            // Cargar los instructores de la página actual
+            await LoadInstructoresAsync(currentPage, pageSize);
+
+            foreach (var instructor in instructores)
+            {
+                await InsertTextsIntoExcel(
+                    instructor.NombreUsuario + ' ' + instructor.ApellidosUsuario,
+                    instructor.CedulaUsuario,
+                    instructor.TotalHorasGanadas,
+                    instructor.Grupos.SelectMany(g => g.Horarios).ToList()
+                );
+            }
+
+            // Incrementar la página actual
+            currentPage++;
+        }
+
+        await sweetAletNotify("Los archivos se han descargado exitosamente.", "info");
+    }
+
 
     // Función para convertir letra de columna Excel a número
     private int ColumnaExcelANumero(string columna)

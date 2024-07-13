@@ -115,7 +115,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary">Save changes</button>
+                <button type="button" class="btn btn-primary" @onclick="(()=> ImprimirTodosCertificados())">Descargar Todos</button>
             </div>
         </div>
     </div>
@@ -163,7 +163,7 @@
             isLoading = false;
             StateHasChanged();
             //await JSRuntime.InvokeVoidAsync("alert", "No se encontraron coincidencias");
-            sweetAletNotify("No se encontraron coincidencias", "info");
+            await sweetAletNotify("No se encontraron coincidencias", "info");
             Periodos = new List<PeriodoConNombreCurso>();
         }
         else
@@ -171,7 +171,7 @@
             isLoading = false;
             StateHasChanged();
             Console.WriteLine("Error al buscar los periodos.");
-            sweetAletNotify("Error al buscar los periodos", "error");
+            await sweetAletNotify("Error al buscar los periodos", "error");
         }
     }
     //FUNCIONES PARA Periodo
@@ -240,7 +240,7 @@
                 isLoading = false;
                 StateHasChanged();
                 Console.WriteLine("Error al actualizar el nombre del archivo");
-                sweetAletNotify("Error al actualizar el nombre del archivo", "error");
+                await sweetAletNotify("Error al actualizar el nombre del archivo", "error");
             }
         }
 
@@ -281,7 +281,7 @@
         }
         isLoading = false;
         StateHasChanged();
-        sweetAletNotify("Archivo actualizado correctamente", "info");
+        await sweetAletNotify("Archivo actualizado correctamente", "info");
         /*using var content = new MultipartFormDataContent();
 
             foreach (var file in e.GetMultipleFiles(maxAllowedFiles))
@@ -330,7 +330,7 @@
             isLoading = false;
             StateHasChanged();
             //await JSRuntime.InvokeVoidAsync("alert", "No se encontraron coincidencias");
-            sweetAletNotify("No se encontraron coincidencias", "info");
+            await sweetAletNotify("No se encontraron coincidencias", "info");
             ListaTutores = new List<InstructorPeriodo>();
         }
         else
@@ -338,7 +338,7 @@
             isLoading = false;
             StateHasChanged();
             Console.WriteLine("Error al buscar los periodos.");
-            sweetAletNotify("Error al buscar los periodos.", "error");
+            await sweetAletNotify("Error al buscar los periodos.", "error");
         }
     }
 
@@ -347,13 +347,13 @@
         if (string.IsNullOrEmpty(fileName))
         {
             //JSRuntime.InvokeVoidAsync("alert", "Este curso no tiene asignado una plantilla para el certificado");
-            sweetAletNotify("Este curso no tiene asignado una plantilla para el certificado", "info");
+            await sweetAletNotify("Este curso no tiene asignado una plantilla para el certificado", "info");
 
         }
         else
         {
             var url = $"http://localhost:5117/uploads/{fileName}";
-            JSRuntime.InvokeVoidAsync("open", url, "_blank");
+            await JSRuntime.InvokeVoidAsync("open", url, "_blank");
         }
     }
 
@@ -362,10 +362,10 @@
         isLoading = true;
         StateHasChanged();
         Console.WriteLine($"fullnameUser: {fullname}");
-        Console.WriteLine($"nombre periodo: {nombbrePeiodo}");
-        Console.WriteLine($"nombre curso: {nombbreCurso}");
-        Console.WriteLine($"Nombre Certificado: {nombre_certificado}");
-        Console.WriteLine($"horas de estudiante: {horasAsignadas}");
+        //Console.WriteLine($"nombre periodo: {nombbrePeiodo}");
+        //Console.WriteLine($"nombre curso: {nombbreCurso}");
+        //Console.WriteLine($"Nombre Certificado: {nombre_certificado}");
+        //Console.WriteLine($"horas de estudiante: {horasAsignadas}");
         var response = await Http.GetAsync($"http://localhost:5117/api/File/{nombre_certificado}");
 
         if (!response.IsSuccessStatusCode)
@@ -373,7 +373,7 @@
             isLoading = false;
             StateHasChanged();
             //await JSRuntime.InvokeVoidAsync("alert", "File not found.");
-            sweetAletNotify("Archivo no encontrado", "info");
+            await sweetAletNotify("Archivo no encontrado", "info");
         }
         else
         {
@@ -387,9 +387,17 @@
             };
             var fileStream = response.Content.ReadAsStream();
             using var streamRef = new DotNetStreamReference(stream: fileStream);
-            await JSRuntime.InvokeVoidAsync("downloadFileFromStream", nombre_certificado, streamRef, texts);
+            await JSRuntime.InvokeVoidAsync("downloadFileFromStream", "Tutor_" + fullname, streamRef, texts);
             isLoading = false;
             StateHasChanged();
+        }
+    }
+
+    private async Task ImprimirTodosCertificados()
+    {
+        @foreach (var tutor in ListaTutores)
+        {
+            await ImprimirCertificados(tutor.NombreUsuario + ' ' + tutor.ApellidosUsuario, tutor.NombreCertificado, tutor.HorasGanadasInstructor);
         }
     }
 

@@ -139,8 +139,8 @@
 
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary">Save changes</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" @onclick="(()=> ImprimirTodosCertificados())">Descargar todos</button>
             </div>
         </div>
     </div>
@@ -236,7 +236,7 @@
             isLoading = false;
             StateHasChanged();
             //await JSRuntime.InvokeVoidAsync("alert", "No se encontraron coincidencias");
-            sweetAletNotify("No se encontraron coincidencias", "info");
+            await sweetAletNotify("No se encontraron coincidencias", "info");
             Periodos = new List<PeriodoConNombreCurso>();
         }
         else
@@ -244,7 +244,7 @@
             isLoading = false;
             StateHasChanged();
             Console.WriteLine("Error al buscar los periodos.");
-            sweetAletNotify("Error al buscar los periodos.", "error");
+            await sweetAletNotify("Error al buscar los periodos.", "error");
         }
         isLoading = false;
         StateHasChanged();
@@ -277,8 +277,8 @@
             {
                 return; // Termina la ejecución de la función si el usuario selecciona "No"
             }
-        isLoading = true;
-        StateHasChanged();
+            isLoading = true;
+            StateHasChanged();
         }
         var fileforNAME = e.File;
 
@@ -305,7 +305,7 @@
                 isLoading = false;
                 StateHasChanged();
                 Console.WriteLine("Error al actualizar el nombre del archivo en la base de datos.");
-                sweetAletNotify("Error al actualizar el nombre del archivo en la base de datos.", "error");
+                await sweetAletNotify("Error al actualizar el nombre del archivo en la base de datos.", "error");
             }
         }
 
@@ -346,30 +346,30 @@
         }
         isLoading = false;
         StateHasChanged();
-        sweetAletNotify("Archivo actualizado correctamente", "info");
+        await sweetAletNotify("Archivo actualizado correctamente", "info");
         /*using var content = new MultipartFormDataContent();
 
-            foreach (var file in e.GetMultipleFiles(maxAllowedFiles))
-            {
-            var fileContent = new StreamContent(file.OpenReadStream(maxFileSize));
-            fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
+        foreach (var file in e.GetMultipleFiles(maxAllowedFiles))
+        {
+        var fileContent = new StreamContent(file.OpenReadStream(maxFileSize));
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
 
-                fileNames.Add(file.Name);
+    fileNames.Add(file.Name);
 
-                content.Add(
-        content: fileContent,
-        name: "\"files\"",
+    content.Add(
+    content: fileContent,
+    name: "\"files\"",
         fileName: file.Name);
 
-        }
+    }
 
-        var response = await Http.PostAsync("http://localhost:5117/api/File", content);
-        var newUploadResults = await response.Content.ReadFromJsonAsync<List<UploadResult>>();
+    var response = await Http.PostAsync("http://localhost:5117/api/File", content);
+    var newUploadResults = await response.Content.ReadFromJsonAsync<List<UploadResult>>();
 
-        if (newUploadResults is not null)
-            {
-            uploadResults = uploadResults.Concat(newUploadResults).ToList();
-        }*/
+    if (newUploadResults is not null)
+        {
+        uploadResults = uploadResults.Concat(newUploadResults).ToList();
+    }*/
     }
 
     private async Task ImprimirCertificados(string fullname, string nombre_certificado, int horasAsignadas)
@@ -377,10 +377,10 @@
         isLoading = true;
         StateHasChanged();
         Console.WriteLine($"fullnameUser: {fullname}");
-        Console.WriteLine($"nombre periodo: {nombbrePeiodo}");
-        Console.WriteLine($"nombre curso: {nombbreCurso}");
-        Console.WriteLine($"Nombre Certificado: {nombre_certificado}");
-        Console.WriteLine($"horas de estudiante: {horasAsignadas}");
+        //Console.WriteLine($"nombre periodo: {nombbrePeiodo}");
+        //Console.WriteLine($"nombre curso: {nombbreCurso}");
+        //Console.WriteLine($"Nombre Certificado: {nombre_certificado}");
+        //Console.WriteLine($"horas de estudiante: {horasAsignadas}");
         var response = await Http.GetAsync($"http://localhost:5117/api/File/{nombre_certificado}");
 
         if (!response.IsSuccessStatusCode)
@@ -388,7 +388,7 @@
             isLoading = false;
             StateHasChanged();
             //await JSRuntime.InvokeVoidAsync("alert", "File not found.");
-            sweetAletNotify("Archivo no encontrado", "info");
+            await sweetAletNotify("Archivo no encontrado", "info");
         }
         else
         {
@@ -402,9 +402,17 @@
             };
             var fileStream = response.Content.ReadAsStream();
             using var streamRef = new DotNetStreamReference(stream: fileStream);
-            await JSRuntime.InvokeVoidAsync("downloadFileFromStream", nombre_certificado, streamRef, texts);
+            await JSRuntime.InvokeVoidAsync("downloadFileFromStream", "Tutor_" + fullname, streamRef, texts);
             isLoading = false;
             StateHasChanged();
+        }
+    }
+
+    private async Task ImprimirTodosCertificados()
+    {
+        @foreach (var estudiante in ListaEstudiantes)
+        {
+            await ImprimirCertificados(estudiante.NombreUsuario + ' ' + estudiante.ApellidosUsuario, estudiante.NombreCertificado, estudiante.horas_asignadas_estudiante);
         }
     }
 
@@ -430,7 +438,7 @@
             isLoading = false;
             StateHasChanged();
             //await JSRuntime.InvokeVoidAsync("alert", "No se encontraron coincidencias");
-            sweetAletNotify("No se encontraron coincidencias", "info");
+            await sweetAletNotify("No se encontraron coincidencias", "info");
             ListaEstudiantes = new List<UsuarioPeriodo>();
         }
         else
@@ -438,7 +446,7 @@
             isLoading = false;
             StateHasChanged();
             Console.WriteLine("Error al buscar los periodos.");
-            sweetAletNotify("Error al buscar los periodos", "error");
+            await sweetAletNotify("Error al buscar los periodos", "error");
         }
     }
 

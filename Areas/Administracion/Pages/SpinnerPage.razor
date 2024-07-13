@@ -1,12 +1,13 @@
-﻿<div class="spinner-overlay">
-    <div class="spinner-border text-info" style="width: 3rem; height: 3rem;" role="status">
-        <span class="visually-hidden">Loading...</span>
+﻿<div class="spinner-container">
+    <div class="spinner-overlay">
+        <div class="spinner-border text-info" style="width: 8rem; height: 8rem;" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
     </div>
 </div>
-
 <style>
-    .spinner-overlay {
-        position: fixed;
+    .spinner-container {
+        position: fixed; /* Asegúrate de que sea fixed para que siempre esté visible */
         top: 0;
         left: 0;
         width: 100%;
@@ -14,9 +15,20 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background-color: rgba(255, 255, 255, 0.8); /* Fondo semitransparente */
         z-index: 9999; /* Asegúrate de que esté en la parte superior */
     }
+
+    .spinner-overlay {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: rgba(255, 255, 255, 0.8); /* Fondo semitransparente */
+        width: 10rem;
+        height: 10rem;
+        position: absolute; /* Cambia a absolute */
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%); /* Mueve al centro */
+        border-radius: 20px; /* Esquinas redondeadas */
+    }
 </style>
-@code {
-}

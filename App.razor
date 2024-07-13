@@ -2,12 +2,12 @@
 <CascadingAuthenticationState>
     <Router AppAssembly="@typeof(App).Assembly">
         <Found Context="routeData">
-            <RouteView RouteData="@routeData" DefaultLayout="@typeof(EstudianteLayout)" />
+            <RouteView RouteData="@routeData" DefaultLayout="@typeof(AdminLayout)" />
             <!-- AdminLayout, EstudianteLayout  -->
             <FocusOnNavigate RouteData="@routeData" Selector="h1" />
         </Found>
         <NotFound>
-            <LayoutView Layout="@typeof(EstudianteLayout)">
+            <LayoutView Layout="@typeof(AdminLayout)">
                 <p>Sorry, there's nothing at this address.</p>
             </LayoutView>
         </NotFound>
