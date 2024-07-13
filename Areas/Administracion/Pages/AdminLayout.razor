@@ -1,8 +1,10 @@
 ﻿@using LudoLab_ConnectSys_Frontend.Areas.Administracion.Components
+@using LudoLab_ConnectSys_Frontend.Areas.Estudiante.Components
 @inherits LayoutComponentBase
 <div class="page">
     <div class="sidebar">
-        <NavMenuAdmin />
+         <NavMenuAdmin />  
+        <!--<NavMenuEstudiante />-->
     </div>
 
     <main>
@@ -11,6 +13,7 @@
         </div>
 
         <article class="content px-4">
+            <SweetAlert />
             @Body
         </article>
     </main>

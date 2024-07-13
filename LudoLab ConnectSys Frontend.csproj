@@ -39,6 +39,7 @@
 	</ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Areas\Estudiante\Pages\PaginaDeCarga\" />
     <Folder Include="Shared\Styles\" />
   </ItemGroup>
 

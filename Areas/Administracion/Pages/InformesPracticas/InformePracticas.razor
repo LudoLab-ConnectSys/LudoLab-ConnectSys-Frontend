@@ -2,15 +2,20 @@
 @page "/informe-practicas"
 @inject HttpClient Http
 @inject IJSRuntime JSRuntime
+@inject SweetAlertService Swal
 @using Microsoft.AspNetCore.Components.Forms
 @using OfficeOpenXml;
 @using ClosedXML.Excel;
 @using System.IO
 
-<h2>Generar informes de prácticas profecionales</h2><br />
+<h2>Generar informes de prácticas profesionales</h2>
+<br />
 
 <h3>Subir Archivo Excel</h3>
-
+@if (isLoading)
+{
+    <SpinnerPage />
+}
 <br />
 <div>
     <label class="btn btn-success">
@@ -22,46 +27,277 @@
         <div class="mt-2 alert alert-info">
             Archivo subido: @uploadedFileName
         </div>
-        <div class="mt-3">
-            <h5>Especificar posiciones y textos para insertar:</h5>
-            <div class="form-group">
-                <label>Texto 1:</label>
-                <input type="text" @bind="text1" class="form-control" />
-                <label>Fila 1:</label>
-                <input type="number" @bind="row1" class="form-control" />
-                <label>Columna 1(A-Z):</label>
-                <input type="text" @bind="col1Excel" class="form-control" />
+
+        <!-- Button trigger modal -->
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
+            Editar Posiciones
+        </button>
+        <button type="button" class="btn btn-success" @onclick="(()=> ImprimirTodosInformesPracticas())">
+            Descargar todos
+        </button>
+        <!-- Modal -->
+        <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-scrollable modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="exampleModalLabel">Editar las especificaciones de posiciones y textos para insertar</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mt-3">
+                            <div class="form-group">
+                                <label>Nombre completo del instructor:</label>
+                                <div class="d-flex">
+                                    <div class="mr-2">
+                                        <label class="d-block">Fila 1:</label>
+                                        <input type="number" @bind="row1" class="form-control" style="width: 80px;" />
+                                    </div>
+                                    <div>
+                                        <label class="d-block">Columna 1 (A-Z):</label>
+                                        <input type="text" @bind="col1Excel" class="form-control" style="width: 120px;" />
+                                    </div>
+                                </div>
+                            </div><br/>
+
+                            <div class="form-group">
+                                <label>Cédula del instructor:</label>
+                                <div class="d-flex">
+                                    <div class="mr-2">
+                                        <label class="d-block">Fila 2:</label>
+                                        <input type="number" @bind="row2" class="form-control" style="width: 80px;" />
+                                    </div>
+                                    <div>
+                                        <label class="d-block">Columna 2 (A-Z):</label>
+                                        <input type="text" @bind="col2Excel" class="form-control" style="width: 120px;" />
+                                    </div>
+                                </div>
+                            </div><br />
+
+                            <div class="form-group">
+                                <label>Horas obtenidas del instructor:</label>
+                                <div class="d-flex">
+                                    <div class="mr-2">
+                                        <label class="d-block">Fila 3:</label>
+                                        <input type="number" @bind="row3" class="form-control" style="width: 80px;" />
+                                    </div>
+                                    <div>
+                                        <label class="d-block">Columna 3 (A-Z):</label>
+                                        <input type="text" @bind="col3Excel" class="form-control" style="width: 120px;" />
+                                    </div>
+                                </div>
+                            </div><br />
+
+                            <div>
+                                <label>Horarios</label> <!--INICIO DE TABLA DE HORARIOS-->
+
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th></th>
+                                            <th>Lunes</th>
+                                            <th>Martes</th>
+                                            <th>Miércoles</th>
+                                            <th>Jueves</th>
+                                            <th>Viernes</th>
+                                            <th>Sábado</th>
+                                            <th>Domingo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Hora Inicio</td>
+                                            <td>
+                                                <label class="d-block">Fila 3:</label>
+                                                <input type="number" @bind="rowT" class="form-control" style="width: 60px;" min="0" />
+                                                <label class="d-block">Columna 3 (A-Z):</label>
+                                                <input type="text" @bind="colTExcel" class="form-control" style="width: 60px;" maxlength="1" />
+                                            </td>
+                                            <td>@(rowT) - @(ConvertirColumnaALetra(ConvertirColumna(colTExcel) + 1))</td>
+                                            <td>@(rowT) - @(ConvertirColumnaALetra(ConvertirColumna(colTExcel) + 2))</td>
+                                            <td>@(rowT) - @(ConvertirColumnaALetra(ConvertirColumna(colTExcel) + 3))</td>
+                                            <td>@(rowT) - @(ConvertirColumnaALetra(ConvertirColumna(colTExcel) + 4))</td>
+                                            <td>@(rowT) - @(ConvertirColumnaALetra(ConvertirColumna(colTExcel) + 5))</td>
+                                            <td>@(rowT) - @(ConvertirColumnaALetra(ConvertirColumna(colTExcel) + 6))</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Hora Fin</td>
+                                            @for (int i = 0; i < 7; i++)
+                                            {
+                                                <td>@(rowT + 3) - @(ConvertirColumnaALetra(ConvertirColumna(colTExcel) + i))</td>
+                                            }
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <!--FIN DE TABLA DE HORARIOS-->
+                            </div>
+
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary">Save changes</button>
+                    </div>
+                </div>
             </div>
-            <div class="form-group">
-                <label>Texto 2:</label>
-                <input type="text" @bind="text2" class="form-control" />
-                <label>Fila 2:</label>
-                <input type="number" @bind="row2" class="form-control" />
-                <label>Columna 2(A-Z):</label>
-                <input type="text" @bind="col2Excel" class="form-control" />
-            </div>
-            <div class="form-group">
-                <label>Texto 3:</label>
-                <input type="text" @bind="text3" class="form-control" />
-                <label>Fila 3:</label>
-                <input type="number" @bind="row3" class="form-control" />
-                <label>Columna 3(A-Z):</label>
-                <input type="text" @bind="col3Excel" class="form-control" />
-            </div>
-            <button class="btn btn-primary" @onclick="InsertTextsIntoExcel">Insertar Textos</button>
         </div>
+
+        
     }
 </div>
 
+<h3>Lista de tutores</h3>
+@if (instructores == null)
+{
+    <p><em>Cargando...</em></p>
+}
+else if (!instructores.Any())
+{
+    <p>No hay instructores disponibles.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th scope="col">Cédula</th>
+                <th scope="col">Nombre</th>
+                <th scope="col">Apellidos</th>
+                <th scope="col">Edad</th>
+                <th scope="col">Correo</th>
+                <th scope="col">Celular</th>
+                <th scope="col">Teléfono</th>
+                <th scope="col">Horas Ganadas</th>
+                <th scope="col">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var instructor in instructores)
+            {
+                <tr>
+                    <td>@instructor.CedulaUsuario</td>
+                    <td>@instructor.NombreUsuario</td>
+                    <td>@instructor.ApellidosUsuario</td>
+                    <td>@instructor.EdadUsuario</td>
+                    <td>@instructor.CorreoUsuario</td>
+                    <td>@instructor.CelularUsuario</td>
+                    <td>@instructor.TelefonoUsuario</td>
+                    <td>@instructor.TotalHorasGanadas</td>
+                    <td>
+                        <button type="button" class="btn btn-warning" @onclick="(()=> InsertTextsIntoExcel(instructor.NombreUsuario +' '+ instructor.ApellidosUsuario, instructor.CedulaUsuario, instructor.TotalHorasGanadas, instructor.Grupos.SelectMany(g => g.Horarios).ToList()))">
+                            <i class="bi bi-cloud-arrow-down-fill"></i>
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+    <div class="text-center">
+        <button class="btn btn-primary" disabled="@IsFirstPage" @onclick="PreviousPage">Anterior</button>
+        <span>Página @CurrentPage de @TotalPages</span>
+        <button class="btn btn-primary" disabled="@IsLastPage" @onclick="NextPage">Siguiente</button>
+    </div>
 
 @code {
+    private bool isLoading = false;
+    private int rowT = 46;
+    private string colTExcel = "B"; // Inicialmente "A", equivalente a columna 1 en Excel
+
+    private List<InstructorDto> instructores = [];//lista de instructores para generar informes de prácticas
+    private int CurrentPage = 1;//datos para paginación
+    private int PageSize = 3; // Tamaño de página
+    private int TotalCount { get; set; }
+
     private string uploadedFileName;
     private IBrowserFile file;
     private MemoryStream fileStream = new MemoryStream();
 
     private string text1, text2, text3;
-    private int row1, col1, row2, col2, row3, col3;
-    private string col1Excel, col2Excel, col3Excel;
+    private int row1 = 20;
+    private int row2 = 21;
+    private int row3 = 51;
+    private string col1Excel = "D";
+    private string col2Excel = "D";
+    private string col3Excel = "H";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadInstructoresAsync();
+    }
+    // Función para convertir número de columna a letra (1 = A, 2 = B, ...)
+    private int ConvertirColumna(string letraColumna)
+    {
+        if (string.IsNullOrEmpty(letraColumna) || letraColumna.Length != 1 || !char.IsLetter(letraColumna[0]))
+        {
+            // Manejo de error o valor por defecto, si la entrada no es válida
+            return 1; // Por ejemplo, podrías devolver 1 como valor por defecto o manejar un error
+        }
+
+        // Convertir la letra a un número de columna equivalente en Excel
+        return char.ToUpper(letraColumna[0]) - 'A' + 1;
+    }
+
+    // Función para convertir número de columna a letra (1 = A, 2 = B, ...)
+    private string ConvertirColumnaALetra(int numeroColumna)
+    {
+        // Validar que el número de columna esté dentro del rango
+        if (numeroColumna < 1 || numeroColumna > 26)
+        {
+            return string.Empty; // Manejar el caso fuera de rango, si es necesario
+        }
+
+        // Convertir el número de columna a letra equivalente en Excel
+        return ((char)('A' + numeroColumna - 1)).ToString();
+    }
+    private async Task LoadInstructoresAsync(int currentPage = 1, int pageSize = 3)
+    {
+        isLoading = true;
+        StateHasChanged();
+        try
+        {
+            var response = await Http.GetFromJsonAsync<InstructoresPaginadosDto>(
+                $"http://localhost:5117/api/Instructor/instructoresPracticas?pageIndex={currentPage}&pageSize={pageSize}");
+
+            if (response != null)
+            {
+                instructores = response.Instructores;
+                TotalCount = response.TotalCount;
+            }
+        }
+        catch (Exception ex)
+        {
+            isLoading = false;
+            StateHasChanged();
+            Console.WriteLine($"Error al cargar instructores: {ex.Message}");
+            await sweetAletNotify("Error de servidor", "error");
+            // Manejar el error según sea necesario
+        }
+        isLoading = false;
+        StateHasChanged();
+    }
+
+
+    private async Task PreviousPage()//paginación: retroseder una pagina
+    {
+        if (CurrentPage > 1)
+        {
+            CurrentPage--;
+            await LoadInstructoresAsync(CurrentPage, PageSize); // Pasar currentPage y pageSize actualizados
+        }
+    }
+
+    private async Task NextPage()//paginación: ir a la siguiente pagina
+    {
+        if (CurrentPage < TotalPages)
+        {
+            CurrentPage++;
+            await LoadInstructoresAsync(CurrentPage, PageSize); // Pasar currentPage y pageSize actualizados
+        }
+    }
+
+    private bool IsFirstPage => CurrentPage == 1;
+    private bool IsLastPage => CurrentPage == TotalPages;
+    private int TotalPages => (int)Math.Ceiling((decimal)TotalCount / PageSize); // Calcular el total de páginas
 
     private async Task HandleFileSelected(InputFileChangeEventArgs e)
     {
@@ -75,16 +311,85 @@
         }
     }
 
-    private async Task InsertTextsIntoExcel()
+    private async Task InsertTextsIntoExcel(string fullname, string CedulaUsuario, int TotalHorasGanadas, List<Horario> horarios)
     {
+        Console.WriteLine($"fullnameUser: {fullname}");
+        Console.WriteLine($"Cedula Usuario: {CedulaUsuario}");
+        Console.WriteLine($"Total Horas Ganadas: {TotalHorasGanadas}");
         try
         {
+            isLoading = true;
+            StateHasChanged();
+            foreach (var horario in horarios)
+            {
+                Console.WriteLine($"ID Horario: {horario.id_horario}");
+                Console.WriteLine($"ID Grupo: {horario.id_grupo}");
+                Console.WriteLine($"Día Semana: {horario.dia_semana}");
+                Console.WriteLine($"Hora Inicio: {horario.hora_inicio}");
+                Console.WriteLine($"Hora Fin: {horario.hora_fin}");
+                Console.WriteLine("-------------------------------------");
+            }
+            // Diccionario para almacenar los horarios por día de la semana
+            Dictionary<string, Horario> horariosPorDia = new Dictionary<string, Horario>
+            {
+                { "Lunes", new Horario() },
+                { "Martes", new Horario() },
+                { "Miercoles", new Horario() },
+                { "Jueves", new Horario() },
+                { "Viernes", new Horario() },
+                { "Sabado", new Horario() },
+                { "Domingo", new Horario() }
+            };
+
             if (fileStream.Length > 0)
             {
                 fileStream.Position = 0; // Reset the stream position
                 using (var workbook = new XLWorkbook(fileStream))
                 {
+                    // Iterar sobre los horarios para llenar el diccionario
+                    foreach (var horario in horarios)
+                    {
+                        string diaSemana = horario.dia_semana;
+
+                        // Verificar si el día ya tiene horarios asignados
+                        if (!horariosPorDia.ContainsKey(diaSemana))
+                            horariosPorDia[diaSemana] = new Horario();
+
+                        var horarioDia = horariosPorDia[diaSemana];
+
+                        // Verificar y actualizar la hora de inicio si corresponde
+                        if (horarioDia.hora_inicio == TimeSpan.Zero || horario.hora_inicio < horarioDia.hora_inicio)
+                        {
+                            horarioDia.hora_inicio = horario.hora_inicio;
+                        }
+
+                        // Verificar y actualizar la hora de fin si corresponde
+                        if (horarioDia.hora_fin == TimeSpan.Zero || horario.hora_fin > horarioDia.hora_fin)
+                        {
+                            horarioDia.hora_fin = horario.hora_fin;
+                        }
+                    }
+                    // Imprimir el contenido del diccionario
+                    Console.WriteLine($"Imprimir el contenido del diccionario-------");
+                    foreach (var kvp in horariosPorDia)
+                    {
+                        Console.WriteLine($"{kvp.Key}: HoraInicio = {kvp.Value.hora_inicio}, HoraFin = {kvp.Value.hora_fin}");
+                    }
+
                     var worksheet = workbook.Worksheets.First();
+
+                    //Insertar horario:
+                    // Encabezados
+                    int newcoltable = ColumnaExcelANumero(colTExcel);
+
+
+                    int col = 0;
+                    foreach (var kvp in horariosPorDia)
+                    {
+                        worksheet.Cell(rowT, newcoltable + col).Value = kvp.Value.hora_inicio.ToString(@"hh\:mm\:ss");
+                        worksheet.Cell(rowT + 3, newcoltable + col).Value = kvp.Value.hora_fin.ToString(@"hh\:mm\:ss");
+                        col++;
+                    }
 
                     // Convertir columnas de Excel (letras) a números enteros
                     int col1 = ColumnaExcelANumero(col1Excel);
@@ -92,19 +397,19 @@
                     int col3 = ColumnaExcelANumero(col3Excel);
 
                     // Insertar textos en las celdas especificadas
-                    if (!string.IsNullOrEmpty(text1) && row1 > 0 && col1 > 0)
-                        worksheet.Cell(row1, col1).Value = text1;
-                    if (!string.IsNullOrEmpty(text2) && row2 > 0 && col2 > 0)
-                        worksheet.Cell(row2, col2).Value = text2;
-                    if (!string.IsNullOrEmpty(text3) && row3 > 0 && col3 > 0)
-                        worksheet.Cell(row3, col3).Value = text3;
+                    if (!string.IsNullOrEmpty(fullname) && row1 > 0 && col1 > 0)
+                        worksheet.Cell(row1, col1).Value = fullname;
+                    if (!string.IsNullOrEmpty(CedulaUsuario) && row2 > 0 && col2 > 0)
+                        worksheet.Cell(row2, col2).Value = CedulaUsuario;
+                    if (row3 > 0 && col3 > 0)
+                        worksheet.Cell(row3, col3).Value = TotalHorasGanadas;
 
                     using (var outputStream = new MemoryStream())
                     {
                         workbook.SaveAs(outputStream);
                         outputStream.Position = 0;
 
-                        var nombreExcel = string.Concat("Reporte", DateTime.Now.ToString("yyyyMMdd_HHmmss"), ".xlsx");
+                        var nombreExcel = string.Concat("InformePractica_" + fullname, DateTime.Now.ToString("yyyyMMdd_HHmmss"), ".xlsx");
 
                         await JSRuntime.InvokeVoidAsync(
                             "DescargarExelnuevo",
@@ -113,20 +418,54 @@
                         );
                     }
                 }
-
-                Console.WriteLine("Textos insertados en el archivo Excel y archivo descargado correctamente.");
+                isLoading = false;
+                StateHasChanged();
+                //await sweetAletNotify("Textos insertados en el archivo Excel y archivo descargado correctamente.", "info");
             }
             else
             {
-                Console.WriteLine("El archivo subido está vacío.");
+                isLoading = false;
+                StateHasChanged();
+                //await JSRuntime.InvokeVoidAsync("alert", "No tiene un archivo cargado");
+                sweetAletNotify("No tiene un archivo cargado", "info");
             }
         }
         catch (Exception ex)
         {
+            isLoading = false;
+            StateHasChanged();
             Console.WriteLine($"Error al insertar textos en el archivo Excel: {ex.Message}");
+            await sweetAletNotify($"Error al descargar el archivo de {fullname}", "error");
             // Manejo de errores aquí
         }
     }
+    private async Task ImprimirTodosInformesPracticas()
+    {
+        int currentPage = 1;
+        int pageSize = 3;  // Asumo que el tamaño de página es 3. Puedes ajustar este valor si es necesario.
+
+        while (currentPage <= TotalPages)
+        {
+            // Cargar los instructores de la página actual
+            await LoadInstructoresAsync(currentPage, pageSize);
+
+            foreach (var instructor in instructores)
+            {
+                await InsertTextsIntoExcel(
+                    instructor.NombreUsuario + ' ' + instructor.ApellidosUsuario,
+                    instructor.CedulaUsuario,
+                    instructor.TotalHorasGanadas,
+                    instructor.Grupos.SelectMany(g => g.Horarios).ToList()
+                );
+            }
+
+            // Incrementar la página actual
+            currentPage++;
+        }
+
+        await sweetAletNotify("Los archivos se han descargado exitosamente.", "info");
+    }
+
 
     // Función para convertir letra de columna Excel a número
     private int ColumnaExcelANumero(string columna)
@@ -141,6 +480,17 @@
             resultado = resultado * 26 + (c - 'A' + 1);
         }
         return resultado;
+    }
+
+    private async Task sweetAletNotify(string texto, string tipo)
+    {
+        var options = new
+        {
+            Title = texto,
+            Icon = tipo,
+            ConfirmButtonText = "OK"
+        };
+        await JSRuntime.InvokeVoidAsync("FireSweetAlert", options);
     }
 
 }
