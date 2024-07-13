@@ -1,8 +1,8 @@
-﻿@page "/registrar-instructor"
+﻿@page "/matricular-estudiante"
 @inject NavigationManager NavigationManager
 @inject HttpClient Http
 
-<h3 class="text-center my-4">Registrar Instructor</h3>
+<h3 class="text-center my-4">Registrar y Matricular Estudiante</h3>
 
 <EditForm Model="@nuevoUsuario" OnValidSubmit="HandleValidSubmit" class="container">
     <DataAnnotationsValidator />
@@ -26,8 +26,30 @@
                         <InputText id="apellidos" class="form-control" @bind-Value="nuevoUsuario.apellidos_usuario" />
                     </div>
                     <div class="form-group mb-3">
+                        <label for="edad">Edad:</label>
+                        <InputNumber id="edad" class="form-control" @bind-Value="nuevoUsuario.edad_usuario" />
+                    </div>
+                    <div class="form-group mb-3">
                         <label for="correo">Correo Electrónico:</label>
                         <InputText id="correo" class="form-control" @bind-Value="nuevoUsuario.correo_usuario" />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="celular">Número de Celular:</label>
+                        <InputText id="celular" class="form-control" @bind-Value="nuevoUsuario.celular_usuario" />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="telefono">Número de Teléfono:</label>
+                        <InputText id="telefono" class="form-control" @bind-Value="nuevoUsuario.telefono_usuario" />
+                    </div>
+
+                    <!-- Datos del Estudiante -->
+                    <div class="form-group mb-3">
+                        <label for="tipoEstudiante">Tipo de Estudiante:</label>
+                        <InputSelect id="tipoEstudiante" class="form-control" @bind-Value="nuevoEstudiante.tipo_estudiante">
+                            <option value="">Seleccione un tipo</option>
+                            <option value="Docente">Docente</option>
+                            <option value="Grupo de atención prioritaria">Grupo de atención prioritaria</option>
+                        </InputSelect>
                     </div>
 
                     <!-- Selección de Curso -->
@@ -55,7 +77,7 @@
                     </div>
                 </div>
                 <div class="card-footer text-center">
-                    <button type="submit" class="btn btn-success me-2">Guardar y Registrar</button>
+                    <button type="submit" class="btn btn-success me-2">Guardar y Matricular</button>
                     <button type="button" class="btn btn-secondary" @onclick="Regresar">Cancelar</button>
                     @if (!string.IsNullOrEmpty(errorMessage))
                     {
@@ -69,10 +91,11 @@
 
 @code {
     private DirectorioDeArchivos.Shared.Usuario nuevoUsuario = new DirectorioDeArchivos.Shared.Usuario();
-    private int idCursoSeleccionado;
-    private int idPeriodoSeleccionado;
+    private DirectorioDeArchivos.Shared.Estudiante nuevoEstudiante = new DirectorioDeArchivos.Shared.Estudiante();
     private List<Curso> cursos = new List<Curso>();
     private List<PeriodoConNombre> periodosUnicos = new List<PeriodoConNombre>();
+    private int idCursoSeleccionado;
+    private int idPeriodoSeleccionado;
     private string errorMessage;
 
     protected override async Task OnInitializedAsync()
@@ -92,32 +115,35 @@
         }
     }
 
-    private async Task OnCursoSeleccionadoChange(ChangeEventArgs e)
-    {
-        if (int.TryParse(e.Value.ToString(), out int cursoId))
-        {
-            idCursoSeleccionado = cursoId;
-            await CargarPeriodos(cursoId);
-        }
-    }
-
-    private async Task CargarPeriodos(int cursoId)
+    private async Task CargarPeriodos(int idCurso)
     {
         try
         {
-            periodosUnicos = await Http.GetFromJsonAsync<List<PeriodoConNombre>>($"http://localhost:5117/api/Periodo/por-curso/{cursoId}");
-            if (!periodosUnicos.Any())
-            {
-                errorMessage = "No se encontraron periodos para el curso seleccionado.";
-            }
-            else
-            {
-                errorMessage = string.Empty; // Limpia el mensaje de error si se encontraron periodos
-            }
+            Console.WriteLine($"Cargando periodos para el curso con ID: {idCurso}");
+            periodosUnicos = await Http.GetFromJsonAsync<List<PeriodoConNombre>>($"http://localhost:5117/api/Periodo/por-curso/{idCurso}");
+            Console.WriteLine($"Periodos cargados: {periodosUnicos.Count}");
+        }
+        catch (HttpRequestException ex)
+        {
+            errorMessage = $"Error al cargar los periodos: {ex.Message}";
         }
         catch (Exception ex)
         {
-            errorMessage = $"Error al cargar los periodos: {ex.Message}";
+            errorMessage = $"Error inesperado al cargar los periodos: {ex.Message}";
+        }
+    }
+
+    private async Task OnCursoSeleccionadoChange(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value.ToString(), out int idCurso))
+        {
+            idCursoSeleccionado = idCurso;
+            Console.WriteLine($"Curso seleccionado: {idCursoSeleccionado}");
+            await CargarPeriodos(idCursoSeleccionado);
+        }
+        else
+        {
+            errorMessage = "El ID del curso seleccionado no es válido.";
         }
     }
 
@@ -126,8 +152,10 @@
         try
         {
             var usuarioId = await GuardarUsuario();
-            var instructorId = await GuardarInstructor(usuarioId);
-            await RegistrarInstructor(instructorId, idCursoSeleccionado, idPeriodoSeleccionado);
+
+            nuevoEstudiante.id_usuario = usuarioId;
+            var estudianteId = await GuardarEstudiante(nuevoEstudiante);
+            await RegistrarMatricula(estudianteId, idCursoSeleccionado, idPeriodoSeleccionado);
 
             NavigationManager.NavigateTo("/");
         }
@@ -149,35 +177,30 @@
         return usuarioCreado.id_usuario;
     }
 
-    private async Task<int> GuardarInstructor(int usuarioId)
+    private async Task<int> GuardarEstudiante(DirectorioDeArchivos.Shared.Estudiante estudiante)
     {
-        var nuevoInstructor = new DirectorioDeArchivos.Shared.Instructor
-            {
-                id_usuario = usuarioId
-            };
-
-        var response = await Http.PostAsJsonAsync("http://localhost:5117/api/Instructor", nuevoInstructor);
+        var response = await Http.PostAsJsonAsync("http://localhost:5117/api/Estudiante", estudiante);
         response.EnsureSuccessStatusCode();
-        var instructorCreado = await response.Content.ReadFromJsonAsync<DirectorioDeArchivos.Shared.Instructor>();
-        return instructorCreado.id_instructor;
+        var estudianteCreado = await response.Content.ReadFromJsonAsync<DirectorioDeArchivos.Shared.Estudiante>();
+        return estudianteCreado.id_estudiante;
     }
 
-    private async Task RegistrarInstructor(int instructorId, int cursoId, int periodoId)
+    private async Task RegistrarMatricula(int id_estudiante, int id_curso, int id_periodo)
     {
-        var nuevoRegistroInstructor = new DirectorioDeArchivos.Shared.RegistroInstructor
+        var nuevaMatricula = new Matricula
             {
-                id_instructor = instructorId,
-                id_curso = cursoId,
-                id_periodo = periodoId,
-                fecha_registro = DateTime.Now
+                id_estudiante = id_estudiante,
+                id_curso = id_curso,
+                id_periodo = id_periodo,
+                fecha_inscripcion = DateTime.Now
             };
 
-        var response = await Http.PostAsJsonAsync("http://localhost:5117/api/RegistroInstructor", nuevoRegistroInstructor);
+        var response = await Http.PostAsJsonAsync("http://localhost:5117/api/Matricula", nuevaMatricula);
         response.EnsureSuccessStatusCode();
     }
 
     private void Regresar()
     {
-        NavigationManager.NavigateTo("/");
+        NavigationManager.NavigateTo("/estudiantes");
     }
 }

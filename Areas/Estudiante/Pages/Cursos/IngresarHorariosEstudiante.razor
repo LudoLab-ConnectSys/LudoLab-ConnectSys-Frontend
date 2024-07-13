@@ -1,0 +1,80 @@
+﻿@page "/ingresar-horarios/{cursoId:int}"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<h3>Ingresar Horarios Preferentes</h3>
+
+<EditForm Model="@horarios" OnValidSubmit="GuardarHorarios">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label>Día de la Semana:</label>
+        <select @bind="nuevoHorario.dia_semana" class="form-control">
+            <option value="">Seleccione un día</option>
+            <option value="Lunes">Lunes</option>
+            <option value="Martes">Martes</option>
+            <option value="Miércoles">Miércoles</option>
+            <option value="Jueves">Jueves</option>
+            <option value="Viernes">Viernes</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label>Hora de Inicio:</label>
+        <input type="time" value="@(new DateTime(nuevoHorario.hora_inicio.Ticks).ToString("HH:mm"))" @oninput="e => nuevoHorario.hora_inicio = TimeSpan.Parse(e.Value.ToString())" class="form-control" />
+    </div>
+
+    <div class="form-group">
+        <label>Hora de Fin:</label>
+        <input type="time" value="@(new DateTime(nuevoHorario.hora_fin.Ticks).ToString("HH:mm"))" @oninput="e => nuevoHorario.hora_fin = TimeSpan.Parse(e.Value.ToString())" class="form-control" />
+    </div>
+
+    <button type="button" class="btn btn-primary" @onclick="AgregarHorario">Agregar Horario</button>
+
+    <h4>Horarios Preferentes</h4>
+    <ul>
+        @foreach (var horario in horarios)
+        {
+            <li>@horario.dia_semana: @horario.hora_inicio - @horario.hora_fin <button @onclick="() => EliminarHorario(horario)" class="btn btn-danger btn-sm">Eliminar</button></li>
+        }
+    </ul>
+
+    <button type="submit" class="btn btn-success">Guardar Horarios</button>
+</EditForm>
+
+@code {
+    [Parameter] public int cursoId { get; set; }
+
+    private List<HorarioPreferenteEstudiante> horarios = new List<HorarioPreferenteEstudiante>();
+    private HorarioPreferenteEstudiante nuevoHorario = new HorarioPreferenteEstudiante();
+
+    private async Task GuardarHorarios()
+    {
+        var response = await Http.PostAsJsonAsync($"http://localhost:5117/api/Estudiante/HorariosPreferentes/{cursoId}", horarios);
+        if (response.IsSuccessStatusCode)
+        {
+            Navigation.NavigateTo("/cursos-disponibles");
+        }
+        else
+        {
+            // Manejo de errores
+        }
+    }
+
+    private void AgregarHorario()
+    {
+        horarios.Add(new HorarioPreferenteEstudiante
+            {
+                dia_semana = nuevoHorario.dia_semana,
+                hora_inicio = nuevoHorario.hora_inicio,
+                hora_fin = nuevoHorario.hora_fin
+            });
+        nuevoHorario = new HorarioPreferenteEstudiante();
+    }
+
+    private void EliminarHorario(HorarioPreferenteEstudiante horario)
+    {
+        horarios.Remove(horario);
+    }
+}

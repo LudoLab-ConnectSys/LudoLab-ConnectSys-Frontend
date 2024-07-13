@@ -1,0 +1,243 @@
+﻿@page "/grupo/{id_grupo:int}/detalles"
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<h3>Detalles del Grupo</h3>
+
+@if (grupo != null)
+{
+    <EditForm Model="@grupo" OnValidSubmit="GuardarCambios">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="form-group">
+            <label for="nombre_grupo">Nombre del Grupo:</label>
+            <InputText id="nombre_grupo" @bind-Value="grupo.nombre_grupo" class="form-control" />
+        </div>
+
+        <div class="form-group">
+            <label for="instructorSelect">Instructor:</label>
+            <input type="text" id="instructorInput" @bind="instructorSearchText" @oninput="BuscarInstructor" class="form-control" placeholder="Buscar instructor..." />
+            <select id="instructorSelect" @bind="grupo.id_instructor" class="form-control">
+                <option value="">Seleccione un instructor</option>
+                @if (instructoresFiltrados != null)
+                {
+                    @foreach (var instructor in instructoresFiltrados)
+                    {
+                        <option value="@instructor.id_instructor">@instructor.nombre_usuario @instructor.apellidos_usuario</option>
+                    }
+                }
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="estudianteInput">Estudiantes:</label>
+            <input type="text" id="estudianteInput" @bind="estudianteSearchText" @oninput="BuscarEstudiante" class="form-control" placeholder="Buscar estudiante..." />
+            <select id="estudianteSelect" @bind="selectedEstudianteId" class="form-control">
+                <option value="">Seleccione un estudiante</option>
+                @if (estudiantesFiltrados != null)
+                {
+                    @foreach (var estudiante in estudiantesFiltrados)
+                    {
+                        <option value="@estudiante.id_estudiante">@estudiante.nombre_usuario @estudiante.apellidos_usuario</option>
+                    }
+                }
+            </select>
+            <button type="button" class="btn btn-secondary mt-2" @onclick="AgregarEstudianteSeleccionado">Agregar Estudiante</button>
+        </div>
+
+        <div class="form-group">
+            <label>Estudiantes Seleccionados:</label>
+            <ul>
+                @foreach (var estudianteId in grupo.estudiantes)
+                {
+                    var estudiante = todosEstudiantes.FirstOrDefault(e => e.id_estudiante == estudianteId);
+                    if (estudiante != null)
+                    {
+                        <li>
+                            @estudiante.nombre_usuario @estudiante.apellidos_usuario
+                            <button type="button" class="btn btn-danger btn-sm" @onclick="() => RemoverEstudianteSeleccionado(estudianteId)">Eliminar</button>
+                        </li>
+                    }
+                }
+            </ul>
+        </div>
+
+        <div class="form-group">
+            <label>Horarios:</label>
+            @foreach (var horario in grupo.horarios)
+            {
+                <div class="form-inline mb-2">
+                    <select @bind="horario.dia_semana" class="form-control mr-2">
+                        <option value="Lunes">Lunes</option>
+                        <option value="Martes">Martes</option>
+                        <option value="Miércoles">Miércoles</option>
+                        <option value="Jueves">Jueves</option>
+                        <option value="Viernes">Viernes</option>
+                    </select>
+                    <input type="time" value="@(new DateTime(horario.hora_inicio.Ticks).ToString("HH:mm"))" @oninput="e => horario.hora_inicio = TimeSpan.Parse(e.Value.ToString())" class="form-control mr-2" />
+                    <input type="time" value="@(new DateTime(horario.hora_fin.Ticks).ToString("HH:mm"))" @oninput="e => horario.hora_fin = TimeSpan.Parse(e.Value.ToString())" class="form-control mr-2" />
+                    <button type="button" class="btn btn-danger" @onclick="() => EliminarHorario(horario)">Eliminar</button>
+                </div>
+            }
+            <button type="button" class="btn btn-secondary" @onclick="AgregarHorario">Agregar Horario</button>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+    </EditForm>
+}
+else
+{
+    <p><em>Cargando...</em></p>
+}
+
+@code {
+    [Parameter]
+    public int id_grupo { get; set; }
+
+    private ActualizarGrupo grupo = new ActualizarGrupo();
+    private List<InstructorConDetalles> instructores = new List<InstructorConDetalles>();
+    private List<InstructorConDetalles> instructoresFiltrados = new List<InstructorConDetalles>();
+    private List<EstudianteConDetalles> todosEstudiantes = new List<EstudianteConDetalles>();
+    private List<EstudianteConDetalles> estudiantesSinGrupo = new List<EstudianteConDetalles>();
+    private List<EstudianteConDetalles> estudiantesFiltrados = new List<EstudianteConDetalles>();
+    private int selectedEstudianteId;
+    private string instructorSearchText = string.Empty;
+    private string estudianteSearchText = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarGrupoDetalles();
+        await CargarInstructores();
+        await CargarEstudiantesAsignados();
+    }
+
+    private async Task CargarGrupoDetalles()
+    {
+        try
+        {
+            var grupoDetalles = await Http.GetFromJsonAsync<GrupoConDetalles>($"http://localhost:5117/api/Grupo/{id_grupo}/detalles");
+            var periodo = await Http.GetFromJsonAsync<PeriodoConDetalles>($"http://localhost:5117/api/Periodo/detalles/{grupoDetalles.id_periodo}");
+            await CargarEstudiantes(periodo.id_curso, grupoDetalles.id_periodo);
+
+            grupo = new ActualizarGrupo
+                {
+                    id_grupo = grupoDetalles.id_grupo,
+                    id_periodo = grupoDetalles.id_periodo,
+                    id_instructor = grupoDetalles.id_instructor,
+                    nombre_grupo = grupoDetalles.nombre_grupo,
+                    estudiantes = grupoDetalles.estudiantes
+                        .Select(e => todosEstudiantes.FirstOrDefault(s => $"{s.nombre_usuario} {s.apellidos_usuario}" == e)?.id_estudiante ?? 0)
+                        .Where(id => id != 0)
+                        .ToList(),
+                    horarios = grupoDetalles.horarios
+                };
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching data: {ex.Message}");
+        }
+    }
+
+    private async Task CargarInstructores()
+    {
+        try
+        {
+            instructores = await Http.GetFromJsonAsync<List<InstructorConDetalles>>("http://localhost:5117/api/Instructor/todos");
+            instructoresFiltrados = instructores;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching instructors: {ex.Message}");
+        }
+    }
+
+    private async Task CargarEstudiantes(int id_curso, int id_periodo)
+    {
+        try
+        {
+            todosEstudiantes = await Http.GetFromJsonAsync<List<EstudianteConDetalles>>($"http://localhost:5117/api/Estudiante/sin-grupo/{id_curso}/{id_periodo}");
+            estudiantesSinGrupo = todosEstudiantes; // Asignar directamente a estudiantesSinGrupo ya que no usamos id_grupo
+            estudiantesFiltrados = estudiantesSinGrupo;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching students: {ex.Message}");
+        }
+    }
+
+    private async Task CargarEstudiantesAsignados()
+    {
+        try
+        {
+            var estudiantesAsignados = await Http.GetFromJsonAsync<List<EstudianteConDetalles>>($"http://localhost:5117/api/Grupo/{id_grupo}/estudiantes");
+            todosEstudiantes.AddRange(estudiantesAsignados);
+            grupo.estudiantes.AddRange(estudiantesAsignados.Select(e => e.id_estudiante));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching assigned students: {ex.Message}");
+        }
+    }
+
+    private void BuscarInstructor(ChangeEventArgs e)
+    {
+        instructorSearchText = e.Value.ToString();
+        instructoresFiltrados = instructores
+            .Where(i => $"{i.nombre_usuario} {i.apellidos_usuario}".Contains(instructorSearchText, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
+
+    private void BuscarEstudiante(ChangeEventArgs e)
+    {
+        estudianteSearchText = e.Value.ToString();
+        estudiantesFiltrados = estudiantesSinGrupo
+            .Where(e => $"{e.nombre_usuario} {e.apellidos_usuario}".Contains(estudianteSearchText, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
+
+    private void AgregarEstudianteSeleccionado()
+    {
+        if (selectedEstudianteId != 0 && !grupo.estudiantes.Contains(selectedEstudianteId))
+        {
+            grupo.estudiantes.Add(selectedEstudianteId);
+        }
+    }
+
+    private void RemoverEstudianteSeleccionado(int estudianteId)
+    {
+        grupo.estudiantes.Remove(estudianteId);
+    }
+
+    private void AgregarHorario()
+    {
+        grupo.horarios.Add(new HorarioGrupo());
+    }
+
+    private void EliminarHorario(HorarioGrupo horario)
+    {
+        grupo.horarios.Remove(horario);
+    }
+
+    private async Task GuardarCambios()
+    {
+        try
+        {
+            var response = await Http.PutAsJsonAsync($"http://localhost:5117/api/Grupo/{id_grupo}", grupo);
+            if (response.IsSuccessStatusCode)
+            {
+                NavigationManager.NavigateTo($"/grupo/{id_grupo}");
+            }
+            else
+            {
+                Console.WriteLine($"Error saving data: {response.ReasonPhrase}");
+                var errorContent = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Error details: {errorContent}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving data: {ex.Message}");
+        }
+    }
+}

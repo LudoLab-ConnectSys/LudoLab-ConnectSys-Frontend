@@ -1,0 +1,94 @@
+﻿@page "/ingresar-horarios-instructor/{cursoId:int}/{periodoId:int}"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<h3>Ingresar Horarios Preferentes</h3>
+
+<EditForm Model="@horarios" OnValidSubmit="RegistrarHorarios">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label for="diaSemana">Día de la Semana:</label>
+        <InputText id="diaSemana" @bind-Value="nuevoHorario.dia_semana" class="form-control" />
+    </div>
+    <div class="form-group">
+        <label for="horaInicio">Hora de Inicio:</label>
+        <input type="time" value="@(new DateTime(nuevoHorario.hora_inicio.Ticks).ToString("HH:mm"))" @oninput="e => nuevoHorario.hora_inicio = TimeSpan.Parse(e.Value.ToString())" class="form-control mr-2" />
+    </div>
+    <div class="form-group">
+        <label for="horaFin">Hora de Fin:</label>
+        <input type="time" value="@(new DateTime(nuevoHorario.hora_fin.Ticks).ToString("HH:mm"))" @oninput="e => nuevoHorario.hora_fin = TimeSpan.Parse(e.Value.ToString())" class="form-control mr-2" />
+    </div>
+    <button type="button" class="btn btn-primary" @onclick="AgregarHorario">Agregar Horario</button>
+
+    <div>
+        <h4>Horarios Preferentes</h4>
+        <ul>
+            @foreach (var horario in horarios)
+            {
+                <li>@horario.dia_semana: @horario.hora_inicio - @horario.hora_fin <button @onclick="() => EliminarHorario(horario)" class="btn btn-danger btn-sm">Eliminar</button></li>
+            }
+        </ul>
+    </div>
+
+    <button type="submit" class="btn btn-success">Registrar Horarios</button>
+</EditForm>
+
+@code {
+    [Parameter] public int cursoId { get; set; }
+    [Parameter] public int periodoId { get; set; }
+
+    private List<HorarioPreferenteInstructor> horarios = new List<HorarioPreferenteInstructor>();
+    private HorarioPreferenteInstructor nuevoHorario = new HorarioPreferenteInstructor();
+    private int instructorId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            var userId = user.FindFirst(c => c.Type == "sub")?.Value;
+            instructorId = int.Parse(userId);
+        }
+        else
+        {
+            Navigation.NavigateTo("/login");
+        }
+    }
+
+    private async Task RegistrarHorarios()
+    {
+        var registroInstructor = new RegistrarHorarioInstructor
+            {
+                id_instructor = instructorId,
+                id_curso = cursoId,
+                id_periodo = periodoId,
+                horarios = horarios
+            };
+
+        var response = await Http.PostAsJsonAsync("http://localhost:5117/api/Instructor/RegistrarHorario", registroInstructor);
+
+        if (response.IsSuccessStatusCode)
+        {
+            Navigation.NavigateTo("/cursos-disponibles-instructor");
+        }
+        else
+        {
+            Console.WriteLine("Error al registrar horarios");
+        }
+    }
+
+    private void AgregarHorario()
+    {
+        horarios.Add(nuevoHorario);
+        nuevoHorario = new HorarioPreferenteInstructor();
+    }
+
+    private void EliminarHorario(HorarioPreferenteInstructor horario)
+    {
+        horarios.Remove(horario);
+    }
+}

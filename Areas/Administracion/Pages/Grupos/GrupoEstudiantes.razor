@@ -1,0 +1,83 @@
+﻿@page "/grupo/{id_grupo:int}/estudiantes"
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<h3>Estudiantes del Grupo</h3>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Apellido</th>
+            <th>Cédula</th>
+            <th>Edad</th>
+            <th>Correo</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var estudiante in estudiantes)
+        {
+            <tr>
+                <td>@estudiante.id_estudiante</td>
+                <td>@estudiante.nombre_usuario</td>
+                <td>@estudiante.apellidos_usuario</td>
+                <td>@estudiante.cedula_usuario</td>
+                <td>@estudiante.edad_usuario</td>
+                <td>@estudiante.correo_usuario</td>
+                <td>
+                    <button class="btn btn-info" @onclick="() => VerDetalles(estudiante.id_estudiante)">Ver</button>
+                    <button class="btn btn-danger" @onclick="() => EliminarEstudiante(estudiante.id_estudiante)">Eliminar</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@if (!estudiantes.Any())
+{
+    <p>No hay estudiantes en este grupo.</p>
+}
+
+@code {
+    [Parameter]
+    public int id_grupo { get; set; }
+
+    private List<EstudianteConDetalles> estudiantes = new List<EstudianteConDetalles>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarEstudiantesDelGrupo();
+    }
+
+    private async Task CargarEstudiantesDelGrupo()
+    {
+        try
+        {
+            estudiantes = await Http.GetFromJsonAsync<List<EstudianteConDetalles>>($"http://localhost:5117/api/Grupo/{id_grupo}/estudiantes");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching students: {ex.Message}");
+        }
+    }
+
+    private void VerDetalles(int id)
+    {
+        NavigationManager.NavigateTo($"/detalle-estudiante/{id}");
+    }
+
+    private async Task EliminarEstudiante(int id)
+    {
+        var response = await Http.DeleteAsync($"http://localhost:5117/api/Estudiante/{id}");
+        if (response.IsSuccessStatusCode)
+        {
+            estudiantes.RemoveAll(e => e.id_estudiante == id);
+        }
+        else
+        {
+            Console.WriteLine($"Error deleting student: {response.ReasonPhrase}");
+        }
+    }
+}

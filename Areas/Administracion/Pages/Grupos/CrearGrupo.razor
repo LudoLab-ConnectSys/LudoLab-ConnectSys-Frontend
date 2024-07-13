@@ -1,205 +1,252 @@
-﻿@page "/crear-grupo/{EdicionId:int}"
-@inject NavigationManager NavigationManager
+﻿@page "/crear-grupos"
+@inject HttpClient Http
+@inject NavigationManager Navigation
 
-<h3>Crear Nuevo Grupo</h3>
+<h3>Crear Grupos</h3>
 
-<EditForm Model="@nuevoGrupo" OnValidSubmit="@CrearNuevoGrupo">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
+<div class="form-container section">
+    <form @onsubmit="CrearGrupos">
+        <div class="form-group">
+            <label for="cursoSelect">Curso:</label>
+            <select id="cursoSelect" @bind="parametros.CursoId" @bind:after="CargarPeriodos" class="form-control">
+                <option value="">Seleccione un curso</option>
+                @if (cursos != null)
+                {
+                    @foreach (var curso in cursos)
+                    {
+                        <option value="@curso.id_curso">@curso.nombre_curso</option>
+                    }
+                }
+            </select>
+        </div>
 
-    <div class="form-group">
-        <label for="profesor">Profesor:</label>
-        <select id="profesor" class="form-control" @bind="nuevoGrupo.ProfesorId">
-            @foreach (var profesor in profesores)
+        <div class="form-group">
+            <label for="periodoSelect">Periodo:</label>
+            <select id="periodoSelect" @bind="parametros.PeriodoId" @bind:after="CargarEstudiantesEInstructores" class="form-control">
+                <option value="">Seleccione un periodo</option>
+                @if (periodos != null)
+                {
+                    @foreach (var periodo in periodos)
+                    {
+                        <option value="@periodo.id_periodo">@periodo.nombre_periodo</option>
+                    }
+                }
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="numEstudiantes">Número de Estudiantes por Grupo:</label>
+            <input type="number" id="numEstudiantes" @bind="parametros.NumeroEstudiantesPorGrupo" class="form-control" />
+        </div>
+
+        <div class="form-group">
+            <label for="maxGruposInstructor">Número Máximo de Grupos por Instructor:</label>
+            <input type="number" id="maxGruposInstructor" @bind="parametros.NumeroMaximoGruposPorInstructor" class="form-control" />
+        </div>
+
+        <div class="form-group">
+            <label for="horasClase">Horas por Clase:</label>
+            <input type="number" id="horasClase" @bind="parametros.HorasPorClase" class="form-control" />
+        </div>
+
+        <button type="submit" class="btn btn-primary">Crear Grupos</button>
+    </form>
+</div>
+
+<div class="section">
+    <h4>Estudiantes sin grupo</h4>
+    @if (estudiantesSinGrupo != null)
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Horarios Preferentes</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var estudiante in estudiantesSinGrupo)
+                {
+                    <tr>
+                        <td>@estudiante.id_estudiante</td>
+                        <td>@estudiante.nombre_usuario</td>
+                        <td>
+                            @foreach (var horario in estudiante.horariosPreferentes)
+                            {
+                                <div>@horario.dia_semana: @horario.hora_inicio - @horario.hora_fin</div>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <p>Cargando estudiantes...</p>
+    }
+</div>
+
+<div class="section">
+    <h4>Instructores sin grupo</h4>
+    @if (instructoresSinGrupo != null)
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Horarios Preferentes</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var instructor in instructoresSinGrupo)
+                {
+                    <tr>
+                        <td>@instructor.id_instructor</td>
+                        <td>@instructor.nombre_usuario</td>
+                        <td>
+                            @foreach (var horario in instructor.horariosPreferentes)
+                            {
+                                <div>@horario.dia_semana: @horario.hora_inicio - @horario.hora_fin</div>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <p>Cargando instructores...</p>
+    }
+</div>
+
+@if (grupos != null)
+{
+    <div class="section">
+        <h4>Previsualización de Grupos Creados</h4>
+        <div class="grupos-list">
+            @foreach (var grupo in grupos)
             {
-                <option value="@profesor.Id">@profesor.Nombre</option>
-            }
-        </select>
-    </div>
-
-    <div class="form-group">
-        <label for="searchTerm">Buscar Estudiantes:</label>
-        <input type="text" id="searchTerm" @bind="searchTerm" @oninput="FiltrarEstudiantes" placeholder="Buscar..." class="form-control" />
-    </div>
-
-    <div class="form-group">
-        <label for="estudiantes">Estudiantes:</label>
-        <div class="estudiantes-container">
-            @foreach (var estudiante in estudiantesFiltrados)
-            {
-                <div class="estudiante-card @(estudianteSeleccionado[estudiantes.IndexOf(estudiante)] ? "selected" : "")" @onclick="() => SeleccionarEstudiante(estudiantes.IndexOf(estudiante))">
-                    <p>@estudiante.Nombre</p>
+                <div class="grupo-item">
+                    <strong>Grupo:</strong> @grupo.nombre_grupo <br />
+                    <strong>Instructor:</strong> @grupo.nombre_instructor ?? "Sin nombre" <br />
+                    <strong>Estudiantes:</strong>
+                    <ul>
+                        @if (grupo.estudiantes != null)
+                        {
+                            @foreach (var estudiante in grupo.estudiantes)
+                            {
+                                <li>@estudiante</li>
+                            }
+                        }
+                    </ul>
+                    <strong>Horario:</strong>
+                    <ul>
+                        @if (grupo.horarios != null)
+                        {
+                            @foreach (var horario in grupo.horarios)
+                            {
+                                <li>@horario.dia_semana: @horario.hora_inicio - @horario.hora_fin</li>
+                            }
+                        }
+                    </ul>
                 </div>
             }
         </div>
+        <button class="btn btn-success" @onclick="GuardarGrupos">Guardar Grupos</button>
     </div>
+}
 
-    <div class="form-group">
-        <label for="horario">Horario:</label>
-        <select id="horario" class="form-control" @bind="nuevoGrupo.HorarioId">
-            @foreach (var horario in horarios)
-            {
-                <option value="@horario.Id">@horario.Dia - @horario.HoraInicio - @horario.HoraFin</option>
-            }
-        </select>
-    </div>
-
-    <button type="submit" class="btn btn-success">Crear Grupo</button>
-    <button type="button" class="btn btn-secondary" @onclick="Volver">Cancelar</button>
-</EditForm>
-
-<style>
-    .estudiantes-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        max-height: 400px; /* Limita la altura del contenedor */
-        overflow-y: auto; /* Hace que el contenedor sea desplazable verticalmente */
+<div class="section">
+    <h4>Instructores y Estudiantes sin asignar</h4>
+    @if (estudiantesSinGrupo != null && instructoresSinGrupo != null)
+    {
+        <div>
+            <h5>Estudiantes sin asignar:</h5>
+            <ul>
+                @foreach (var estudiante in estudiantesSinGrupo)
+                {
+                    <li>@estudiante.nombre_usuario</li>
+                }
+            </ul>
+        </div>
+        <div>
+            <h5>Instructores sin asignar:</h5>
+            <ul>
+                @foreach (var instructor in instructoresSinGrupo)
+                {
+                    <li>@instructor.nombre_usuario</li>
+                }
+            </ul>
+        </div>
     }
+</div>
 
-    .estudiante-card {
-        padding: 10px;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: background-color 0.3s;
-        width: calc(33.33% - 20px); /* 3 tarjetas por fila con espacio entre ellas */
-        height: 100px; /* Altura fija */
-        box-sizing: border-box;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-    }
-
-        .estudiante-card.selected {
-            background-color: #d1e7dd;
-            border-color: #0f5132;
-        }
-</style>
+<button class="btn btn-secondary" @onclick="CrearGruposManualmente">Crear Grupos Manualmente</button>
 
 @code {
-    [Parameter]
-    public int EdicionId { get; set; }
+    private CrearGruposParametros parametros = new CrearGruposParametros();
+    private List<GrupoConDetalles> grupos;
+    private List<Curso> cursos;
+    private List<PeriodoConNombre> periodos;
+    private List<EstudianteConDetalles> estudiantesSinGrupo;
+    private List<InstructorConDetalles> instructoresSinGrupo;
 
-    private GrupoModel nuevoGrupo = new GrupoModel();
-    private List<Profesor> profesores = new List<Profesor>();
-    private List<Estudiante> estudiantes = new List<Estudiante>();
-    private List<Estudiante> estudiantesFiltrados = new List<Estudiante>();
-    private List<Horario> horarios = new List<Horario>();
-    private bool[] estudianteSeleccionado;
-    private string searchTerm;
-
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        // Cargar datos iniciales desde la base de datos o servicio
-        profesores = ObtenerProfesores();
-        estudiantes = ObtenerEstudiantes();
-        estudiantesFiltrados = estudiantes;
-        horarios = ObtenerHorariosDisponibles();
-        estudianteSeleccionado = new bool[estudiantes.Count];
+        cursos = await Http.GetFromJsonAsync<List<Curso>>("http://localhost:5117/api/Curso");
     }
 
-    private void CrearNuevoGrupo()
+    private async Task CargarPeriodos()
     {
-        // Asignar los IDs de los estudiantes seleccionados al modelo
-        nuevoGrupo.EstudiantesIds = estudiantes
-            .Where((estudiante, index) => estudianteSeleccionado[index])
-            .Select(estudiante => estudiante.Id)
-            .ToList();
-
-        // Aquí deberías guardar el nuevo grupo en la base de datos o servicio
-        GuardarGrupo(nuevoGrupo);
-        NavigationManager.NavigateTo($"/grupos-de-edicion/{EdicionId}");
-    }
-
-    private void Volver()
-    {
-        NavigationManager.NavigateTo($"/grupos-de-edicion/{EdicionId}");
-    }
-
-    private void FiltrarEstudiantes(ChangeEventArgs e)
-    {
-        searchTerm = e.Value.ToString();
-        if (string.IsNullOrEmpty(searchTerm))
+        if (parametros.CursoId != 0)
         {
-            estudiantesFiltrados = estudiantes;
+            periodos = await Http.GetFromJsonAsync<List<PeriodoConNombre>>($"http://localhost:5117/api/Periodo/por-curso/{parametros.CursoId}");
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarEstudiantesEInstructores()
+    {
+        if (parametros.PeriodoId != 0)
+        {
+            estudiantesSinGrupo = await Http.GetFromJsonAsync<List<EstudianteConDetalles>>($"http://localhost:5117/api/Estudiante/sin-grupo/{parametros.CursoId}/{parametros.PeriodoId}");
+            instructoresSinGrupo = await Http.GetFromJsonAsync<List<InstructorConDetalles>>($"http://localhost:5117/api/Instructor/sin-grupo/{parametros.CursoId}/{parametros.PeriodoId}");
+            StateHasChanged();
+        }
+    }
+
+    private async Task CrearGrupos()
+    {
+        var response = await Http.PostAsJsonAsync("http://localhost:5117/api/Grupo/CrearGrupos", parametros);
+        if (response.IsSuccessStatusCode)
+        {
+            grupos = await response.Content.ReadFromJsonAsync<List<GrupoConDetalles>>();
         }
         else
         {
-            estudiantesFiltrados = estudiantes
-                .Where(e => e.Nombre.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
-                .ToList();
+            // Manejo de errores
         }
     }
 
-    private void SeleccionarEstudiante(int index)
+    private async Task GuardarGrupos()
     {
-        estudianteSeleccionado[index] = !estudianteSeleccionado[index];
-    }
-
-    private List<Profesor> ObtenerProfesores()
-    {
-        // Simulación de datos de profesores
-        return new List<Profesor>
+        var response = await Http.PostAsJsonAsync("http://localhost:5117/api/Grupo/GuardarGrupos", grupos);
+        if (response.IsSuccessStatusCode)
         {
-            new Profesor { Id = 1, Nombre = "Profesor A" },
-            new Profesor { Id = 2, Nombre = "Profesor B" }
-        };
-    }
-
-    private List<Estudiante> ObtenerEstudiantes()
-    {
-        // Simulación de datos de estudiantes
-        return new List<Estudiante>
+            // Manejo después de guardar exitosamente
+        }
+        else
         {
-            new Estudiante { Id = 1, Nombre = "Estudiante 1" },
-            new Estudiante { Id = 2, Nombre = "Estudiante 2" },
-            new Estudiante { Id = 3, Nombre = "Estudiante 3" },
-            new Estudiante { Id = 4, Nombre = "Estudiante 4" }
-        };
+            // Manejo de errores
+        }
     }
 
-    private List<Horario> ObtenerHorariosDisponibles()
+    private void CrearGruposManualmente()
     {
-        // Simulación de datos de horarios
-        return new List<Horario>
-        {
-            new Horario { Id = 1, Dia = DayOfWeek.Monday, HoraInicio = new TimeSpan(8, 0, 0), HoraFin = new TimeSpan(10, 0, 0) },
-            new Horario { Id = 2, Dia = DayOfWeek.Wednesday, HoraInicio = new TimeSpan(10, 0, 0), HoraFin = new TimeSpan(12, 0, 0) }
-        };
-    }
-
-    private void GuardarGrupo(GrupoModel grupo)
-    {
-        // Lógica para guardar el grupo
-        Console.WriteLine($"Grupo creado: {grupo.ProfesorId}, {string.Join(", ", grupo.EstudiantesIds)}, {grupo.HorarioId}");
-    }
-
-    public class GrupoModel
-    {
-        public int ProfesorId { get; set; }
-        public List<int> EstudiantesIds { get; set; } = new List<int>();
-        public int HorarioId { get; set; }
-    }
-
-    public class Profesor
-    {
-        public int Id { get; set; }
-        public string Nombre { get; set; }
-    }
-
-    public class Estudiante
-    {
-        public int Id { get; set; }
-        public string Nombre { get; set; }
-    }
-
-    public class Horario
-    {
-        public int Id { get; set; }
-        public DayOfWeek Dia { get; set; }
-        public TimeSpan HoraInicio { get; set; }
-        public TimeSpan HoraFin { get; set; }
+        Navigation.NavigateTo("/crear-grupos-manualmente");
     }
 }

@@ -1,0 +1,53 @@
+﻿@page "/cursos-inscritos"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<h3>Cursos Inscritos</h3>
+
+@if (cursosInscritos == null)
+{
+    <p>Cargando cursos...</p>
+}
+else if (!cursosInscritos.Any())
+{
+    <p>No estás inscrito en ningún curso.</p>
+}
+else
+{
+    <div class="row">
+        @foreach (var curso in cursosInscritos)
+        {
+            <div class="col-md-4">
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">@curso.nombre_curso</h5>
+                        <p class="card-text"><strong>Periodo:</strong> @curso.nombre_periodo</p>
+                        <button class="btn btn-primary" @onclick="() => VerDetalles(curso.id_curso, curso.id_periodo)">Ver Detalles</button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<CursoConPeriodoActivo> cursosInscritos;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            cursosInscritos = await Http.GetFromJsonAsync<List<CursoConPeriodoActivo>>("http://localhost:5117/api/Estudiante/CursosInscritos");
+        }
+        catch (Exception ex)
+        {
+            // Manejo de errores
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+    }
+
+    private void VerDetalles(int cursoId, int periodoId)
+    {
+        Navigation.NavigateTo($"/curso-detalle/{cursoId}/{periodoId}");
+    }
+}

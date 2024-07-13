@@ -1,0 +1,26 @@
+﻿.section {
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    background-color: #f9f9f9;
+}
+
+.form-container {
+    background-color: #e9ecef;
+    border-radius: 10px;
+    padding: 20px;
+    border: 1px solid #ced4da;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.grupos-list .grupo-item {
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #fff;
+}

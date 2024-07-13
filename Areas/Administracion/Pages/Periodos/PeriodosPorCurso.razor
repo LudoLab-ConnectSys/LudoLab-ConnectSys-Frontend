@@ -29,6 +29,7 @@
                 <td>
                     <button class="btn btn-primary" @onclick="() => EditarPeriodo(periodo.id_periodo)">Editar</button>
                     <button class="btn btn-danger" @onclick="() => EliminarPeriodo(periodo.id_periodo)">Eliminar</button>
+                    <button class="btn btn-info" @onclick="() => VerGrupos(periodo.id_periodo)">Ver Grupos</button>
                 </td>
             </tr>
         }
@@ -70,5 +71,10 @@
         {
             periodos.RemoveAll(p => p.id_periodo == id_periodo);
         }
+    }
+
+    private void VerGrupos(int id_periodo)
+    {
+        NavigationManager.NavigateTo($"/periodos/{id_periodo}/grupos");
     }
 }

@@ -1,7 +1,8 @@
 ﻿@page "/detalle-instructor/{InstructorId:int}"
+@inject HttpClient Http
 @inject NavigationManager NavigationManager
 
-<h3>Perfil del Instructor</h3>
+<h3>Detalles del Instructor</h3>
 
 @if (instructor == null)
 {
@@ -9,106 +10,100 @@
 }
 else
 {
-    <div class="container">
-        <div class="row">
-            <div class="col-md-8">
-                <div class="form-group">
-                    <label>Apellido:</label>
-                    <p>@instructor.Apellido</p>
-                </div>
-                <div class="form-group">
-                    <label>Nombre:</label>
-                    <p>@instructor.Nombre</p>
-                </div>
-                <div class="form-group">
-                    <label>Fecha de Nacimiento:</label>
-                    <p>@instructor.FechaNacimiento.ToShortDateString()</p>
-                </div>
-                <div class="form-group">
-                    <label>Especialidad:</label>
-                    <p>@instructor.Especialidad</p>
-                </div>
-                <div class="form-group">
-                    <label>Correo Electrónico:</label>
-                    <p>@instructor.Correo</p>
-                </div>
-                <div class="form-group">
-                    <label>Número de Teléfono:</label>
-                    <p>@instructor.Telefono</p>
-                </div>
-                <div class="form-group">
-                    <label>Ubicación:</label>
-                    <p>@instructor.Ubicacion</p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="form-group text-center">
-                    <label>Imagen/Foto:</label>
-                    @if (!string.IsNullOrEmpty(instructor.FotoUrl))
-                    {
-                        <img src="@instructor.FotoUrl" alt="Foto del instructor" class="img-fluid rounded" style="max-width: 150px; height: auto;" />
-                    }
-                    else
-                    {
-                        <p>No hay foto disponible</p>
-                    }
-                </div>
-            </div>
-        </div>
-    </div>
-}
+    <EditForm Model="instructorUpdateModel" OnValidSubmit="GuardarCambios">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
 
-<button class="btn btn-primary" @onclick="() => EditarInstructor(instructor.Id)">Editar</button>
-<button class="btn btn-secondary" @onclick="Regresar">Regresar</button>
+        <div>
+            <h4>Información del Instructor</h4>
+            <div class="form-group">
+                <label>Nombre:</label>
+                <InputText @bind-Value="instructorUpdateModel.nombre_usuario" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label>Apellido:</label>
+                <InputText @bind-Value="instructorUpdateModel.apellidos_usuario" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label>Cédula:</label>
+                <InputText @bind-Value="instructorUpdateModel.cedula_usuario" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label>Correo:</label>
+                <InputText @bind-Value="instructorUpdateModel.correo_usuario" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label>Celular:</label>
+                <InputText @bind-Value="instructorUpdateModel.celular_usuario" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label>Teléfono:</label>
+                <InputText @bind-Value="instructorUpdateModel.telefono_usuario" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label>Edad:</label>
+                <InputNumber @bind-Value="instructorUpdateModel.edad_usuario" class="form-control" />
+            </div>
+
+            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+            <button type="button" class="btn btn-danger" @onclick="EliminarInstructor">Eliminar</button>
+            <button type="button" class="btn btn-secondary" @onclick="VerCursosInscritos">Ver Cursos Inscritos</button>
+        </div>
+    </EditForm>
+}
 
 @code {
     [Parameter]
     public int InstructorId { get; set; }
 
-    private Instructor instructor;
+    private InstructorConDetallesCompleto instructor;
+    private InstructorUpdateModel instructorUpdateModel;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        instructor = ObtenerInstructorPorId(InstructorId);
-    }
+        instructor = await Http.GetFromJsonAsync<InstructorConDetallesCompleto>($"http://localhost:5117/api/Instructor/DetallesById/{InstructorId}");
 
-    private void EditarInstructor(int id)
-    {
-        NavigationManager.NavigateTo($"/editar-instructor/{id}");
-    }
-
-    private void Regresar()
-    {
-        NavigationManager.NavigateTo("/instructores");
-    }
-
-    private Instructor ObtenerInstructorPorId(int id)
-    {
-        // Simulación de obtención de instructor por ID
-        return new Instructor
+        instructorUpdateModel = new InstructorUpdateModel
             {
-                Id = 1,
-                Apellido = "Sanchez",
-                Nombre = "Pedro",
-                FechaNacimiento = new DateTime(1980, 8, 15),
-                Especialidad = "Blazor",
-                Correo = "pedro.sanchez@example.com",
-                Telefono = "987654321",
-                Ubicacion = "Lima Sede Central > Aula 101",
-                FotoUrl = "https://example.com/foto.jpg"
+                id_instructor = instructor.id_instructor,
+                nombre_usuario = instructor.nombre_usuario,
+                apellidos_usuario = instructor.apellidos_usuario,
+                cedula_usuario = instructor.cedula_usuario,
+                correo_usuario = instructor.correo_usuario,
+                celular_usuario = instructor.celular_usuario,
+                telefono_usuario = instructor.telefono_usuario,
+                edad_usuario = instructor.edad_usuario
             };
     }
 
-    public class Instructor
+    private async Task GuardarCambios()
     {
-        public int Id { get; set; }
-        public string Apellido { get; set; }
-        public string Nombre { get; set; }
-        public DateTime FechaNacimiento { get; set; }
-        public string Especialidad { get; set; }
-        public string Correo { get; set; }
-        public string Telefono { get; set; }
-        public string Ubicacion { get; set; }
-        public string FotoUrl { get; set; }
+        var response = await Http.PutAsJsonAsync($"http://localhost:5117/api/Instructor/{InstructorId}", instructorUpdateModel);
+        if (response.IsSuccessStatusCode)
+        {
+            NavigationManager.NavigateTo("/instructores");
+        }
+        else
+        {
+            // Manejar el error
+        }
+    }
+
+    private async Task EliminarInstructor()
+    {
+        var response = await Http.DeleteAsync($"http://localhost:5117/api/Instructor/{InstructorId}");
+        if (response.IsSuccessStatusCode)
+        {
+            NavigationManager.NavigateTo("/instructores");
+        }
+        else
+        {
+            // Manejar el error
+        }
+    }
+
+    private void VerCursosInscritos()
+    {
+        NavigationManager.NavigateTo($"/cursos-inscritos-instructor/{InstructorId}");
     }
 }

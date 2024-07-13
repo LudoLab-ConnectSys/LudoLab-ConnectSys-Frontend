@@ -1,0 +1,206 @@
+﻿@page "/crear-grupos-manualmente"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<h3>Crear Grupos Manualmente</h3>
+
+<div class="form-container section">
+    <form @onsubmit="CrearGrupoManual">
+        <div class="form-group">
+            <label for="cursoSelect">Curso:</label>
+            <select id="cursoSelect" @bind="parametros.CursoId" @bind:after="CargarPeriodos" class="form-control">
+                <option value="">Seleccione un curso</option>
+                @if (cursos != null)
+                {
+                    @foreach (var curso in cursos)
+                    {
+                        <option value="@curso.id_curso">@curso.nombre_curso</option>
+                    }
+                }
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="periodoSelect">Periodo:</label>
+            <select id="periodoSelect" @bind="parametros.PeriodoId" @bind:after="CargarEstudiantesEInstructores" class="form-control">
+                <option value="">Seleccione un periodo</option>
+                @if (periodos != null)
+                {
+                    @foreach (var periodo in periodos)
+                    {
+                        <option value="@periodo.id_periodo">@periodo.nombre_periodo</option>
+                    }
+                }
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="instructorInput">Instructor:</label>
+            <input type="text" id="instructorInput" @bind="instructorSearchText" @oninput="BuscarInstructor" class="form-control" placeholder="Buscar instructor..." />
+            <select id="instructorSelect" @bind="parametros.InstructorId" class="form-control">
+                <option value="">Seleccione un instructor</option>
+                @if (instructoresFiltrados != null)
+                {
+                    @foreach (var instructor in instructoresFiltrados)
+                    {
+                        <option value="@instructor.id_instructor">@instructor.nombre_usuario</option>
+                    }
+                }
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="estudianteInput">Estudiantes:</label>
+            <input type="text" id="estudianteInput" @bind="estudianteSearchText" @oninput="BuscarEstudiante" class="form-control" placeholder="Buscar estudiante..." />
+            <select id="estudianteSelect" @bind="selectedEstudianteId" class="form-control">
+                <option value="">Seleccione un estudiante</option>
+                @if (estudiantesFiltrados != null)
+                {
+                    @foreach (var estudiante in estudiantesFiltrados)
+                    {
+                        <option value="@estudiante.id_estudiante">@estudiante.nombre_usuario</option>
+                    }
+                }
+            </select>
+            <button type="button" class="btn btn-secondary" @onclick="AgregarEstudianteSeleccionado">Agregar Estudiante</button>
+        </div>
+
+        <div class="form-group">
+            <label>Estudiantes Seleccionados:</label>
+            <div class="checkbox-group">
+                @foreach (var estudianteId in parametros.EstudiantesSeleccionados)
+                {
+                    var estudiante = estudiantesSinGrupo.FirstOrDefault(e => e.id_estudiante == estudianteId);
+                    if (estudiante != null)
+                    {
+                        <div class="form-check">
+                            <input type="checkbox" checked class="form-check-input" disabled />
+                            <label class="form-check-label">@estudiante.nombre_usuario</label>
+                            <button type="button" class="btn btn-danger" @onclick="() => RemoverEstudianteSeleccionado(estudianteId)">Eliminar</button>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="horarios">Horarios:</label>
+            <div id="horarios">
+                @foreach (var horario in parametros.Horarios)
+                {
+                    <div class="form-inline mb-2">
+                        <select @bind="horario.dia_semana" class="form-control mr-2">
+                            <option value="Lunes">Lunes</option>
+                            <option value="Martes">Martes</option>
+                            <option value="Miércoles">Miércoles</option>
+                            <option value="Jueves">Jueves</option>
+                            <option value="Viernes">Viernes</option>
+                        </select>
+                        <input type="time" value="@(new DateTime(horario.hora_inicio.Ticks).ToString("HH:mm"))" @oninput="e => horario.hora_inicio = TimeSpan.Parse(e.Value.ToString())" class="form-control mr-2" />
+                        <input type="time" value="@(new DateTime(horario.hora_fin.Ticks).ToString("HH:mm"))" @oninput="e => horario.hora_fin = TimeSpan.Parse(e.Value.ToString())" class="form-control mr-2" />
+                        <button type="button" class="btn btn-danger" @onclick="() => EliminarHorario(horario)">Eliminar</button>
+                    </div>
+                }
+                <button type="button" class="btn btn-secondary" @onclick="AgregarHorario">Agregar Horario</button>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Crear Grupo</button>
+    </form>
+</div>
+
+@code {
+    private CrearGrupoManualParametros parametros = new CrearGrupoManualParametros();
+    private List<Curso> cursos;
+    private List<PeriodoConNombre> periodos;
+    private List<EstudianteConDetalles> estudiantesSinGrupo;
+    private List<InstructorConDetalles> instructoresSinGrupo;
+    private List<InstructorConDetalles> instructoresFiltrados;
+    private List<EstudianteConDetalles> estudiantesFiltrados;
+    private int selectedEstudianteId;
+    private string instructorSearchText = string.Empty;
+    private string estudianteSearchText = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        cursos = await Http.GetFromJsonAsync<List<Curso>>("http://localhost:5117/api/Curso");
+    }
+
+    private async Task CargarPeriodos()
+    {
+        if (parametros.CursoId != 0)
+        {
+            periodos = await Http.GetFromJsonAsync<List<PeriodoConNombre>>($"http://localhost:5117/api/Periodo/por-curso/{parametros.CursoId}");
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarEstudiantesEInstructores()
+    {
+        if (parametros.PeriodoId != 0)
+        {
+            estudiantesSinGrupo = await Http.GetFromJsonAsync<List<EstudianteConDetalles>>($"http://localhost:5117/api/Estudiante/sin-grupo/{parametros.CursoId}/{parametros.PeriodoId}");
+            estudiantesFiltrados = estudiantesSinGrupo;
+            instructoresSinGrupo = await Http.GetFromJsonAsync<List<InstructorConDetalles>>($"http://localhost:5117/api/Instructor/todos");
+            instructoresFiltrados = instructoresSinGrupo;
+            StateHasChanged();
+        }
+    }
+
+    private void BuscarInstructor(ChangeEventArgs e)
+    {
+        instructorSearchText = e.Value.ToString();
+        instructoresFiltrados = instructoresSinGrupo
+            .Where(i => i.nombre_usuario.Contains(instructorSearchText, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
+
+    private void BuscarEstudiante(ChangeEventArgs e)
+    {
+        estudianteSearchText = e.Value.ToString();
+        estudiantesFiltrados = estudiantesSinGrupo
+            .Where(e => e.nombre_usuario.Contains(estudianteSearchText, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
+
+    private void AgregarEstudianteSeleccionado()
+    {
+        if (selectedEstudianteId != 0 && !parametros.EstudiantesSeleccionados.Contains(selectedEstudianteId))
+        {
+            parametros.EstudiantesSeleccionados.Add(selectedEstudianteId);
+        }
+    }
+
+    private void RemoverEstudianteSeleccionado(int estudianteId)
+    {
+        if (parametros.EstudiantesSeleccionados.Contains(estudianteId))
+        {
+            parametros.EstudiantesSeleccionados.Remove(estudianteId);
+        }
+    }
+
+    private void AgregarHorario()
+    {
+        parametros.Horarios.Add(new HorarioGrupo());
+    }
+
+    private void EliminarHorario(HorarioGrupo horario)
+    {
+        parametros.Horarios.Remove(horario);
+    }
+
+    private async Task CrearGrupoManual()
+    {
+        var response = await Http.PostAsJsonAsync("http://localhost:5117/api/Grupo/CrearGrupoManual", parametros);
+        if (response.IsSuccessStatusCode)
+        {
+            Navigation.NavigateTo("/grupos");
+        }
+        else
+        {
+            // Manejo de errores
+            var errorContent = await response.Content.ReadAsStringAsync();
+            Console.WriteLine(errorContent);
+        }
+    }
+}

@@ -1,43 +1,47 @@
 ﻿@page "/instructores"
 @inject NavigationManager NavigationManager
+@inject HttpClient Http
 
 <h3>Listado de Instructores</h3>
 
+<!-- Filtro por Curso -->
 <div class="form-group">
-    <label for="periodoSelect">Filtrar por Periodo:</label>
-    <select id="periodoSelect" class="form-control" @onchange="PeriodoChanged">
-        <option value="">Seleccionar Periodo</option>
-        @foreach (var periodo in periodos)
+    <label for="cursoSelect">Filtrar por Curso:</label>
+    <select id="cursoSelect" class="form-control" @onchange="OnCursoSeleccionadoChange">
+        <option value="">Seleccionar Curso</option>
+        @foreach (var curso in cursos)
         {
-            <option value="@periodo">@periodo</option>
+            <option value="@curso.id_curso">@curso.nombre_curso</option>
         }
     </select>
 </div>
 
-@if (!string.IsNullOrEmpty(selectedPeriodo))
+@if (selectedCurso != 0)
 {
+    <!-- Filtro por Periodo -->
     <div class="form-group">
-        <label for="cursoSelect">Filtrar por Curso:</label>
-        <select id="cursoSelect" class="form-control" @onchange="CursoChanged">
-            <option value="">Seleccionar Curso</option>
-            @foreach (var curso in cursosFiltrados)
+        <label for="periodoSelect">Filtrar por Periodo:</label>
+        <select id="periodoSelect" class="form-control" @onchange="OnPeriodoSeleccionadoChange">
+            <option value="">Seleccionar Periodo</option>
+            @foreach (var periodo in periodosFiltrados)
             {
-                <option value="@curso.Id">@curso.Nombre</option>
+                <option value="@periodo.id_lista_periodo">@periodo.nombre_periodo</option>
             }
         </select>
     </div>
 }
 
-<button class="btn btn-success" @onclick="() => CrearNuevoInstructor()">Añadir Nuevo Instructor</button>
+<button class="btn btn-success" @onclick="CrearNuevoInstructor">Añadir Nuevo Instructor</button>
 
 <table class="table">
     <thead>
         <tr>
             <th>ID</th>
             <th>Nombre</th>
+            <th>Apellido</th>
             <th>Correo</th>
-            <th>Curso</th>
-            <th>Periodo</th>
+            <th>Cursos</th>
+            <th>Periodos</th>
             <th>Acciones</th>
         </tr>
     </thead>
@@ -45,15 +49,15 @@
         @foreach (var instructor in instructoresFiltrados)
         {
             <tr>
-                <td>@instructor.Id</td>
-                <td>@instructor.Nombre</td>
-                <td>@instructor.Correo</td>
-                <td>@instructor.CursoNombre</td>
-                <td>@instructor.Periodo</td>
+                <td>@instructor.id_instructor</td>
+                <td>@instructor.nombre_usuario</td>
+                <td>@instructor.apellidos_usuario</td>
+                <td>@instructor.correo_usuario</td>
+                <td>@string.Join(", ", instructor.cursos)</td>
+                <td>@string.Join(", ", instructor.periodos)</td>
                 <td>
-                    <button class="btn btn-info" @onclick="() => VerDetalles(instructor.Id)">Ver</button>
-                    <button class="btn btn-primary" @onclick="() => EditarInstructor(instructor.Id)">Editar</button>
-                    <button class="btn btn-danger" @onclick="() => EliminarInstructor(instructor.Id)">Eliminar</button>
+                    <button class="btn btn-info" @onclick="() => VerDetalles(instructor.id_instructor)">Ver</button>
+                    <button class="btn btn-danger" @onclick="() => EliminarInstructor(instructor.id_instructor)">Eliminar</button>
                 </td>
             </tr>
         }
@@ -66,66 +70,79 @@
 }
 
 @code {
-    private List<Instructor> instructores = new List<Instructor>();
-    private List<Instructor> instructoresFiltrados = new List<Instructor>();
-    private List<string> periodos = new List<string> { "2024A", "2024B", "2025A" };
+    private List<InstructorConDetalles> instructores = new List<InstructorConDetalles>();
+    private List<InstructorConDetalles> instructoresFiltrados = new List<InstructorConDetalles>();
+    private List<ListaPeriodo> periodos = new List<ListaPeriodo>();
+    private List<ListaPeriodo> periodosFiltrados = new List<ListaPeriodo>();
     private List<Curso> cursos = new List<Curso>();
-    private List<Curso> cursosFiltrados = new List<Curso>();
-    private List<Edicion> ediciones = new List<Edicion>();
-    private string selectedPeriodo = "";
+    private int selectedPeriodo = 0;
     private int selectedCurso = 0;
+    private string errorMessage;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        instructores = ObtenerInstructores();
-        cursos = ObtenerCursos();
-        ediciones = ObtenerEdiciones();
+        instructores = await Http.GetFromJsonAsync<List<InstructorConDetalles>>("http://localhost:5117/api/Instructor/Detalles");
+        periodos = await Http.GetFromJsonAsync<List<ListaPeriodo>>("http://localhost:5117/api/ListaPeriodo");
+        cursos = await Http.GetFromJsonAsync<List<Curso>>("http://localhost:5117/api/Curso");
         instructoresFiltrados = instructores;
-        cursosFiltrados = cursos;
     }
 
-    private void PeriodoChanged(ChangeEventArgs e)
-    {
-        selectedPeriodo = e.Value.ToString();
-        selectedCurso = 0; // Reset curso filter
-        FiltrarCursos();
-        FiltrarInstructores();
-    }
-
-    private void CursoChanged(ChangeEventArgs e)
+    private async Task OnCursoSeleccionadoChange(ChangeEventArgs e)
     {
         if (int.TryParse(e.Value.ToString(), out int cursoId))
         {
             selectedCurso = cursoId;
+            await CargarPeriodos(cursoId);
+        }
+        else
+        {
+            selectedCurso = 0;
+            selectedPeriodo = 0; // Reset periodo filter
+            periodosFiltrados = new List<ListaPeriodo>();
             FiltrarInstructores();
         }
     }
 
-    private void FiltrarCursos()
+    private async Task CargarPeriodos(int cursoId)
     {
-        if (string.IsNullOrEmpty(selectedPeriodo))
+        try
         {
-            cursosFiltrados = cursos;
+            periodosFiltrados = await Http.GetFromJsonAsync<List<ListaPeriodo>>($"http://localhost:5117/api/Periodo/por-curso/{cursoId}");
+            if (!periodosFiltrados.Any())
+            {
+                errorMessage = "No se encontraron periodos para el curso seleccionado.";
+            }
+            else
+            {
+                errorMessage = string.Empty; // Limpia el mensaje de error si se encontraron periodos
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error al cargar los periodos: {ex.Message}";
+        }
+    }
+
+    private void OnPeriodoSeleccionadoChange(ChangeEventArgs e)
+    {
+        var selectedValue = e.Value.ToString();
+        if (string.IsNullOrEmpty(selectedValue))
+        {
+            selectedPeriodo = 0;
         }
         else
         {
-            var cursoIds = ediciones
-                .Where(ed => ed.Periodo == selectedPeriodo)
-                .Select(ed => ed.CursoId)
-                .Distinct()
-                .ToList();
-
-            cursosFiltrados = cursos
-                .Where(curso => cursoIds.Contains(curso.Id))
-                .ToList();
+            selectedPeriodo = int.Parse(selectedValue);
         }
+
+        FiltrarInstructores();
     }
 
     private void FiltrarInstructores()
     {
         instructoresFiltrados = instructores
-            .Where(inst => (string.IsNullOrEmpty(selectedPeriodo) || inst.Periodo == selectedPeriodo) &&
-                          (selectedCurso == 0 || inst.CursoId == selectedCurso))
+            .Where(inst => (selectedCurso == 0 || inst.id_cursos.Contains(selectedCurso)) &&
+                           (selectedPeriodo == 0 || inst.id_periodos.Contains(selectedPeriodo)))
             .ToList();
     }
 
@@ -136,71 +153,16 @@
 
     private void CrearNuevoInstructor()
     {
-        NavigationManager.NavigateTo("/crear-instructor");
+        NavigationManager.NavigateTo("/registrar-instructor");
     }
 
-    private void EditarInstructor(int id)
+    private async Task EliminarInstructor(int id)
     {
-        NavigationManager.NavigateTo($"/editar-instructor/{id}");
-    }
-
-    private void EliminarInstructor(int id)
-    {
-        instructores.RemoveAll(e => e.Id == id);
-        FiltrarInstructores();
-    }
-
-    private List<Instructor> ObtenerInstructores()
-    {
-        // Simulación de datos de instructores
-        return new List<Instructor>
+        var response = await Http.DeleteAsync($"http://localhost:5117/api/Instructor/{id}");
+        if (response.IsSuccessStatusCode)
         {
-            new Instructor { Id = 1, Nombre = "Pedro Sanchez", Correo = "pedro.sanchez@example.com", CursoId = 1, CursoNombre = "Blazor para Principiantes", Periodo = "2024A" },
-            new Instructor { Id = 2, Nombre = "Ana Lopez", Correo = "ana.lopez@example.com", CursoId = 2, CursoNombre = "Blazor Avanzado", Periodo = "2024B" }
-        };
-    }
-
-    private List<Curso> ObtenerCursos()
-    {
-        // Simulación de datos de cursos
-        return new List<Curso>
-        {
-            new Curso { Id = 1, Nombre = "Blazor para Principiantes" },
-            new Curso { Id = 2, Nombre = "Blazor Avanzado" }
-        };
-    }
-
-    private List<Edicion> ObtenerEdiciones()
-    {
-        // Simulación de datos de ediciones
-        return new List<Edicion>
-        {
-            new Edicion { Id = 1, CursoId = 1, Periodo = "2024A" },
-            new Edicion { Id = 2, CursoId = 2, Periodo = "2024B" },
-            new Edicion { Id = 3, CursoId = 1, Periodo = "2025A" }
-        };
-    }
-
-    public class Instructor
-    {
-        public int Id { get; set; }
-        public string Nombre { get; set; }
-        public string Correo { get; set; }
-        public int CursoId { get; set; }
-        public string CursoNombre { get; set; }
-        public string Periodo { get; set; }
-    }
-
-    public class Curso
-    {
-        public int Id { get; set; }
-        public string Nombre { get; set; }
-    }
-
-    public class Edicion
-    {
-        public int Id { get; set; }
-        public int CursoId { get; set; }
-        public string Periodo { get; set; }
+            instructores.RemoveAll(i => i.id_instructor == id);
+            FiltrarInstructores();
+        }
     }
 }

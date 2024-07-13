@@ -58,7 +58,7 @@ else
         var response = await Http.PutAsJsonAsync($"http://localhost:5117/api/Periodo/{PeriodoId}", periodo);
         if (response.IsSuccessStatusCode)
         {
-            NavigationManager.NavigateTo($"/cursos/{periodo.id_curso}/periodos");
+            NavigationManager.NavigateTo($"/cursos/{periodo.id_curso}/periodos-curso");
         }
         else
         {

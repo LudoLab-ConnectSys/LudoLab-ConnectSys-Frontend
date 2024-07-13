@@ -1,0 +1,92 @@
+﻿@page "/asociar-curso-periodo/{PeriodoId:int}"
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<h3>Asociar Cursos a Periodo</h3>
+
+<EditForm OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label for="curso">Seleccione Cursos:</label>
+        <InputSelect id="curso" class="form-control" @bind-Value="cursoSeleccionado">
+            <option value="" disabled selected>Seleccione un curso</option>
+            @foreach (var curso in cursos)
+            {
+                <option value="@curso.id_curso">@curso.nombre_curso</option>
+            }
+        </InputSelect>
+        <button type="button" class="btn btn-primary" @onclick="AgregarCurso">Agregar Curso</button>
+    </div>
+
+    <ul>
+        @foreach (var curso in cursosAsociados)
+        {
+            <li>
+                @curso.nombre_curso
+                <button type="button" class="btn btn-danger btn-sm" @onclick="() => RemoverCurso(curso.id_curso)">Eliminar</button>
+            </li>
+        }
+    </ul>
+
+    <button type="submit" class="btn btn-success">Guardar Cambios</button>
+</EditForm>
+
+@if (asociacionGuardada)
+{
+    <p class="text-success">Cursos asociados con éxito!</p>
+}
+
+@code {
+    [Parameter]
+    public int PeriodoId { get; set; }
+
+    private List<Curso> cursos = new List<Curso>();
+    private List<Curso> cursosAsociados = new List<Curso>();
+    private int cursoSeleccionado;
+    private bool asociacionGuardada = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        cursos = await Http.GetFromJsonAsync<List<Curso>>("http://localhost:5117/api/Curso");
+        // Obtener los cursos ya asociados si es necesario
+        var periodosCursos = await Http.GetFromJsonAsync<List<Periodo>>($"http://localhost:5117/api/Periodo/Curso/{PeriodoId}");
+        cursosAsociados = cursos.Where(c => periodosCursos.Any(pc => pc.id_curso == c.id_curso)).ToList();
+    }
+
+    private void AgregarCurso()
+    {
+        var curso = cursos.FirstOrDefault(c => c.id_curso == cursoSeleccionado);
+        if (curso != null && !cursosAsociados.Any(c => c.id_curso == curso.id_curso))
+        {
+            cursosAsociados.Add(curso);
+        }
+    }
+
+    private void RemoverCurso(int cursoId)
+    {
+        var curso = cursosAsociados.FirstOrDefault(c => c.id_curso == cursoId);
+        if (curso != null)
+        {
+            cursosAsociados.Remove(curso);
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        var periodos = cursosAsociados.Select(c => new Periodo
+            {
+                id_curso = c.id_curso,
+                id_ListaPeriodo = PeriodoId // Asegúrate de que esto es correcto según tu modelo de datos
+            }).ToList();
+
+        foreach (var periodo in periodos)
+        {
+            await Http.PutAsJsonAsync($"http://localhost:5117/api/Periodo/{PeriodoId}", periodo);
+        }
+
+        asociacionGuardada = true;
+        NavigationManager.NavigateTo("/periodos"); // Redirigir a la lista de periodos
+    }
+}

@@ -1,0 +1,18 @@
+﻿@using LudoLab_ConnectSys_Frontend.Areas.Instructor.Components
+@inherits LayoutComponentBase
+<div class="page">
+    <div class="sidebar">
+        <!-- <NavMenuAdmin />  -->
+        <NavMenuInstructor />
+    </div>
+
+    <main>
+        <div class="encabezado">
+            <Encabezado />
+        </div>
+
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>

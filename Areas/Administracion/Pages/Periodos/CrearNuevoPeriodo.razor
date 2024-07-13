@@ -1,0 +1,114 @@
+﻿@page "/crear-periodo/{CursoId:int}"
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<h3>Crear Nuevo Periodo</h3>
+
+<EditForm Model="nuevoPeriodo" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label for="fechaInicio">Fecha de Inicio:</label>
+        <InputText id="fechaInicio" class="form-control" @bind-Value="nuevoPeriodo.fecha_inicio_periodo" />
+    </div>
+    <div class="form-group">
+        <label for="fechaFin">Fecha de Fin:</label>
+        <InputText id="fechaFin" class="form-control" @bind-Value="nuevoPeriodo.fecha_fin_periodo" />
+    </div>
+    <div class="form-group">
+        <label for="duracionHoras">Duración en Horas:</label>
+        <InputNumber id="duracionHoras" class="form-control" @bind-Value="nuevoPeriodo.duracion_periodo_horas" />
+    </div>
+
+    <div class="form-group">
+        <label for="listaPeriodo">Lista de Periodos:</label>
+        <InputSelect id="listaPeriodo" class="form-control" @bind-Value="selectedListaPeriodo">
+            <option value="" disabled>Seleccione una lista de periodos</option>
+            @foreach (var listaPeriodo in listaPeriodos)
+            {
+                <option value="@listaPeriodo.id_lista_periodo">@listaPeriodo.nombre_periodo</option>
+            }
+            <option value="-1">Nombrar un nuevo periodo</option>
+        </InputSelect>
+    </div>
+
+    @if (selectedListaPeriodo == -1)
+    {
+        <div class="form-group">
+            <label for="nuevoNombrePeriodo">Nuevo Nombre del Periodo:</label>
+            <InputText id="nuevoNombrePeriodo" class="form-control" @bind-Value="nuevoNombrePeriodo" />
+        </div>
+    }
+
+    <button type="submit" class="btn btn-success">Crear Periodo</button>
+</EditForm>
+
+@if (periodoCreado)
+{
+    <p class="text-success">Periodo creado con éxito!</p>
+}
+
+@code {
+    [Parameter]
+    public int CursoId { get; set; }
+
+    private Periodo nuevoPeriodo = new Periodo();
+    private bool periodoCreado = false;
+    private List<ListaPeriodo> listaPeriodos = new List<ListaPeriodo>();
+    private string nuevoNombrePeriodo;
+    private int selectedListaPeriodo = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        listaPeriodos = await Http.GetFromJsonAsync<List<ListaPeriodo>>("http://localhost:5117/api/ListaPeriodo");
+        nuevoPeriodo = new Periodo { id_curso = CursoId };
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (selectedListaPeriodo == -1)
+        {
+            // Crear un nuevo nombre de periodo si no existe
+            if (!string.IsNullOrEmpty(nuevoNombrePeriodo))
+            {
+                var listaPeriodoExistente = listaPeriodos.FirstOrDefault(lp => lp.nombre_periodo == nuevoNombrePeriodo);
+                if (listaPeriodoExistente != null)
+                {
+                    nuevoPeriodo.id_ListaPeriodo = listaPeriodoExistente.id_lista_periodo;
+                }
+                else
+                {
+                    var nuevaListaPeriodo = new ListaPeriodo { nombre_periodo = nuevoNombrePeriodo };
+                    var response = await Http.PostAsJsonAsync("http://localhost:5117/api/ListaPeriodo", nuevaListaPeriodo);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var listaPeriodoCreada = await response.Content.ReadFromJsonAsync<ListaPeriodo>();
+                        nuevoPeriodo.id_ListaPeriodo = listaPeriodoCreada.id_lista_periodo;
+                    }
+                    else
+                    {
+                        // Manejar el error al crear un nuevo periodo en la lista de periodos
+                        return;
+                    }
+                }
+            }
+        }
+        else
+        {
+            nuevoPeriodo.id_ListaPeriodo = selectedListaPeriodo;
+        }
+
+        var responsePeriodo = await Http.PostAsJsonAsync("http://localhost:5117/api/Periodo", nuevoPeriodo);
+        if (responsePeriodo.IsSuccessStatusCode)
+        {
+            periodoCreado = true;
+            nuevoPeriodo = new Periodo { id_curso = CursoId }; // Reiniciar el formulario
+            NavigationManager.NavigateTo($"/cursos/{CursoId}/periodos-curso");
+        }
+        else
+        {
+            // Manejar el error
+        }
+    }
+}

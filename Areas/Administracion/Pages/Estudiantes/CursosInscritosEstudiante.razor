@@ -1,0 +1,61 @@
+﻿@page "/cursos-inscritos/{EstudianteId:int}"
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<h3>Cursos Inscritos</h3>
+
+@if (cursos == null)
+{
+    <p><em>Cargando...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Nombre del Curso</th>
+                <th>Periodo</th>
+                <th>Grupo</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var curso in cursos)
+            {
+                <tr>
+                    <td>@curso.nombre_curso</td>
+                    <td>@curso.nombre_periodo</td>
+                    <td>@curso.nombre_grupo</td>
+                    <td>
+                        <button class="btn btn-info" @onclick="() => VerCurso(curso.id_curso, curso.id_periodo)">Ir al Curso</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <button class="btn btn-secondary" @onclick="Regresar">Regresar</button>
+}
+
+@code {
+    [Parameter]
+    public int EstudianteId { get; set; }
+
+    private List<CursoInscritoEstudiante> cursos;
+
+    protected override async Task OnInitializedAsync()
+    {
+        cursos = await Http.GetFromJsonAsync<List<CursoInscritoEstudiante>>($"http://localhost:5117/api/Estudiante/CursosInscritos/{EstudianteId}");
+    }
+
+    private void Regresar()
+    {
+        NavigationManager.NavigateTo($"/detalle-estudiante/{EstudianteId}");
+    }
+
+    private void VerCurso(int id_curso, int id_periodo)
+    {
+        NavigationManager.NavigateTo($"/curso/{id_curso}/grupos/{id_periodo}");
+    }
+
+    
+}

@@ -1,0 +1,77 @@
+﻿@page "/curso/{id_curso:int}/grupos/{id_periodo:int}"
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<h3>Grupos del Curso</h3>
+
+@if (grupos != null)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Instructor</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var grupo in grupos)
+            {
+                <tr>
+                    <td>@grupo.id_grupo</td>
+                    <td>@grupo.nombre_instructor</td>
+                    <td>
+                        <button class="btn btn-info" @onclick="() => VerGrupo(grupo.id_grupo)">Ver</button>
+                        <button class="btn btn-primary" @onclick="() => EditarGrupo(grupo.id_grupo)">Editar</button>
+                        <button class="btn btn-danger" @onclick="() => EliminarGrupo(grupo.id_grupo)">Eliminar</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p><em>Cargando...</em></p>
+}
+
+@code {
+    [Parameter]
+    public int id_curso { get; set; }
+
+    [Parameter]
+    public int id_periodo { get; set; }
+
+    private List<GrupoConInstructor> grupos = new List<GrupoConInstructor>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            grupos = await Http.GetFromJsonAsync<List<GrupoConInstructor>>($"http://localhost:5117/api/Grupo/Curso/{id_curso}/Periodo/{id_periodo}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching data: {ex.Message}");
+        }
+    }
+
+    private void VerGrupo(int id_grupo)
+    {
+        NavigationManager.NavigateTo($"/grupo/{id_grupo}/detalles");
+    }
+
+    private void EditarGrupo(int id_grupo)
+    {
+        NavigationManager.NavigateTo($"/editar-grupo/{id_grupo}");
+    }
+
+    private async Task EliminarGrupo(int id_grupo)
+    {
+        var response = await Http.DeleteAsync($"http://localhost:5117/api/Grupo/{id_grupo}");
+        if (response.IsSuccessStatusCode)
+        {
+            grupos.RemoveAll(g => g.id_grupo == id_grupo);
+        }
+    }
+}

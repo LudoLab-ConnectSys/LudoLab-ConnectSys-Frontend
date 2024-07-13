@@ -1,0 +1,54 @@
+﻿@page "/cursos-inscritos-instructor/{InstructorId:int}"
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<h3>Cursos Inscritos del Instructor</h3>
+
+@if (instructor == null)
+{
+    <p><em>Cargando...</em></p>
+}
+else
+{
+    <div>
+        <h4>Información del Instructor</h4>
+        <p><strong>Nombre:</strong> @instructor.nombre_usuario @instructor.apellidos_usuario</p>
+        <p><strong>Cédula:</strong> @instructor.cedula_usuario</p>
+        <p><strong>Correo:</strong> @instructor.correo_usuario</p>
+        <p><strong>Celular:</strong> @instructor.celular_usuario</p>
+        <p><strong>Teléfono:</strong> @instructor.telefono_usuario</p>
+    </div>
+    <br />
+    <div>
+        <h4>Cursos Inscritos</h4>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Curso</th>
+                    <th>Periodo</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var curso in instructor.cursos)
+                {
+                    <tr>
+                        <td>@curso</td>
+                        <td>@instructor.periodos[instructor.cursos.IndexOf(curso)]</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int InstructorId { get; set; }
+
+    private InstructorConDetallesCompleto instructor;
+
+    protected override async Task OnInitializedAsync()
+    {
+        instructor = await Http.GetFromJsonAsync<InstructorConDetallesCompleto>($"http://localhost:5117/api/Instructor/DetallesById/{InstructorId}");
+    }
+}

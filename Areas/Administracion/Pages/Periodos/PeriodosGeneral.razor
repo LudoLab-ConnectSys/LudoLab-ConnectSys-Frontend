@@ -1,19 +1,17 @@
-﻿@page "/cursos/{CursoId:int}/periodos"
+﻿@page "/periodos"
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
 
-<h3>Periodos del Curso</h3>
-
-<button class="btn btn-success" @onclick="CrearNuevoPeriodo">Crear Nuevo Periodo</button>
+<h3>Periodos</h3>
 
 <table class="table">
     <thead>
         <tr>
             <th>ID</th>
+            <th>Nombre del Periodo</th>
             <th>Fecha de Inicio</th>
             <th>Fecha de Fin</th>
             <th>Horas</th>
-            <th>Lista de Periodo</th>
             <th>Acciones</th>
         </tr>
     </thead>
@@ -22,11 +20,12 @@
         {
             <tr>
                 <td>@periodo.id_periodo</td>
+                <td>@periodo.nombre_periodo</td>
                 <td>@periodo.fecha_inicio_periodo</td>
                 <td>@periodo.fecha_fin_periodo</td>
                 <td>@periodo.duracion_periodo_horas</td>
-                <td>@listaPeriodos.FirstOrDefault(lp => lp.id_lista_periodo == periodo.id_ListaPeriodo)?.nombre_periodo</td>
                 <td>
+                    <button class="btn btn-info" @onclick="() => VerCursos(periodo.id_periodo)">Ver Cursos</button>
                     <button class="btn btn-primary" @onclick="() => EditarPeriodo(periodo.id_periodo)">Editar</button>
                     <button class="btn btn-danger" @onclick="() => EliminarPeriodo(periodo.id_periodo)">Eliminar</button>
                 </td>
@@ -37,25 +36,27 @@
 
 @if (!periodos.Any())
 {
-    <p>No hay periodos disponibles para este curso. ¿Desea <a href="crear-periodo">crear un nuevo periodo</a>?</p>
+    <p>No hay periodos disponibles.</p>
 }
 
 @code {
-    [Parameter]
-    public int CursoId { get; set; }
-
-    private List<Periodo> periodos = new List<Periodo>();
-    private List<ListaPeriodo> listaPeriodos = new List<ListaPeriodo>();
+    private List<PeriodoConNombre> periodos = new List<PeriodoConNombre>();
 
     protected override async Task OnInitializedAsync()
     {
-        periodos = await Http.GetFromJsonAsync<List<Periodo>>($"http://localhost:5117/api/Periodo/Curso/{CursoId}");
-        listaPeriodos = await Http.GetFromJsonAsync<List<ListaPeriodo>>("http://localhost:5117/api/ListaPeriodo");
+        try
+        {
+            periodos = await Http.GetFromJsonAsync<List<PeriodoConNombre>>("http://localhost:5117/api/Periodo/all-periodos-con-nombre");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching data: {ex.Message}");
+        }
     }
 
-    private void CrearNuevoPeriodo()
+    private void VerCursos(int id_periodo)
     {
-        NavigationManager.NavigateTo($"/crear-periodo/{CursoId}");
+        NavigationManager.NavigateTo($"/periodos/{id_periodo}/cursos");
     }
 
     private void EditarPeriodo(int id_periodo)

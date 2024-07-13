@@ -1,0 +1,80 @@
+﻿@page "/periodos/{PeriodoId:int}/grupos"
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<h3>Grupos del Periodo</h3>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Instructor</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var grupo in grupos)
+        {
+            <tr>
+                <td>@grupo.id_grupo</td>
+                <td>@grupo.nombre_instructor</td>
+                <td>
+                    <button class="btn btn-primary" @onclick="() => VerGrupo(grupo.id_grupo)">Ver Grupo</button>
+                    <button class="btn btn-info" @onclick="() => Editar(grupo.id_grupo)">Actualizar</button>
+                    <button class="btn btn-danger" @onclick="() => EliminarGrupo(grupo.id_grupo)">Eliminar</button>
+                    
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@if (!grupos.Any())
+{
+    <p>No hay grupos disponibles para este periodo.</p>
+}
+
+@code {
+    [Parameter]
+    public int PeriodoId { get; set; }
+
+    private List<GrupoConInstructor> grupos = new List<GrupoConInstructor>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            grupos = await Http.GetFromJsonAsync<List<GrupoConInstructor>>($"http://localhost:5117/api/Grupo/Periodo/{PeriodoId}/Grupos");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching data: {ex.Message}");
+        }
+    }
+
+    private void Editar(int id_grupo)
+    {
+        NavigationManager.NavigateTo($"/grupo/{id_grupo}/detalles");
+    }
+
+    private void VerGrupo(int id_grupo)
+    {
+        NavigationManager.NavigateTo($"/grupo/{id_grupo}/estudiantes");
+    }
+
+    private async Task EliminarGrupo(int id_grupo)
+    {
+        var response = await Http.DeleteAsync($"http://localhost:5117/api/Grupo/{id_grupo}");
+        if (response.IsSuccessStatusCode)
+        {
+            // Elimina el grupo de la lista local si la eliminación en el servidor fue exitosa
+            grupos.RemoveAll(g => g.id_grupo == id_grupo);
+        }
+        else
+        {
+            Console.WriteLine($"Error deleting group: {response.ReasonPhrase}");
+            var errorContent = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Error details: {errorContent}");
+        }
+    }
+}

@@ -1,0 +1,39 @@
+﻿@page "/cursos-disponibles"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<h3>Cursos Disponibles</h3>
+
+<div class="card-container">
+    @if (cursos != null)
+    {
+        @foreach (var curso in cursos)
+        {
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">@curso.nombre_curso</h5>
+                    <button class="btn btn-primary" @onclick="() => SeleccionarCurso(curso.id_curso)">Seleccionar</button>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <p>Cargando cursos...</p>
+    }
+</div>
+
+@code {
+    private List<CursoConPeriodoActivo> cursos;
+
+    protected override async Task OnInitializedAsync()
+    {
+        cursos = await Http.GetFromJsonAsync<List<CursoConPeriodoActivo>>("http://localhost:5117/api/Curso/CursosConPeriodosActivos");
+    }
+
+    private void SeleccionarCurso(int cursoId)
+    {
+        Navigation.NavigateTo($"/ingresar-horarios/{cursoId}");
+    }
+
+}

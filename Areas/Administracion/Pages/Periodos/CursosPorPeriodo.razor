@@ -1,0 +1,82 @@
+﻿@page "/periodos/{id_periodo:int}/cursos"
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<h3>Cursos del Periodo</h3>
+
+@if (cursos != null)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre del Curso</th>
+                <th>Tipo</th>
+                <th>Horas</th>
+                <th>Modalidad</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var curso in cursos)
+            {
+                <tr>
+                    <td>@curso.id_curso</td>
+                    <td>@curso.nombre_curso</td>
+                    <td>@curso.tipo_curso</td>
+                    <td>@curso.horas</td>
+                    <td>@modalidades.FirstOrDefault(m => m.id_modalidad == curso.Modalidad_id_modalidad)?.nombre_modalidad</td>
+                    <td>
+                        <button class="btn btn-info" @onclick="() => VerCurso(curso.id_curso)">Ver</button>
+                        <button class="btn btn-primary" @onclick="() => EditarCurso(curso.id_curso)">Editar</button>
+                        <button class="btn btn-danger" @onclick="() => EliminarCurso(curso.id_curso)">Eliminar</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p><em>Cargando...</em></p>
+}
+
+@code {
+    [Parameter]
+    public int id_periodo { get; set; }
+
+    private List<Curso> cursos;
+    private List<Modalidad> modalidades = new List<Modalidad>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            cursos = await Http.GetFromJsonAsync<List<Curso>>($"http://localhost:5117/api/Periodo/{id_periodo}/cursos");
+            modalidades = await Http.GetFromJsonAsync<List<Modalidad>>("http://localhost:5117/api/Modalidad");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching data: {ex.Message}");
+        }
+    }
+
+    private void VerCurso(int id_curso)
+    {
+        NavigationManager.NavigateTo($"/curso/{id_curso}/grupos/{id_periodo}");
+    }
+
+    private void EditarCurso(int id_curso)
+    {
+        NavigationManager.NavigateTo($"/editar-curso/{id_curso}");
+    }
+
+    private async Task EliminarCurso(int id_curso)
+    {
+        var response = await Http.DeleteAsync($"http://localhost:5117/api/Curso/{id_curso}");
+        if (response.IsSuccessStatusCode)
+        {
+            cursos.RemoveAll(c => c.id_curso == id_curso);
+        }
+    }
+}

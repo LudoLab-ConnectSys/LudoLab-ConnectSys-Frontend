@@ -14,11 +14,17 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Remove="Areas\Administracion\Pages\Periodos\AsociarCursoAPeriodo.razor" />
+    <Content Remove="Areas\Estudiante\Pages\CursosDisponibles.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="ClosedXML" Version="0.102.2" />
     <PackageReference Include="CurrieTechnologies.Razor.SweetAlert2" Version="5.6.0" />
     <PackageReference Include="EPPlus" Version="7.1.3" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.4" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="8.0.4" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Graph" Version="5.56.0" />
   </ItemGroup>
 
 	<ItemGroup>
@@ -38,6 +44,8 @@
 
 	
   <ItemGroup>
+    <None Include="Areas\Administracion\Pages\Periodos\AsociarCursoAPeriodo.razor" />
+    <None Include="Areas\Estudiante\Pages\Cursos\CursosDisponibles.razor" />
     <None Include="wwwroot\assets\js\main.js" />
     <None Include="wwwroot\assets\vendor\aos\aos.cjs.js" />
     <None Include="wwwroot\assets\vendor\aos\aos.esm.js" />
@@ -93,6 +101,22 @@
 	
   <ItemGroup>
     <ProjectReference Include="..\DirectorioDeArchivos.Shared\DirectorioDeArchivos.Shared.csproj" />
+  </ItemGroup>
+
+	
+  <ItemGroup>
+    <UpToDateCheckInput Remove="Areas\Administracion\Pages\Periodos\AsociarCursoAPeriodo.razor" />
+  </ItemGroup>
+
+	
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="Areas\Administracion\Pages\Periodos\AsociarCursoAPeriodo.razor" />
+    <_ContentIncludedByDefault Remove="Areas\Estudiante\Pages\CursosDisponibles.razor" />
+  </ItemGroup>
+
+	
+  <ItemGroup>
+    <UpToDateCheckInput Remove="Areas\Estudiante\Pages\CursosDisponibles.razor" />
   </ItemGroup>
 
 </Project>

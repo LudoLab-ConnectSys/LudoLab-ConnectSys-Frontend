@@ -1,44 +1,59 @@
 using CurrieTechnologies.Razor.SweetAlert2;
 using LudoLab_ConnectSys_Frontend;
+using LudoLab_ConnectSys_Frontend.Shared.Utilities;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Microsoft.Graph;
+using Microsoft.Kiota.Abstractions.Authentication;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
+
+// Configuración del HttpClient para interactuar con tu backend
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
+
 builder.Services.AddSweetAlert2();
 
-
-
+// Configuración de la autenticación MSAL
 builder.Services.AddMsalAuthentication(options =>
 {
-    /*var authentication = options.ProviderOptions.Authentication;
-    authentication.ClientId = "b4382df8-e63a-4fa0-a985-4268f4563482";
-    authentication.Authority = "https://login.microsoftonline.com/common";
-    authentication.RedirectUri = builder.HostEnvironment.BaseAddress;
-
-    options.ProviderOptions.DefaultAccessTokenScopes.Add("https://graph.microsoft.com/.default");*/
     builder.Configuration.Bind("AzureAd", options.ProviderOptions.Authentication);
-    options.ProviderOptions.DefaultAccessTokenScopes
-            .Add("https://graph.microsoft.com/User.Read");
+    options.ProviderOptions.DefaultAccessTokenScopes.Add("https://graph.microsoft.com/User.Read");
+    options.ProviderOptions.DefaultAccessTokenScopes.Add("https://graph.microsoft.com/sites.fullcontrol.all");
+    options.ProviderOptions.DefaultAccessTokenScopes.Add("https://graph.microsoft.com/sites.manage.all");
+    options.ProviderOptions.DefaultAccessTokenScopes.Add("https://graph.microsoft.com/sites.read.all");
+    options.ProviderOptions.DefaultAccessTokenScopes.Add("https://graph.microsoft.com/sites.readwrite.all");
 });
 
+// Configuración del HttpClient para interactuar con Microsoft Graph
 builder.Services.AddScoped(sp =>
 {
-    var authorizationMessageHandler =
-        sp.GetRequiredService<AuthorizationMessageHandler>();
+    var authorizationMessageHandler = sp.GetRequiredService<AuthorizationMessageHandler>();
     authorizationMessageHandler.InnerHandler = new HttpClientHandler();
     authorizationMessageHandler.ConfigureHandler(
         authorizedUrls: new[] { "https://graph.microsoft.com/v1.0" },
-        scopes: new[] { "User.Read" });
+        scopes: new[]
+        {
+            "User.Read",
+            "sites.fullcontrol.all",
+            "sites.manage.all",
+            "sites.read.all",
+            "sites.readwrite.all"
+        });
 
     return new HttpClient(authorizationMessageHandler);
 });
 
+// Registro del CustomAuthenticationProvider
+builder.Services.AddScoped<IAuthenticationProvider, CustomAuthenticationProvider>();
 
-
-
+// Configuración del GraphServiceClient
+builder.Services.AddScoped(sp =>
+{
+    var httpClient = sp.GetRequiredService<HttpClient>();
+    return new GraphServiceClient(httpClient);
+});
 
 await builder.Build().RunAsync();
