@@ -406,10 +406,10 @@ else
 
                     using (var outputStream = new MemoryStream())
                     {
-                        workbook.SaveAs(outputStream);
+                        workbook.SaveAs(outputStream, new SaveOptions { ValidatePackage = false });
                         outputStream.Position = 0;
 
-                        var nombreExcel = string.Concat("InformePractica_" + fullname, DateTime.Now.ToString("yyyyMMdd_HHmmss"), ".xlsx");
+                        var nombreExcel = $"InformePractica_{fullname}_{DateTime.Now:yyyyMMdd_HHmmss}.xlsm";
 
                         await JSRuntime.InvokeVoidAsync(
                             "DescargarExelnuevo",

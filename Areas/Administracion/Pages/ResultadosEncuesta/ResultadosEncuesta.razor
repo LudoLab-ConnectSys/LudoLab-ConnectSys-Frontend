@@ -1,8 +1,309 @@
 ﻿@inject NavigationManager NavigationManager
 @page "/resultados-encuestas"
+@using System.Net.Http.Headers
+@using DirectorioDeArchivos.Shared
+@inject HttpClient Http
+@using CurrieTechnologies.Razor.SweetAlert2
+@inject SweetAlertService Swal
+@inject IJSRuntime JSRuntime
+@using Microsoft.JSInterop
+@using Microsoft.AspNetCore.Components.Forms
+@using OfficeOpenXml;
+@using ClosedXML.Excel;
 
-<h3>Resultados de Encuesta de satisfación</h3>
+<h2>Resultados de Encuesta de satisfación</h2>
+
+<EditForm Model="newCurso">
+    <div class="contenedor">
+        <label for="nombrePeriodo">Nombre del Periodo:</label>
+        <label for="nombreCurso">Nombre del Curso:</label>
+    </div>
+
+    <div>
+        <select @bind="selectedPeriodo">
+            <option value=0>Seleccione un periodo</option>
+            @foreach (var periodo in listaPeriodos)
+            {
+                <option value="@periodo.id_lista_periodo">@periodo.nombre_periodo</option>
+            }
+        </select>
+        <InputText @bind-Value="@newPeriodocertificate"></InputText>
+        <button @onclick="(() => BuscarPeriodos(selectedPeriodo, newPeriodocertificate))" class="btn btn-primary">Buscar Curso</button>
+    </div>
+</EditForm>
+
+<button @onclick="(() => ListarPeriodos())" type="button" class="btn btn-primary">Listar Cursos</button>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th scope="col">Nombre Periodo</th>
+            <th scope="col">Inicio</th>
+            <th scope="col">Fin</th>
+            <th scope="col">Nombre Curso</th>
+            <th scope="col">Certificado</th>
+            <th scope="col">Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var en in Periodos)
+        {
+            var inputFileId = $"fileInput_{en.id_periodo}";
+
+            <tr>
+                <td>@en.nombre_periodo</td>
+                <td>@en.fecha_inicio_periodo</td>
+                <td>@en.fecha_fin_periodo</td>
+                <td>@en.nombre_curso</td>
+                <td>@(string.IsNullOrEmpty(en.nombre_certificado) ? "No asignado" : en.nombre_certificado)</td>
+                <td>
+                    <!--<button type="button" class="btn btn-warning" @onclick="(()=> ImprimirResultadosEncuestas(en.id_periodo))">
+                        <i class="bi bi-cloud-arrow-down-fill"></i>
+                    </button>-->
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" @onclick="(() => OntenerEncuestas(en.id_periodo, en.nombre_curso) )">
+                        <i class="bi bi-card-checklist"></i>
+                    </button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Lista de encuestas</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                
+                <div class="encuesta-list">
+                    <div class="encuesta-grid">
+                        @foreach (var encuesta in encuestas)
+                        {
+                            <div class="encuesta-card" @onclick="() => ImprimirResultadosEncuestas(encuesta.id_encuesta)">
+                                <h4>@encuesta.titulo</h4>
+                                <p>Fecha de Creación: @encuesta.fecha_creacion.ToShortDateString()</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary">Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+    /* Estilos CSS para EncuestasList.razor */
+
+    .encuesta-list {
+        padding: 20px;
+    }
+
+    .encuesta-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 20px;
+    }
+
+    .encuesta-card {
+        background-color: #f0f0f0;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 10px;
+        cursor: pointer;
+        transition: transform 0.2s ease-in-out;
+    }
+
+        .encuesta-card:hover {
+            transform: scale(1.05);
+        }
+
+        .encuesta-card h4 {
+            margin-bottom: 8px;
+        }
+
+        .encuesta-card p {
+            font-size: 14px;
+            color: #666;
+        }
+
+</style>
 
 @code {
+    Curso newCurso = new Curso();
+    private bool isLoading = false;
+    private List<ListaPeriodo> listaPeriodos = [];
+    private int selectedPeriodo;
+    string newPeriodocertificate;
 
+    List<Encuesta> encuestas = new List<Encuesta>();//Lista de encuestas
+    int idPeriodoF;
+    String nombreCurso;
+
+    public static List<PeriodoConNombreCurso> Periodos = new List<PeriodoConNombreCurso>();
+    private SumatoriaRespuestasModel sumatoriaRespuestas = new SumatoriaRespuestasModel();// resultado de encuestas
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ListaNombresPeriodos();
+    }
+
+    //FUNCIONES PARA obtener Periodos
+    public async Task ListaNombresPeriodos()
+    {
+        isLoading = true;
+        StateHasChanged();
+        listaPeriodos = await Http.GetFromJsonAsync<List<ListaPeriodo>>("http://localhost:5117/api/Periodo/getNamePeriodoList");
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    public async Task BuscarPeriodos(int id_lista_periodo, string nombre_curso)
+    {
+        isLoading = true;
+        StateHasChanged();
+        Console.WriteLine($"ID Lista Periodo: {id_lista_periodo}, Nombre Curso: {nombre_curso}");
+        // Construir la URL con los parámetros de consulta
+        var url = $"http://localhost:5117/api/Periodo/PeriodoByName?id_lista_periodo={id_lista_periodo}&nombre_curso={nombre_curso}";
+
+        var response = await Http.GetAsync(url);
+
+        if (response.IsSuccessStatusCode)
+        {
+            isLoading = false;
+            StateHasChanged();
+            Periodos = await response.Content.ReadFromJsonAsync<List<PeriodoConNombreCurso>>();
+        }
+        else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            isLoading = false;
+            StateHasChanged();
+            //await JSRuntime.InvokeVoidAsync("alert", "No se encontraron coincidencias");
+            await sweetAletNotify("No se encontraron coincidencias", "info");
+            Periodos = new List<PeriodoConNombreCurso>();
+        }
+        else
+        {
+            isLoading = false;
+            StateHasChanged();
+            Console.WriteLine("Error al buscar los periodos.");
+            await sweetAletNotify("Error al buscar los periodos", "error");
+        }
+    }
+
+    //FUNCIONES PARA ontener Periodos de cursos
+    public async Task ListarPeriodos()
+    {
+        isLoading = true;
+        StateHasChanged();
+        Periodos = await Http.GetFromJsonAsync<List<PeriodoConNombreCurso>>("http://localhost:5117/api/Periodo");
+        isLoading = false;
+        StateHasChanged();
+    }
+
+
+    private async Task ImprimirResultadosEncuestas(int id_encuesta)// DESCAGAR resultados de encuestas en formato excel
+    {
+        Console.WriteLine($"PERIODO LLAMADO {idPeriodoF} && {id_encuesta}");
+        try
+        {
+            isLoading = true;
+            var response = await Http.GetAsync($"http://localhost:5117/api/Encuesta/SumatoriaRespuestasPorPeriodo?idPeriodoF={idPeriodoF}&id_encuesta={id_encuesta}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                sumatoriaRespuestas = await response.Content.ReadFromJsonAsync<SumatoriaRespuestasModel>();
+
+                using (var workbook = new XLWorkbook())
+                {
+                    var worksheet = workbook.Worksheets.Add("Resultados");
+                    worksheet.Cell(1, 1).Value = "Nombre Completo del Tutor";
+                    worksheet.Cell(1, 2).Value = "Sumatoria";
+
+                    for (int i = 0; i < sumatoriaRespuestas.SumatoriaTutores.Count; i++)
+                    {
+                        worksheet.Cell(i + 2, 1).Value = sumatoriaRespuestas.SumatoriaTutores[i].NombreCompletoTutor;
+                        worksheet.Cell(i + 2, 2).Value = sumatoriaRespuestas.SumatoriaTutores[i].Sumatoria;
+                    }
+
+                    worksheet.Cell(sumatoriaRespuestas.SumatoriaTutores.Count + 2, 1).Value = "Sumatoria Total del Periodo";
+                    worksheet.Cell(sumatoriaRespuestas.SumatoriaTutores.Count + 2, 2).Value = sumatoriaRespuestas.SumatoriaTotalPeriodo;
+
+                    using (var stream = new MemoryStream())
+                    {
+                        workbook.SaveAs(stream);
+                        var base64 = Convert.ToBase64String(stream.ToArray());
+                        await JSRuntime.InvokeVoidAsync("DescargarExel", $"ResultadosEncuesta_{nombreCurso}.xlsx", base64);
+                    }
+                }
+            }
+            else
+            {
+                //error = $"Error: {response.ReasonPhrase}";
+            }
+
+
+        }
+        catch (Exception ex)
+        {
+            //error = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task OntenerEncuestas(int id_periodo, string nombre_curso)
+    {
+        isLoading = true;
+        StateHasChanged();
+        idPeriodoF = id_periodo;
+        nombreCurso = nombre_curso;
+        try
+        {
+            encuestas = await Http.GetFromJsonAsync<List<Encuesta>>("http://localhost:5117/api/Encuesta/GetEncuesta");
+        }
+        catch (Exception ex)
+        {
+            await sweetAletNotify("Error al obtener las encuestas", "error");
+            isLoading = false;
+            StateHasChanged();
+            return;
+        }
+
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task sweetAletNotify(string texto, string tipo)//notificacion de alertas
+    {
+        var options = new
+        {
+            Title = texto,
+            Icon = tipo,
+            ConfirmButtonText = "OK"
+        };
+        await JSRuntime.InvokeVoidAsync("FireSweetAlert", options);
+    }
+
+    public class SumatoriaRespuestasModel
+    {
+        public List<SumatoriaTutor> SumatoriaTutores { get; set; }
+        public int SumatoriaTotalPeriodo { get; set; }
+    }
+
+    public class SumatoriaTutor
+    {
+        public string NombreCompletoTutor { get; set; }
+        public int Sumatoria { get; set; }
+    }
 }
+

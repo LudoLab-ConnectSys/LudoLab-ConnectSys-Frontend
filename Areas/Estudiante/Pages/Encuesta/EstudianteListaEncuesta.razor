@@ -1,0 +1,101 @@
+﻿<!-- EncuestasList.razor -->
+@page "/encuestas"
+@inject HttpClient httpClient
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@inject SweetAlertService Swal
+
+<h3>Lista de Encuestas</h3>
+
+@if (isLoading)
+{
+    <Spinner />
+}
+<div class="encuesta-list">
+    <div class="encuesta-grid">
+        @foreach (var encuesta in encuestas)
+        {
+            <div class="encuesta-card" @onclick="() => VerDetalles(encuesta.id_encuesta)">
+                <h4>@encuesta.titulo</h4>
+                <p>Fecha de Creación: @encuesta.fecha_creacion.ToShortDateString()</p>
+            </div>
+        }
+    </div>
+</div>
+<style>
+    /* Estilos CSS para EncuestasList.razor */
+
+    .encuesta-list {
+        padding: 20px;
+    }
+
+    .encuesta-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 20px;
+    }
+
+    .encuesta-card {
+        background-color: #f0f0f0;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 10px;
+        cursor: pointer;
+        transition: transform 0.2s ease-in-out;
+    }
+
+        .encuesta-card:hover {
+            transform: scale(1.05);
+        }
+
+        .encuesta-card h4 {
+            margin-bottom: 8px;
+        }
+
+        .encuesta-card p {
+            font-size: 14px;
+            color: #666;
+        }
+
+</style>
+@code {
+    private bool isLoading = false;
+    List<Encuesta> encuestas = new List<Encuesta>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            encuestas = await httpClient.GetFromJsonAsync<List<Encuesta>>("http://localhost:5117/api/Encuesta/GetEncuesta");
+        }
+        catch (Exception ex)
+        {
+            await sweetAletNotify("Error al obtener las encuestas", "error");
+            isLoading = false;
+            StateHasChanged();
+            return;
+        }
+
+        isLoading = false;
+        StateHasChanged();
+    }
+
+
+    void VerDetalles(int encuestaId)
+    {
+        NavigationManager.NavigateTo($"/encuestas/{encuestaId}");
+    }
+    private async Task sweetAletNotify(string texto, string tipo)
+    {
+        var options = new
+        {
+            Title = texto,
+            Icon = tipo,
+            ConfirmButtonText = "OK"
+        };
+        await JSRuntime.InvokeVoidAsync("FireSweetAlert", options);
+    }
+}
