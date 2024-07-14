@@ -135,13 +135,13 @@ else
         try
         {
             await Http.PostAsJsonAsync("http://localhost:5117/api/Encuesta/respuestas", respuestasEnviar);
-            sweetAletNotify("¡Respuestas registradas exitosamente!", "info");
+            await sweetAletNotify("¡Respuestas registradas exitosamente!", "info");
             //await JSRuntime.InvokeVoidAsync("refreshPage");
 
         }
         catch (Exception ex)
         {
-            sweetAletNotify("Error al guardar respuestas", "error");
+            await sweetAletNotify("Error al guardar respuestas", "error");
         }
         isLoading = false;
         StateHasChanged();

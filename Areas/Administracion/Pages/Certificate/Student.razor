@@ -418,12 +418,13 @@
 
     public async Task EstudiantesPorPeriodo(int id_periodo, string curso, string periodo)
     {
+        Console.WriteLine($"id_periodo:{id_periodo} + curso:{curso}+ periodo: {periodo}");
         isLoading = true;
         StateHasChanged();
         nombbreCurso = curso;
         nombbrePeiodo = periodo;
         // Construir la URL con los parámetros de consulta
-        var url = $"http://localhost:5117/api/Grupo/{id_periodo}";
+        var url = $"http://localhost:5117/api/Grupo/GetEstudiantesPorPeriodo/{id_periodo}";
 
         var response = await Http.GetAsync(url);
 
