@@ -1,16 +1,11 @@
-﻿@using LudoLab_ConnectSys_Frontend.Areas.Estudiante.Pages
 <CascadingAuthenticationState>
     <Router AppAssembly="@typeof(App).Assembly">
         <Found Context="routeData">
-            <!--   <RouteView RouteData="@routeData" DefaultLayout="@typeof(AdminLayout)" /> -->
-             <RouteView RouteData="@routeData" DefaultLayout="@typeof(EstudianteLayout)" />
-            <!-- <RouteView RouteData="@routeData" DefaultLayout="@typeof(InstructorLayout)" /> -->
+             <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
             <FocusOnNavigate RouteData="@routeData" Selector="h1" />
         </Found>
         <NotFound>
-            <!--  <LayoutView Layout="@typeof(AdminLayout)">-->
-            <LayoutView Layout="@typeof(EstudianteLayout)"> 
-            <!-- <LayoutView Layout="@typeof(InstructorLayout)">-->
+            <LayoutView Layout="@typeof(MainLayout)">
                 <p>Sorry, there's nothing at this address.</p>
             </LayoutView>
         </NotFound>
