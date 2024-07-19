@@ -1,4 +1,7 @@
 ﻿@page "/cursos-disponibles"
+@layout EstudianteLayout
+@attribute [Authorize(Roles = "Estudiante")]
+@using Microsoft.AspNetCore.Authorization
 @inject HttpClient Http
 @inject NavigationManager Navigation
 
