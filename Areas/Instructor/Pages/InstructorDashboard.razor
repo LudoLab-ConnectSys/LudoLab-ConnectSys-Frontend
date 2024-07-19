@@ -1,5 +1,7 @@
 ﻿@page "/instructorDashboard"
 @layout InstructorLayout
+@attribute [Authorize(Roles = "Instructor")]
+@using Microsoft.AspNetCore.Authorization
 
 <h3>Instructor Dashboard</h3>
 <p>Bienvenido al panel de instructor.</p>

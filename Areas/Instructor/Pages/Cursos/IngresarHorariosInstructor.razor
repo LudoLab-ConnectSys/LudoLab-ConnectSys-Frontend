@@ -1,4 +1,7 @@
 ﻿@page "/ingresar-horarios-instructor/{cursoId:int}/{periodoId:int}"
+@layout InstructorLayout
+@attribute [Authorize(Roles = "Instructor")]
+@using Microsoft.AspNetCore.Authorization
 @inject HttpClient Http
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthenticationStateProvider
