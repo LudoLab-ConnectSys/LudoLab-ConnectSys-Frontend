@@ -1,24 +1,27 @@
 ﻿@page "/crear-curso"
+@layout AdminLayout
+@attribute [Authorize(Roles = "Administrador")]
+@using Microsoft.AspNetCore.Authorization
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
 
 <h3>Crear Nuevo Curso</h3>
 
 <EditForm Model="nuevoCurso" OnValidSubmit="HandleValidSubmit">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
+    <DataAnnotationsValidator/>
+    <ValidationSummary/>
 
     <div class="form-group">
         <label for="nombre">Nombre del curso:</label>
-        <InputText id="nombre" class="form-control" @bind-Value="nuevoCurso.nombre_curso" />
+        <InputText id="nombre" class="form-control" @bind-Value="nuevoCurso.nombre_curso"/>
     </div>
     <div class="form-group">
         <label for="tipo">Tipo del curso:</label>
-        <InputText id="tipo" class="form-control" @bind-Value="nuevoCurso.tipo_curso" />
+        <InputText id="tipo" class="form-control" @bind-Value="nuevoCurso.tipo_curso"/>
     </div>
     <div class="form-group">
         <label for="horas">Horas del curso:</label>
-        <InputNumber id="horas" class="form-control" @bind-Value="nuevoCurso.horas" />
+        <InputNumber id="horas" class="form-control" @bind-Value="nuevoCurso.horas"/>
     </div>
     <div class="form-group">
         <label for="modalidad">Modalidad:</label>
@@ -62,4 +65,5 @@
             // Manejar el error
         }
     }
+
 }

@@ -1,4 +1,7 @@
 ﻿@page "/registrar-usuario"
+@layout AdminLayout
+@attribute [Authorize(Roles = "Administrador")]
+@using Microsoft.AspNetCore.Authorization
 @inject NavigationManager NavigationManager
 @inject HttpClient Http
 

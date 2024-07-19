@@ -1,5 +1,8 @@
-﻿@inject NavigationManager NavigationManager
-@page "/informe-practicas"
+﻿@page "/informe-practicas"
+@layout AdminLayout
+@attribute [Authorize(Roles = "Administrador")]
+@using Microsoft.AspNetCore.Authorization
+@inject NavigationManager NavigationManager
 @inject HttpClient Http
 @inject IJSRuntime JSRuntime
 @inject SweetAlertService Swal

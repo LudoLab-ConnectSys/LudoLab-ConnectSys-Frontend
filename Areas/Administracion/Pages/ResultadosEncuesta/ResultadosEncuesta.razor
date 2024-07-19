@@ -1,5 +1,8 @@
-﻿@inject NavigationManager NavigationManager
-@page "/resultados-encuestas"
+﻿@page "/resultados-encuestas"
+@layout AdminLayout
+@attribute [Authorize(Roles = "Administrador")]
+@using Microsoft.AspNetCore.Authorization
+@inject NavigationManager NavigationManager
 
 <h3>Resultados de Encuesta de satisfación</h3>
 

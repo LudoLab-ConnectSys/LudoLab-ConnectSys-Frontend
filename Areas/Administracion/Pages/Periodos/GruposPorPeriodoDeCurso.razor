@@ -1,4 +1,7 @@
 ﻿@page "/periodos/{PeriodoId:int}/grupos"
+@layout AdminLayout
+@attribute [Authorize(Roles = "Administrador")]
+@using Microsoft.AspNetCore.Authorization
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
 

@@ -1,4 +1,7 @@
 ﻿@page "/configurar-emparejamiento/{EdicionId:int}"
+@layout AdminLayout
+@attribute [Authorize(Roles = "Administrador")]
+@using Microsoft.AspNetCore.Authorization
 @using System.ComponentModel.DataAnnotations
 @inject NavigationManager NavigationManager
 

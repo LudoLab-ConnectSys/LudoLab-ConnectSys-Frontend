@@ -1,5 +1,8 @@
-﻿@inject NavigationManager NavigationManager
-@page "/student"
+﻿@page "/student"
+@layout AdminLayout
+@attribute [Authorize(Roles = "Administrador")]
+@using Microsoft.AspNetCore.Authorization
+@inject NavigationManager NavigationManager
 @using System.Net.Http.Headers
 @using DirectorioDeArchivos.Shared
 @inject HttpClient Http

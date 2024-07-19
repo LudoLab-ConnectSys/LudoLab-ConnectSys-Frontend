@@ -1,4 +1,7 @@
 ﻿@page "/grupos-de-edicion/{EdicionId:int}"
+@layout AdminLayout
+@attribute [Authorize(Roles = "Administrador")]
+@using Microsoft.AspNetCore.Authorization
 @inject NavigationManager NavigationManager
 
 <h3>Grupos de la Edición</h3>

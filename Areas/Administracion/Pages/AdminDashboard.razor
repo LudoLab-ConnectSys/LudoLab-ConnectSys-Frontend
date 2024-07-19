@@ -1,5 +1,7 @@
 ﻿@page "/adminDashboard"
 @layout AdminLayout
+@attribute [Authorize(Roles = "Administrador")]
+@using Microsoft.AspNetCore.Authorization
 
 <h3>Admin Dashboard</h3>
 <p>Bienvenido al panel de administración.</p>

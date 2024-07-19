@@ -1,5 +1,8 @@
-﻿@inject NavigationManager NavigationManager
-@page "/generar-reportes"
+﻿@page "/generar-reportes"
+@layout AdminLayout
+@attribute [Authorize(Roles = "Administrador")]
+@using Microsoft.AspNetCore.Authorization
+@inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
 @using Microsoft.JSInterop
 @inject HttpClient Http

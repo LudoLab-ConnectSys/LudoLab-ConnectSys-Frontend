@@ -1,4 +1,7 @@
 ﻿@page "/curso/{id_curso:int}/grupos/{id_periodo:int}"
+@layout AdminLayout
+@attribute [Authorize(Roles = "Administrador")]
+@using Microsoft.AspNetCore.Authorization
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
 

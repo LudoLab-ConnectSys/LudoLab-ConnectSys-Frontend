@@ -1,4 +1,7 @@
 ﻿@page "/emparejar-horarios/{EdicionId:int}/{numEstudiantes:int}"
+@layout AdminLayout
+@attribute [Authorize(Roles = "Administrador")]
+@using Microsoft.AspNetCore.Authorization
 @inject NavigationManager NavigationManager
 
 <h3>Resultados del Emparejamiento de Horarios</h3>
