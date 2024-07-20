@@ -27,7 +27,7 @@ else
             <InputNumber id="duracionHoras" class="form-control" @bind-Value="periodo.duracion_periodo_horas" />
         </div>
         <div class="form-group">
-            <label for="listaPeriodo">Lista de Periodos:</label>
+            <label for="listaPeriodo">Nombre de Periodo:</label>
             <InputSelect id="listaPeriodo" class="form-control" @bind-Value="periodo.id_ListaPeriodo">
                 <option value="" disabled selected>Seleccione una lista de periodos</option>
                 @foreach (var listaPeriodo in listaPeriodos)

@@ -49,8 +49,18 @@
     private List<HorarioPreferenteEstudiante> horarios = new List<HorarioPreferenteEstudiante>();
     private HorarioPreferenteEstudiante nuevoHorario = new HorarioPreferenteEstudiante();
 
+    // Quemar el ID del estudiante
+    private const int estudianteId = 10; // Reemplaza con el ID real del estudiante
+
     private async Task GuardarHorarios()
     {
+        // Añadir el ID del estudiante a cada horario antes de enviarlo
+        foreach (var horario in horarios)
+        {
+            horario.id_estudiante = estudianteId;
+        }
+
+        // Enviar la lista de horarios al controlador
         var response = await Http.PostAsJsonAsync($"http://localhost:5117/api/Estudiante/HorariosPreferentes/{cursoId}", horarios);
         if (response.IsSuccessStatusCode)
         {
@@ -68,7 +78,8 @@
             {
                 dia_semana = nuevoHorario.dia_semana,
                 hora_inicio = nuevoHorario.hora_inicio,
-                hora_fin = nuevoHorario.hora_fin
+                hora_fin = nuevoHorario.hora_fin,
+                id_estudiante = estudianteId // Quemar el ID del estudiante en el nuevo horario
             });
         nuevoHorario = new HorarioPreferenteEstudiante();
     }
