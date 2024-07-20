@@ -195,7 +195,7 @@
         nombrePeriodo = periodo;
         nombreCurso = curso;
         // Construir la URL con los parámetros de consulta
-        var url = $"http://localhost:5117/api/Grupo/{id_periodo}";
+        var url = $"http://localhost:5117/api/Grupo/GetEstudiantesPorPeriodo/{id_periodo}";
 
         var response = await Http.GetAsync(url);
 

@@ -31,10 +31,6 @@
         <a class="nav-link" href="#" @onclick="ToggleGruposMenu">
             <span class="bi bi-book" aria-hidden="true"></span> Grupos
         </a>
-        @if (isGruposMenuVisible)
-        {
-            <div class="sub-menu">
-                <NavLink class="nav-link" href="/crear-grupos">Crear Grupos (Horarios)</NavLink>
             </div>
         }
     </div>
@@ -42,16 +38,7 @@
     <div class="nav-item px-3">
         <a class="nav-link" href="#" @onclick="ToggleUsuariosMenu">
             <span class="bi bi-person" aria-hidden="true"></span> Usuarios
-        </a>
-        @if (isUsuariosMenuVisible)
-        {
-            <div class="sub-menu">
-                <NavLink class="nav-link" href="registrar-usuario">Registrar Usuario</NavLink>
             </div>
-        }
-    </div>
-
-        <div class="nav-item px-3">
             <a class="nav-link" href="#" @onclick="ToggleEstudiantesMenu">
             <span class="bi bi-person-fill" aria-hidden="true"></span> Estudiantes
             </a>
@@ -84,7 +71,7 @@
     
 
         <div class="nav-item px-3">
-            <a class="nav-link" href="#" @onclick="ToggleCertificateMenu">
+            <a class="nav-link"  @onclick="ToggleCertificateMenu">
                 <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Certificados
             </a>
             @if (isCertificateMenuVisible)
