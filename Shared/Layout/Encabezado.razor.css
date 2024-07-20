@@ -5,6 +5,15 @@
     width: 100%; /* Se extiende a lo ancho del contenedor */
     height: 55px;
     background-color: white;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end; /* Alinea el contenido al final */
+    padding-right: 20px; /* Añadir algo de espacio desde el borde derecho */
+}
+
+.encabezado {
+    display: flex;
+    align-items: center;
 }
 
 .nombre-usuario {
@@ -12,13 +21,11 @@
     font-size: 16px;
     line-height: 125%;
     font-family: Roboto, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif;
-    position: absolute;
-    left: 1350px;
-    top: 10px;
-    width: 100px;
-    height: 40px;
-    text-align: center;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
+    margin-right: 10px; /* Espacio entre el nombre y el icono */
+}
+
+.icono-cerrar-sesion {
+    cursor: pointer;
+    font-size: 16px; /* Coincide con el tamaño de la fuente del nombre de usuario */
+    color: #000;
 }

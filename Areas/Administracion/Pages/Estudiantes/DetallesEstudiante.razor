@@ -1,8 +1,7 @@
 ﻿@page "/detalle-estudiante/{EstudianteId:int}"
+@layout AdminLayout
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
-
-<h3>Detalles del Estudiante</h3>
 
 @if (estudiante == null)
 {
@@ -15,7 +14,7 @@ else
         <ValidationSummary />
 
         <div>
-            <h4>Información del Estudiante</h4>
+            <h3>Detalles del Estudiante</h3>
             <div class="form-group">
                 <label>Nombre:</label>
                 <InputText @bind-Value="estudianteUpdateModel.nombre_usuario" class="form-control" />

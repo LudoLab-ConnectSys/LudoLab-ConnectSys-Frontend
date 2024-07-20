@@ -1,4 +1,5 @@
 ﻿@page "/crear-grupos"
+@layout AdminLayout
 @inject HttpClient Http
 @inject NavigationManager Navigation
 
@@ -132,7 +133,7 @@
             {
                 <div class="grupo-item">
                     <strong>Grupo:</strong> @grupo.nombre_grupo <br />
-                    <strong>Instructor:</strong> @grupo.nombre_instructor ?? "Sin nombre" <br />
+                    <strong>Instructor:</strong> @grupo.nombre_instructor<br />
                     <strong>Estudiantes:</strong>
                     <ul>
                         @if (grupo.estudiantes != null)

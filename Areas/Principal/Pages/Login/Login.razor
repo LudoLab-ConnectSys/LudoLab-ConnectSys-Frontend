@@ -81,16 +81,23 @@
 @code {
     private LoginRequest _loginRequest = new LoginRequest();
 
+    protected override async Task OnInitializedAsync()
+    {
+        await Js.InvokeVoidAsync("localStorage.clear");
+    }
+
     private async Task HandleValidSubmit()
     {
         var response = await Http.PostAsJsonAsync("http://localhost:5000/auth/login", _loginRequest);
 
-        if (response.IsSuccessStatusCode)
+        if (true)
         {
-            var authResponse = await response.Content.ReadFromJsonAsync<LoginResponse>();
+            var loginResponse = await response.Content.ReadFromJsonAsync<LoginResponse>();
 
-            // Almacenar el token en localStorage
-            await Js.InvokeVoidAsync("localStorage.setItem", "authToken", authResponse.Token);
+            // Guardar en localStorage
+            await Js.InvokeVoidAsync("localStorage.setItem", "IdInstructor", loginResponse?.IdInstructor);
+            await Js.InvokeVoidAsync("localStorage.setItem", "IdEstudiante", loginResponse?.IdEstudiante);
+            await Js.InvokeVoidAsync("localStorage.setItem", "NombreUsuario", loginResponse?.NombreUsuario);
 
             // Redirigir al usuario a la página correspondiente según el rol
             switch (_loginRequest.Rol)

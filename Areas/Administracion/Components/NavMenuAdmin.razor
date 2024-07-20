@@ -1,6 +1,6 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿﻿<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">LudoLab ConnectSys Frontend</a>
+        <a class="navbar-brand" href="">LudoLab ConnectSys</a>
         <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
             <span class="navbar-toggler-icon"></span>
         </button>
@@ -9,27 +9,27 @@
 
 <div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
 
-        <div class="nav-item px-3">
-            <a class="nav-link"  @onclick="ToggleCursosMenu">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Cursos
-            </a>
-            @if (isCursosMenuVisible)
-            {
-                <div class="sub-menu">
-                    <NavLink class="nav-link" href="cursos">Todos los Cursos</NavLink>
-                </div>
-                <div class="sub-menu">
-                    <NavLink class="nav-link" href="crear-curso">Crear Curso</NavLink>
-                </div>
-                <div class="sub-menu">
-                    <NavLink class="nav-link" href="periodos">Periodos</NavLink> <!-- Nueva opción -->
-                </div>
-            }
-        </div>
+    <div class="nav-item px-3">
+        <a class="nav-link"  @onclick="ToggleCursosMenu">
+            <span class="bi bi-bank2" aria-hidden="true"></span> Cursos
+        </a>
+        @if (isCursosMenuVisible)
+        {
+            <div class="sub-menu">
+                <NavLink class="nav-link" href="cursos">Todos los Cursos</NavLink>
+            </div>
+            <div class="sub-menu">
+                <NavLink class="nav-link" href="crear-curso">Crear Curso</NavLink>
+            </div>
+            <div class="sub-menu">
+                <NavLink class="nav-link" href="periodos">Periodos</NavLink>
+            </div>
+        }
+    </div>
 
     <div class="nav-item px-3">
         <a class="nav-link"  @onclick="ToggleGruposMenu">
-            <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Grupos
+            <span class="bi bi-book" aria-hidden="true"></span> Grupos
         </a>
         @if (isGruposMenuVisible)
         {
@@ -41,7 +41,7 @@
 
     <div class="nav-item px-3">
         <a class="nav-link"  @onclick="ToggleUsuariosMenu">
-            <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Usuarios
+            <span class="bi bi-person" aria-hidden="true"></span> Usuarios
         </a>
         @if (isUsuariosMenuVisible)
         {
@@ -51,24 +51,24 @@
         }
     </div>
 
-        <div class="nav-item px-3">
-            <a class="nav-link"  @onclick="ToggleEstudiantesMenu">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Estudiantes
-            </a>
-            @if (isEstudiantesMenuVisible)
-            {
-                <div class="sub-menu">
-                    <NavLink class="nav-link" href="estudiantes">Todos</NavLink>
-                </div>
-               /* <div class="sub-menu">
-                    <NavLink class="nav-link" href="crear-estudiante">Inscripcion</NavLink>
-                </div>*/
-            }
-        </div>
+    <div class="nav-item px-3">
+        <a class="nav-link"  @onclick="ToggleEstudiantesMenu">
+            <span class="bi bi-person-fill" aria-hidden="true"></span> Estudiantes
+        </a>
+        @if (isEstudiantesMenuVisible)
+        {
+            <div class="sub-menu">
+                <NavLink class="nav-link" href="estudiantes">Todos</NavLink>
+            </div>
+            <div class="sub-menu">
+                <NavLink class="nav-link" href="matricular-estudiante">Inscripcion</NavLink>
+            </div>
+        }
+    </div>
 
     <div class="nav-item px-3">
         <a class="nav-link"  @onclick="ToggleInstructoresMenu">
-            <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Instructores
+            <span class="bi bi-person-badge" aria-hidden="true"></span> Instructores
         </a>
         @if (isInstructoresMenuVisible)
         {
@@ -81,50 +81,50 @@
         }
     </div>
 
-    
 
-        <div class="nav-item px-3">
-            <a class="nav-link"  @onclick="ToggleCertificateMenu">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Certificados
-            </a>
-            @if (isCertificateMenuVisible)
-            {
-                <div class="sub-menu">
-                    <NavLink class="nav-link" href="tutor">Tutors</NavLink>
-                </div>
-                <div class="sub-menu">
-                    <NavLink class="nav-link" href="student">Students</NavLink>
-                </div>
-            }
-        </div>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="informe-practicas">
-                <span class="bi bi-file-earmark-text" aria-hidden="true"></span> Informes de Prácticas
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="generar-reportes">
-                <span class="bi bi-bar-chart " aria-hidden="true"></span> Reportes
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="resultados-encuestas">
-                <span class="bi bi-clipboard-check" aria-hidden="true"></span> Encuestas
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <a class="nav-link"  @onclick="ToggleRepositorioMenu">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Repositorio
-            </a>
-            @if (isRepositorioMenuVisible)
-            {
-                <div class="sub-menu">
+    <div class="nav-item px-3">
+        <a class="nav-link"  @onclick="ToggleCertificateMenu">
+            <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Certificados
+        </a>
+        @if (isCertificateMenuVisible)
+        {
+            <div class="sub-menu">
+                <NavLink class="nav-link" href="tutor">Tutors</NavLink>
+            </div>
+            <div class="sub-menu">
+                <NavLink class="nav-link" href="student">Students</NavLink>
+            </div>
+        }
+    </div>
+
+    <div class="nav-item px-3">
+        <NavLink class="nav-link" href="informe-practicas">
+            <span class="bi bi-file-earmark-text" aria-hidden="true"></span> Informes de Prácticas
+        </NavLink>
+    </div>
+    <div class="nav-item px-3">
+        <NavLink class="nav-link" href="generar-reportes">
+            <span class="bi bi-bar-chart " aria-hidden="true"></span> Reportes
+        </NavLink>
+    </div>
+    <div class="nav-item px-3">
+        <NavLink class="nav-link" href="resultados-encuestas">
+            <span class="bi bi-clipboard-check" aria-hidden="true"></span> Encuestas
+        </NavLink>
+    </div>
+    <div class="nav-item px-3">
+        <a class="nav-link"  @onclick="ToggleRepositorioMenu">
+            <span class="bi bi-share-fill" aria-hidden="true"></span> Repositorio
+        </a>
+        @if (isRepositorioMenuVisible)
+        {
+            <div class="sub-menu">
                 <NavLink class="nav-link" href="repositorio">Subir Archivo</NavLink>
-                </div>
-                
-            }
-        </div>
+            </div>
+
+        }
+    </div>
 </div>
 
 

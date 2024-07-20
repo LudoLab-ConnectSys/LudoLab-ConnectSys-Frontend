@@ -1,9 +1,28 @@
-﻿
-    <div class="fondo-encabezado"></div>
-    <div class="nombre-usuario">Luis Chiliguano</div>
-
-
+﻿<div class="fondo-encabezado">
+    <div class="encabezado">
+        <div class="nombre-usuario">@nombreUsuario</div>
+        <i class="bi bi-box-arrow-right icono-cerrar-sesion" @onclick="Logout"></i>
+    </div>
+</div>
 
 @code {
+    [Inject] private NavigationManager Navigation { get; set; }
+    [Inject] private IJSRuntime Js { get; set; }
+
+    private string nombreUsuario;
+
+    protected override async Task OnInitializedAsync()
+    {
+        nombreUsuario = await Js.InvokeAsync<string>("localStorage.getItem", "NombreUsuario");
+        if (string.IsNullOrEmpty(nombreUsuario))
+        {
+            nombreUsuario = "Usuario no identificado"; // Valor por defecto si no se encuentra el nombre de usuario
+        }
+    }
+
+    private void Logout()
+    {
+        Navigation.NavigateTo("/login");
+    }
 
 }
