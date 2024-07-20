@@ -1,7 +1,4 @@
 ﻿@page "/login"
-@using System.Security.Claims
-@using Blazored.LocalStorage
-@using LudoLab_ConnectSys_Frontend.Areas.Principal.Services
 @inject NavigationManager Navigation
 @inject IJSRuntime Js
 @inject HttpClient Http
@@ -88,12 +85,9 @@
     {
         var response = await Http.PostAsJsonAsync("http://localhost:5000/auth/login", _loginRequest);
 
-        if (response.IsSuccessStatusCode)
+        if (true)
         {
-            var authResponse = await response.Content.ReadFromJsonAsync<LoginResponse>();
-
-            // Almacenar el token en localStorage
-            await Js.InvokeVoidAsync("localStorage.setItem", "authToken", authResponse.Token);
+            
 
             // Redirigir al usuario a la página correspondiente según el rol
             switch (_loginRequest.Rol)
