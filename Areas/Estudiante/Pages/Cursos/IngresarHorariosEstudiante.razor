@@ -2,12 +2,13 @@
 @layout EstudianteLayout
 @inject HttpClient Http
 @inject NavigationManager Navigation
+@inject IJSRuntime Js
 
 <h3>Ingresar Horarios Preferentes</h3>
 
 <EditForm Model="@horarios" OnValidSubmit="GuardarHorarios">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
+    <DataAnnotationsValidator/>
+    <ValidationSummary/>
 
     <div class="form-group">
         <label>Día de la Semana:</label>
@@ -23,12 +24,12 @@
 
     <div class="form-group">
         <label>Hora de Inicio:</label>
-        <input type="time" value="@(new DateTime(nuevoHorario.hora_inicio.Ticks).ToString("HH:mm"))" @oninput="e => nuevoHorario.hora_inicio = TimeSpan.Parse(e.Value.ToString())" class="form-control" />
+        <input type="time" value="@(new DateTime(nuevoHorario.hora_inicio.Ticks).ToString("HH:mm"))" @oninput="e => nuevoHorario.hora_inicio = TimeSpan.Parse(e.Value.ToString())" class="form-control"/>
     </div>
 
     <div class="form-group">
         <label>Hora de Fin:</label>
-        <input type="time" value="@(new DateTime(nuevoHorario.hora_fin.Ticks).ToString("HH:mm"))" @oninput="e => nuevoHorario.hora_fin = TimeSpan.Parse(e.Value.ToString())" class="form-control" />
+        <input type="time" value="@(new DateTime(nuevoHorario.hora_fin.Ticks).ToString("HH:mm"))" @oninput="e => nuevoHorario.hora_fin = TimeSpan.Parse(e.Value.ToString())" class="form-control"/>
     </div>
 
     <button type="button" class="btn btn-primary" @onclick="AgregarHorario">Agregar Horario</button>
@@ -50,6 +51,13 @@
     private List<HorarioPreferenteEstudiante> horarios = new List<HorarioPreferenteEstudiante>();
     private HorarioPreferenteEstudiante nuevoHorario = new HorarioPreferenteEstudiante();
 
+    private string? idEstudiante;
+
+    protected override async Task OnInitializedAsync()
+    {
+        idEstudiante = await Js.InvokeAsync<string>("localStorage.getItem", "IdEstudiante");
+    }
+
     private async Task GuardarHorarios()
     {
         var response = await Http.PostAsJsonAsync($"http://localhost:5117/api/Estudiante/HorariosPreferentes/{cursoId}", horarios);
@@ -66,11 +74,11 @@
     private void AgregarHorario()
     {
         horarios.Add(new HorarioPreferenteEstudiante
-            {
-                dia_semana = nuevoHorario.dia_semana,
-                hora_inicio = nuevoHorario.hora_inicio,
-                hora_fin = nuevoHorario.hora_fin
-            });
+        {
+            dia_semana = nuevoHorario.dia_semana,
+            hora_inicio = nuevoHorario.hora_inicio,
+            hora_fin = nuevoHorario.hora_fin
+        });
         nuevoHorario = new HorarioPreferenteEstudiante();
     }
 
@@ -78,4 +86,5 @@
     {
         horarios.Remove(horario);
     }
+
 }
