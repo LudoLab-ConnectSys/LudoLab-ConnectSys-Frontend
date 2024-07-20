@@ -6,17 +6,21 @@ using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Graph;
 using Microsoft.Kiota.Abstractions.Authentication;
+using Blazored.LocalStorage;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-// Configuración del HttpClient para interactuar con tu backend
+// Para usar LocalStorage
+builder.Services.AddBlazoredLocalStorage();
+
+// Configuraciï¿½n del HttpClient para interactuar con tu backend
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
 builder.Services.AddSweetAlert2();
 
-// Configuración de la autenticación MSAL
+// Configuraciï¿½n de la autenticaciï¿½n MSAL
 builder.Services.AddMsalAuthentication(options =>
 {
     builder.Configuration.Bind("AzureAd", options.ProviderOptions.Authentication);
@@ -27,7 +31,7 @@ builder.Services.AddMsalAuthentication(options =>
     options.ProviderOptions.DefaultAccessTokenScopes.Add("https://graph.microsoft.com/sites.readwrite.all");
 });
 
-// Configuración del HttpClient para interactuar con Microsoft Graph
+// Configuraciï¿½n del HttpClient para interactuar con Microsoft Graph
 builder.Services.AddScoped(sp =>
 {
     var authorizationMessageHandler = sp.GetRequiredService<AuthorizationMessageHandler>();
@@ -49,7 +53,7 @@ builder.Services.AddScoped(sp =>
 // Registro del CustomAuthenticationProvider
 builder.Services.AddScoped<IAuthenticationProvider, CustomAuthenticationProvider>();
 
-// Configuración del GraphServiceClient
+// Configuraciï¿½n del GraphServiceClient
 builder.Services.AddScoped(sp =>
 {
     var httpClient = sp.GetRequiredService<HttpClient>();
