@@ -102,7 +102,7 @@
                                 <td>@en.CedulaUsuario</td>
                                 <td>@en.CelularUsuario</td>
                                 <td>
-                                    <button type="button" class="btn btn-warning" @onclick="(()=> ImprimirCertificados(en.NombreUsuario +' '+ en.ApellidosUsuario, en.NombreCertificado, en.HorasGanadasInstructor))">
+                                    <button type="button" class="btn btn-warning" @onclick="(()=> ImprimirCertificados(en.NombreUsuario +' '+ en.ApellidosUsuario, en.NombreCertificado, en.HorasGanadasInstructor, 1))">
                                         <i class="bi bi-cloud-arrow-down-fill"></i>
                                     </button>
                                 </td>
@@ -357,7 +357,7 @@
         }
     }
 
-    private async Task ImprimirCertificados(string fullname, string nombre_certificado, int horasAsignadas)
+    private async Task ImprimirCertificados(string fullname, string nombre_certificado, int horasAsignadas, int alertmess)
     {
         isLoading = true;
         StateHasChanged();
@@ -390,6 +390,11 @@
             await JSRuntime.InvokeVoidAsync("downloadFileFromStream", "Tutor_" + fullname, streamRef, texts);
             isLoading = false;
             StateHasChanged();
+
+            if (alertmess == 1)
+            {
+                await sweetAletNotify("Certificado descargado exitosamente.", "success");
+            }
         }
     }
 
@@ -397,8 +402,10 @@
     {
         @foreach (var tutor in ListaTutores)
         {
-            await ImprimirCertificados(tutor.NombreUsuario + ' ' + tutor.ApellidosUsuario, tutor.NombreCertificado, tutor.HorasGanadasInstructor);
+            await ImprimirCertificados(tutor.NombreUsuario + ' ' + tutor.ApellidosUsuario, tutor.NombreCertificado, tutor.HorasGanadasInstructor, 2);
         }
+
+        await sweetAletNotify("Certificados descargados exitosamente.", "success");
     }
 
     private async Task sweetAletNotify(string texto, string tipo)
