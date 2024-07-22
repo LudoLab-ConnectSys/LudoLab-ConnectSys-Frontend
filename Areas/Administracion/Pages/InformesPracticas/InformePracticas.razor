@@ -184,7 +184,7 @@ else
                     <td>@instructor.TelefonoUsuario</td>
                     <td>@instructor.TotalHorasGanadas</td>
                     <td>
-                        <button type="button" class="btn btn-warning" @onclick="(()=> InsertTextsIntoExcel(instructor.NombreUsuario +' '+ instructor.ApellidosUsuario, instructor.CedulaUsuario, instructor.TotalHorasGanadas, instructor.Grupos.SelectMany(g => g.Horarios).ToList()))">
+                        <button type="button" class="btn btn-warning" @onclick="(()=> InsertTextsIntoExcel(instructor.NombreUsuario +' '+ instructor.ApellidosUsuario, instructor.CedulaUsuario, instructor.TotalHorasGanadas, instructor.Grupos.SelectMany(g => g.Horarios).ToList(), 1))">
                             <i class="bi bi-cloud-arrow-down-fill"></i>
                         </button>
                     </td>
@@ -312,15 +312,15 @@ else
         }
     }
 
-    private async Task InsertTextsIntoExcel(string fullname, string CedulaUsuario, int TotalHorasGanadas, List<Horario> horarios)
+    private async Task InsertTextsIntoExcel(string fullname, string CedulaUsuario, int TotalHorasGanadas, List<Horario> horarios, int alertmess)
     {
+        isLoading = true;
+        StateHasChanged();
         Console.WriteLine($"fullnameUser: {fullname}");
         Console.WriteLine($"Cedula Usuario: {CedulaUsuario}");
         Console.WriteLine($"Total Horas Ganadas: {TotalHorasGanadas}");
         try
         {
-            isLoading = true;
-            StateHasChanged();
             foreach (var horario in horarios)
             {
                 Console.WriteLine($"ID Horario: {horario.id_horario}");
@@ -421,14 +421,17 @@ else
                 }
                 isLoading = false;
                 StateHasChanged();
-                //await sweetAletNotify("Textos insertados en el archivo Excel y archivo descargado correctamente.", "info");
+                if (alertmess == 1)
+                {
+                    await sweetAletNotify("Archivo descargado exitosamente.", "success");
+                }
             }
             else
             {
                 isLoading = false;
                 StateHasChanged();
                 //await JSRuntime.InvokeVoidAsync("alert", "No tiene un archivo cargado");
-                sweetAletNotify("No tiene un archivo cargado", "info");
+                await sweetAletNotify("No tiene un archivo cargado", "info");
             }
         }
         catch (Exception ex)
@@ -456,7 +459,8 @@ else
                     instructor.NombreUsuario + ' ' + instructor.ApellidosUsuario,
                     instructor.CedulaUsuario,
                     instructor.TotalHorasGanadas,
-                    instructor.Grupos.SelectMany(g => g.Horarios).ToList()
+                    instructor.Grupos.SelectMany(g => g.Horarios).ToList(),
+                    2
                 );
             }
 
@@ -464,7 +468,7 @@ else
             currentPage++;
         }
 
-        await sweetAletNotify("Los archivos se han descargado exitosamente.", "info");
+        await sweetAletNotify("Los archivos se han descargado exitosamente.", "success");
     }
 
 

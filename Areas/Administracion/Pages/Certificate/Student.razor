@@ -128,7 +128,7 @@
                                 <td>@en.CedulaUsuario</td>
                                 <td>@en.CelularUsuario</td>
                                 <td>
-                                    <button type="button" class="btn btn-warning" @onclick="(()=> ImprimirCertificados(en.NombreUsuario +' '+ en.ApellidosUsuario, en.NombreCertificado, en.horas_asignadas_estudiante))">
+                                    <button type="button" class="btn btn-warning" @onclick="(()=> ImprimirCertificados(en.NombreUsuario +' '+ en.ApellidosUsuario, en.NombreCertificado, en.horas_asignadas_estudiante, 1))">
                                         <i class="bi bi-cloud-arrow-down-fill"></i>
                                     </button>
                                 </td>
@@ -373,7 +373,7 @@
     }*/
     }
 
-    private async Task ImprimirCertificados(string fullname, string nombre_certificado, int horasAsignadas)
+    private async Task ImprimirCertificados(string fullname, string nombre_certificado, int horasAsignadas, int alertmess)
     {
         isLoading = true;
         StateHasChanged();
@@ -406,6 +406,10 @@
             await JSRuntime.InvokeVoidAsync("downloadFileFromStream", "Tutor_" + fullname, streamRef, texts);
             isLoading = false;
             StateHasChanged();
+            if (alertmess == 1)
+            {
+                await sweetAletNotify("Certificado descargado exitosamente.", "success");
+            }
         }
     }
 
@@ -413,8 +417,9 @@
     {
         @foreach (var estudiante in ListaEstudiantes)
         {
-            await ImprimirCertificados(estudiante.NombreUsuario + ' ' + estudiante.ApellidosUsuario, estudiante.NombreCertificado, estudiante.horas_asignadas_estudiante);
+            await ImprimirCertificados(estudiante.NombreUsuario + ' ' + estudiante.ApellidosUsuario, estudiante.NombreCertificado, estudiante.horas_asignadas_estudiante, 2);
         }
+        await sweetAletNotify("Certificados descargados exitosamente.", "success");
     }
 
     public async Task EstudiantesPorPeriodo(int id_periodo, string curso, string periodo)
