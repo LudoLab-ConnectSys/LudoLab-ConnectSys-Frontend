@@ -38,7 +38,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
     <script>
         window.modificarPDF = async (arrayBuffer, texts) => {
-            const { PDFDocument, rgb } = PDFLib;
+            const { PDFDocument, rgb, StandardFonts } = PDFLib;
 
             // Cargar el PDF existente desde un ArrayBuffer
             const pdfDoc = await PDFDocument.load(arrayBuffer);
@@ -47,21 +47,40 @@
             const pages = pdfDoc.getPages();
             const firstPage = pages[0];
 
-            // Establecer las coordenadas para el texto
+            // Obtener el tamaño de la página
             const { width, height } = firstPage.getSize();
-            console.log(`Page size: width=${width}, height=${height}`);
-            const textWidth = 200;
-            const textHeight = 100;
-            const x = 30;
-            const y = height - 30;
 
-            // Dibujar el texto
-            firstPage.drawText('Texto a quieres insertar', {
-                x,
-                y,
-                size: 20,
-                color: PDFLib.rgb(1, 1, 1)
+            // Cargar la fuente estándar
+            const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+            // Función para obtener el ancho del texto
+            const getTextWidth = (text, size) => {
+                return font.widthOfTextAtSize(text, size);
+            };
+
+            // Calcular las coordenadas centradas para los textos superiores
+            const topTexts = texts.slice(0, 3);
+            topTexts.forEach((text, index) => {
+                const textWidth = getTextWidth(text.content, text.size);
+                text.x = (width - textWidth) / 2;
+                text.y = height - 100 - (index * 30); // Espaciado entre líneas de 30
             });
+
+            // Coordenadas para los textos inferiores izquierdos
+            const bottomLeftTexts = texts.slice(3, 6);
+            bottomLeftTexts.forEach((text, index) => {
+                text.x = 50;
+                text.y = 100 - (index * 20); // Espaciado entre líneas de 30
+            });
+
+            // Coordenadas para los textos inferiores derechos
+            const bottomRightTexts = texts.slice(6, 9);
+            bottomRightTexts.forEach((text, index) => {
+                const textWidth = getTextWidth(text.content, text.size);
+                text.x = width - textWidth - 50;
+                text.y = 100 - (index * 20); // Espaciado entre líneas de 30
+            });
+
             // Dibujar cada texto en las posiciones especificadas
             texts.forEach(text => {
                 console.log(`Inserting text: ${text.content} at x=${text.x}, y=${text.y}`);
@@ -69,8 +88,34 @@
                     x: text.x,
                     y: text.y,
                     size: text.size || 20,
+                    font,
                     color: rgb(0, 0, 0)
                 });
+            });
+
+            // Dibujar líneas para las firmas
+            // Línea para la firma en la parte inferior izquierda
+            firstPage.drawLine({
+                start: { x: 50, y: 120 },
+                end: { x: 250, y: 120 },
+                thickness: 1,
+                color: rgb(0, 0, 0)
+            });
+
+            // Línea para la firma en la parte inferior derecha
+            firstPage.drawLine({
+                start: { x: width - 250, y: 120 },
+                end: { x: width - 50, y: 120 },
+                thickness: 1,
+                color: rgb(0, 0, 0)
+            });
+            // Línea larga debajo de los textos superiores
+            const lineY = topTexts[topTexts.length - 1].y - 100;
+            firstPage.drawLine({
+                start: { x: 70, y: lineY },
+                end: { x: width - 70, y: lineY },
+                thickness: 1,
+                color: rgb(0, 0, 0)
             });
 
             // Serializar el PDF modificado a un ArrayBuffer
@@ -80,28 +125,53 @@
         };
     </script>
 
+
     <script>
         window.downloadFileFromStream = async (fileName, contentStreamReference, texts) => {
             const { PDFDocument, rgb, StandardFonts } = PDFLib;
 
-
             // Convertir el stream de contenido a un ArrayBuffer
             const arrayBuffer = await contentStreamReference.arrayBuffer();
             const pdfDoc = await PDFDocument.load(arrayBuffer);
-
-            // Embeber la fuente Times New Roman
-            const timesNewRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
-
             // Obtener la primera página
             const pages = pdfDoc.getPages();
             const firstPage = pages[0];
+            // Obtener el tamaño de la página
+            const { width, height } = firstPage.getSize();
+            // Embeber la fuente Times New Roman
+            const timesNewRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
 
-            // Dibujar cada texto en las posiciones especificadas
+            // Función para obtener el ancho del texto
+            const getTextWidth = (text, size) => {
+                return timesNewRomanFont.widthOfTextAtSize(text, size);
+            };
+
+            // Calcular la posición de la línea
+            const lineY = height / 2 + 50; // Ajustar esta constante según tus necesidades
+            // Calcular las coordenadas centradas para los textos justo debajo de la línea
+            const bottomRightTextsName = texts.slice(0, 1);
+            const textStartYname = lineY - 10; // Ajustar el espaciado entre la línea y el primer texto
+            bottomRightTextsName.forEach((text, index) => {
+                const textWidth = getTextWidth(text.content, text.size);
+                text.x = (width - textWidth) / 2; // Centrar el texto
+                text.y = height - 250 - (index * 20); // Espaciado entre líneas de 30
+            });
+
+            // Calcular las coordenadas centradas para los textos justo debajo de la línea
+            const bottomRightTexts = texts.slice(1, 5);
+            const textStartY = lineY - 30; // Ajustar el espaciado entre la línea y el primer texto
+            bottomRightTexts.forEach((text, index) => {
+                const textWidth = getTextWidth(text.content, text.size);
+                text.x = (width - textWidth) / 2; // Centrar el texto
+                text.y = textStartY - (index * 20); // Espaciado entre líneas de 30
+            });
+
+            // Dibujar los textos en el PDF
             texts.forEach(text => {
                 firstPage.drawText(text.content, {
                     x: text.x,
                     y: text.y,
-                    size: text.size || 20,
+                    size: text.size,
                     font: timesNewRomanFont,
                     color: rgb(0, 0, 0)
                 });
@@ -143,7 +213,7 @@
         }
     </script>
     <script>
-    //notificacines con formato - alertas
+        //notificacines con formato - alertas
         window.FireSweetAlert = function (options) {
             return Swal.fire(options);
         };

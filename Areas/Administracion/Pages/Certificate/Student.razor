@@ -7,7 +7,7 @@
 @inject IJSRuntime JSRuntime
 @using Microsoft.JSInterop
 
-<h2>Generar Certificados para Estudiantes</h2>
+<h2 class="titulo-resultado">Generar Certificados para Estudiantes</h2>
 @if (isLoading)
 {
     <SpinnerPage />
@@ -29,30 +29,31 @@
 
     <button @onclick="(() => ActualizarCertificado(newCertificado))">Actualizar nombre del CERTIFICADO</button>
 </EditForm>-->
-
-<br/>
-<h3>Lista de cursos</h3>
+<!--<h3 class="titulo-resultado">Lista de Cursos</h3>-->
 <EditForm Model="newCurso">
     <div class="contenedor">
-        <label for="nombrePeriodo">Nombre del Periodo:</label>
-        <label for="nombreCurso">Nombre del Curso:</label>
-    </div>
-
-    <div>
-        <select @bind="selectedPeriodo">
+        <label for="nombrePeriodo" class="label">Nombre del Periodo:</label>
+        <select id="nombrePeriodo" @bind="selectedPeriodo" class="select">
             <option value="">Seleccione un periodo</option>
             @foreach (var periodo in listaPeriodos)
             {
                 <option value="@periodo.id_lista_periodo">@periodo.nombre_periodo</option>
             }
         </select>
-        <InputText @bind-Value="@newPeriodocertificate"></InputText>
-        <button @onclick="(() => BuscarPeriodos(selectedPeriodo, newPeriodocertificate))" class="btn btn-primary">Buscar Curso</button>
+    </div>
+
+    <div class="contenedor">
+        <label for="nombreCurso" class="label">Nombre del Curso:</label>
+        <InputText id="nombreCurso" @bind-Value="@newPeriodocertificate" class="input-text"></InputText>
+    </div>
+
+    <div class="contenedor-botones">
+        <button @onclick="(() => BuscarPeriodos(selectedPeriodo, newPeriodocertificate))" class="btn btn-primary btn-buscar">Buscar Curso</button>
+        <button @onclick="(() => ListaPeriodos())" type="button" class="btn btn-secondary btn-listar">Listar Todos los Cursos</button>
     </div>
 </EditForm>
 
-<button @onclick="(() => ListaPeriodos())" type="button" class="btn btn-primary">Listar Cursos</button>
-<table class="table table-striped">
+<table class="table table-striped table-resultado">
     <thead>
         <tr>
             <th scope="col">Nombre Periodo</th>
@@ -77,14 +78,18 @@
                 <td>
                     <!--<button type="button" class="btn btn-success"></button>-->
                         <label for="@inputFileId" class="btn btn-success">
-                            <i class="bi bi-cloud-upload-fill"></i>
+                            Cargar Plantilla
+                        <!--<i class="bi bi-cloud-upload-fill"></i>-->
                         </label>
                     <InputFile id="@inputFileId" OnChange="@(e => OnInputFileChange(e, en.id_periodo, en.nombre_certificado))" class="d-none" accept=".pdf" />
-                    
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" @onclick="(() => EstudiantesPorPeriodo(en.id_periodo, en.nombre_curso, en.nombre_periodo))">
-                        <i class=" bi bi-person-lines-fill"></i>
+
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModalGAP" @onclick="(() => EstudiantesPorPeriodo(en.id_periodo, en.nombre_curso, en.nombre_periodo, 1))" >
+                        GAP
                     </button>
-                    <button type="button" class="btn btn-info" @onclick="(()=> OpenPdf(en.nombre_certificado))"><i class="bi bi-eye-fill"></i></button>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" @onclick="(() => EstudiantesPorPeriodo(en.id_periodo, en.nombre_curso, en.nombre_periodo, 2))" >
+                        Docentes
+                    </button>
+                    <button type="button" class="btn btn-info" @onclick="(()=> OpenPdf(en.nombre_certificado))">Ver</button>
                 </td>
             </tr>
         }
@@ -98,12 +103,12 @@
 </style>
 
 
-<!-- Modal para lista de ususarios-->
-<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+<!-- Modal para lista de GAP-->
+<div class="modal fade" id="exampleModalGAP" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
-                <h1 class="modal-title fs-5" id="exampleModalLabel">Lista de estudiantes</h1>
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Lista de estudiantes GAP</h1>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -127,7 +132,54 @@
                                 <td>@en.CedulaUsuario</td>
                                 <td>@en.CelularUsuario</td>
                                 <td>
-                                    <button type="button" class="btn btn-warning" @onclick="(()=> ImprimirCertificados(en.NombreUsuario +' '+ en.ApellidosUsuario, en.NombreCertificado, en.horas_asignadas_estudiante, 1))">
+                                    <button type="button" class="btn btn-warning" @onclick="(()=> ImprimirCertificadosGAP(en.NombreUsuario +' '+ en.ApellidosUsuario, en.NombreCertificado, en.horas_asignadas_estudiante, 1))" PreventDefault: true>
+                                        <i class="bi bi-cloud-arrow-down-fill"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+
+                    </tbody>
+                </table>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" @onclick="(()=> ImprimirTodosCertificadosGAP())">Descargar todos</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Modal para lista de Profedores-->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Lista de estudiantes tipo Docentes</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Nombre</th>
+                            <th scope="col">Apellido</th>
+                            <th scope="col">CI</th>
+                            <th scope="col">Celular</th>
+                            <th scope="col">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var en in ListaEstudiantes)
+                        {
+                            <tr>
+                                <td>@en.NombreUsuario</td>
+                                <td>@en.ApellidosUsuario</td>
+                                <td>@en.CedulaUsuario</td>
+                                <td>@en.CelularUsuario</td>
+                                <td>
+                                    <button type="button" class="btn btn-warning" @onclick="(()=> ImprimirCertificados(en.NombreUsuario +' '+ en.ApellidosUsuario, en.NombreCertificado, en.horas_asignadas_estudiante, 1))" PreventDefault: true>
                                         <i class="bi bi-cloud-arrow-down-fill"></i>
                                     </button>
                                 </td>
@@ -146,6 +198,86 @@
     </div>
 </div>
 
+<style>
+    .titulo-resultado {
+        text-align: center;
+        color: #007bff;
+        margin-bottom: 30px;
+        font-size: 28px;
+        font-weight: bold;
+    }
+
+    .contenedor {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .label {
+        flex: 1;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .select, .input-text {
+        flex: 2;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 16px;
+    }
+
+    .contenedor-botones {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+    }
+
+    .btn-buscar {
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+
+    .btn-listar {
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: #6c757d;
+        border-color: #6c757d;
+    }
+
+    .table-resultado {
+        width: 100%;
+        margin-top: 20px;
+        border-collapse: collapse;
+    }
+
+        .table-resultado th, .table-resultado td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .table-resultado th {
+            background-color: #f8f8f8;
+            font-weight: bold;
+        }
+
+        .table-resultado td {
+            color: #333;
+        }
+
+    .modal-title {
+        font-size: 22px;
+    }
+
+    .info-modal {
+        margin-bottom: 15px;
+        font-size: 16px;
+        color: #333;
+    }
+</style>
 
 @code {
     private bool isLoading = false;//carga de spinner de carga
@@ -319,10 +451,15 @@
             //textos y sus posiciones para insertar en el pdf
             var texts = new List<object>
             {
-                new { content = "Nombre del Estudiante:", x = 100, y = 150, size = 24 },
-                new { content = "Curso:", x = 100, y = 120, size = 18 },
-                new { content = "Periodo:", x = 100, y = 90, size = 18 },
-                new { content = "Horas Asignadas:", x = 100, y = 60, size = 18 }
+                new { content = "LA ESCUELA POLITÉCNICA NACIONAL Y LA FACULTAD DE INGENIERÍA DE SISTEMAS", x = 0, y = 0, size = 18 },
+                new { content = "CONFIERE EL PRESENTE", x = 0, y = 0, size = 18 },
+                new { content = "CERTIFICADO A:", x = 0, y = 0, size = 18 },
+                new { content = "Dra. Mayra Carrión", x = 0, y = 0, size = 14 },
+                new { content = "DIRECTORA:", x = 0, y = 0, size = 14 },
+                new { content = "PROYECTO INCLUSIÓN DIGITAL", x = 0, y = 0, size = 14 },
+                new { content = "Dr. Jose Lucio", x = 0, y = 0, size = 14 },
+                new { content = "DECANO", x = 0, y = 0, size = 14 },
+                new { content = "FACULTAD DE INGENIERÍA DE SISTEMAS", x = 0, y = 0, size = 14 }
             };
             // Llamar a la función de JavaScript para modificar el PDF
             var pdfBytes = await JSRuntime.InvokeAsync<byte[]>("modificarPDF", memoryStream.ToArray(), texts);
@@ -372,15 +509,11 @@
     }*/
     }
 
-    private async Task ImprimirCertificados(string fullname, string nombre_certificado, int horasAsignadas, int alertmess)
+    private async Task ImprimirCertificadosGAP(string fullname, string nombre_certificado, int horasAsignadas, int alertmess)
     {
         isLoading = true;
         StateHasChanged();
         Console.WriteLine($"fullnameUser: {fullname}");
-        //Console.WriteLine($"nombre periodo: {nombbrePeiodo}");
-        //Console.WriteLine($"nombre curso: {nombbreCurso}");
-        //Console.WriteLine($"Nombre Certificado: {nombre_certificado}");
-        //Console.WriteLine($"horas de estudiante: {horasAsignadas}");
         var response = await Http.GetAsync($"http://localhost:5117/api/File/{nombre_certificado}");
 
         if (!response.IsSuccessStatusCode)
@@ -395,14 +528,51 @@
             //textos y sus posiciones para insertar en el pdf
             var texts = new List<object>
             {
-                new { content = fullname, x = 400, y = 150, size = 24 },
-                new { content = nombbreCurso, x = 300, y = 120, size = 18 },
-                new { content = nombbrePeiodo, x = 300, y = 90, size = 18 },
-                new { content = Convert.ToString(horasAsignadas), x = 300, y = 60, size = 18 }
+                new { content = fullname, x = 400, y = 150, size = 30 },
+                new { content = "Por haber participado en el Proyecto de “Inclusión Digital” 18ava edición de la Escuela Politécnica Nacional", x = 0, y = 0, size = 14 },
+                new { content = "desarrollado del 19 de abril de 2023 al 08 de septiembre, con una duración de 40 horas.", x = 0, y = 0, size = 14 },
+                new { content = " ", x = 0, y = 0, size = 14 },
+                new { content = Convert.ToString(horasAsignadas), x = 0, y = 0, size = 14 }
             };
             var fileStream = response.Content.ReadAsStream();
             using var streamRef = new DotNetStreamReference(stream: fileStream);
-            await JSRuntime.InvokeVoidAsync("downloadFileFromStream", "Tutor_" + fullname, streamRef, texts);
+            await JSRuntime.InvokeVoidAsync("downloadFileFromStream", "GAP_" + fullname, streamRef, texts);
+            isLoading = false;
+            StateHasChanged();
+            if (alertmess == 1)
+            {
+                await sweetAletNotify("Certificado descargado exitosamente.", "success");
+            }
+        }
+    }
+    private async Task ImprimirCertificados(string fullname, string nombre_certificado, int horasAsignadas, int alertmess)
+    {
+        isLoading = true;
+        StateHasChanged();
+        Console.WriteLine($"fullnameUser: {fullname}");
+        var response = await Http.GetAsync($"http://localhost:5117/api/File/{nombre_certificado}");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            isLoading = false;
+            StateHasChanged();
+            //await JSRuntime.InvokeVoidAsync("alert", "File not found.");
+            await sweetAletNotify("Archivo no encontrado", "info");
+        }
+        else
+        {
+            //textos y sus posiciones para insertar en el pdf
+            var texts = new List<object>
+            {
+                new { content = fullname, x = 400, y = 150, size = 30 },
+                new { content = "Por haber aprobado el Curso de herramientas TIC para la Educación", x = 0, y = 0, size = 14 },
+                new { content = "impartido en el marco del Proyecto de “Inclusión Digital” 18ava edición de la Escuela Politécnica Nacional", x = 0, y = 0, size = 14 },
+                new { content = "desarrollado del 19 de abril de 2023 al 08 de septiembre, con una duración de 40 horas.", x = 0, y = 0, size = 14 },
+                new { content = Convert.ToString(horasAsignadas), x = 0, y = 0, size = 14 }
+            };
+            var fileStream = response.Content.ReadAsStream();
+            using var streamRef = new DotNetStreamReference(stream: fileStream);
+            await JSRuntime.InvokeVoidAsync("downloadFileFromStream", "Docente_" + fullname, streamRef, texts);
             isLoading = false;
             StateHasChanged();
             if (alertmess == 1)
@@ -412,6 +582,14 @@
         }
     }
 
+    private async Task ImprimirTodosCertificadosGAP()
+    {
+        @foreach (var estudiante in ListaEstudiantes)
+        {
+            await ImprimirCertificadosGAP(estudiante.NombreUsuario + ' ' + estudiante.ApellidosUsuario, estudiante.NombreCertificado, estudiante.horas_asignadas_estudiante, 2);
+        }
+        await sweetAletNotify("Certificados GAP descargados exitosamente.", "success");
+    }
     private async Task ImprimirTodosCertificados()
     {
         @foreach (var estudiante in ListaEstudiantes)
@@ -421,15 +599,25 @@
         await sweetAletNotify("Certificados descargados exitosamente.", "success");
     }
 
-    public async Task EstudiantesPorPeriodo(int id_periodo, string curso, string periodo)
+    public async Task EstudiantesPorPeriodo(int id_periodo, string curso, string periodo, int InttiposEstudiante)
     {
+        ListaEstudiantes = new List<UsuarioPeriodo>();
+        string tiposEstudiante = "GAP";
+        if (InttiposEstudiante == 1)
+        {
+            tiposEstudiante = "GAP";
+        }
+        else
+        {
+            tiposEstudiante = "Profesor";
+        }
         Console.WriteLine($"id_periodo:{id_periodo} + curso:{curso}+ periodo: {periodo}");
         isLoading = true;
         StateHasChanged();
         nombbreCurso = curso;
         nombbrePeiodo = periodo;
         // Construir la URL con los parámetros de consulta
-        var url = $"http://localhost:5117/api/Grupo/GetEstudiantesPorPeriodo/{id_periodo}";
+        var url = $"http://localhost:5117/api/Grupo/GetTipoEstudiantesPorPeriodo/{id_periodo}?tiposEstudiante={tiposEstudiante}";
 
         var response = await Http.GetAsync(url);
 

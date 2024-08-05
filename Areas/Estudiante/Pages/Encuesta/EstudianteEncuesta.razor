@@ -3,39 +3,72 @@
 @inject IJSRuntime JSRuntime
 @inject SweetAlertService Swal
 
-<h3>Encuesta</h3>
-@if (isLoading)
-{
-    <Spinner />
-}
-@if (!encuestaCompletada)
-{
-    @if (preguntas != null)
+<div class="encuesta-container">
+    <h3 class="titulo-encuesta">@tituloEncuesta</h3>
+    @if (isLoading)
     {
-        @foreach (var pregunta in preguntas)
+        <Spinner />
+    }
+    @if (!encuestaCompletada)
+    {
+        @if (preguntas != null)
         {
-            <div class="pregunta-container">
-                <label class="pregunta-label">@pregunta.texto_pregunta</label>
-                <input type="text" class="pregunta-input" @bind="respuestas[pregunta.id_pregunta]" />
-            </div>
+            @foreach (var pregunta in preguntas)
+            {
+                <div class="pregunta-container">
+                    <label class="pregunta-label">@pregunta.texto_pregunta</label>
+                    <select class="pregunta-select" @bind="respuestas[pregunta.id_pregunta]">
+                        <option value="">Selecciona una opción</option>
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            <option value="@i">@i</option>
+                        }
+                    </select>
+                </div>
+            }
+            <button class="boton-enviar" @onclick="EnviarRespuestas" disabled="@(preguntas.Count < 1)">Enviar</button>
         }
-        <button class="boton-enviar" @onclick="EnviarRespuestas">Enviar</button>
-        
+        else
+        {
+            <p class="cargando-texto">Cargando preguntas...</p>
+        }
     }
     else
     {
-        <p>Cargando preguntas...</p>
+        <h4 class="no-cuestionarios">No tiene cuestionarios pendientes</h4>
     }
-    <!---->
-}
-else
-{
-    <h4>No tiene cuetionarios pendientes</h4>
-    <!--  //@sweetAletNotify("Ya ha completado el cuestionario", "info")-->
-}
+</div>
 
 <style>
+    .encuesta-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .titulo-encuesta {
+        color: #007bff;
+        margin-bottom: 30px;
+        font-size: 24px;
+        text-align: center;
+    }
+
     .pregunta-container {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         margin-bottom: 20px;
     }
 
@@ -43,11 +76,12 @@ else
         font-weight: bold;
         color: #333;
         font-size: 16px;
+        margin-bottom: 10px;
     }
 
-    .pregunta-input {
+    .pregunta-select {
         width: 100%;
-        padding: 8px;
+        padding: 10px;
         font-size: 14px;
         border: 1px solid #ccc;
         border-radius: 4px;
@@ -60,13 +94,36 @@ else
         border: none;
         border-radius: 4px;
         cursor: pointer;
+        transition: background-color 0.3s ease;
+        margin-top: 20px;
+        width: 100%;
+        text-align: center;
+    }
+
+        .boton-enviar:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .boton-enviar:hover:not(:disabled) {
+            background-color: #0056b3;
+        }
+
+    .cargando-texto, .no-cuestionarios {
+        text-align: center;
+        color: #555;
+        font-size: 18px;
+        margin-top: 20px;
     }
 </style>
+
 
 @code {
     [Parameter]
     public int EncuestaId { get; set; }
 
+
+    private string tituloEncuesta = "Cargando...";
     private bool isLoading = false;
     private int idEstudiante;
     private List<Pregunta> preguntas = new List<Pregunta>();
@@ -76,12 +133,28 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        isLoading = true;
+        StateHasChanged();
         int initidEstudiante = 7; // Esto debería obtenerse dinámicamente según tu lógica
         idEstudiante = initidEstudiante;
+        await CargarTituloEncuesta();
         await VerificarEncuestaCompletada(idEstudiante);
         if (!encuestaCompletada)
         {
             await RecibirPreguntas();
+        }
+        isLoading = false;
+        StateHasChanged();
+    }
+    private async Task CargarTituloEncuesta()
+    {
+        try
+        {
+            tituloEncuesta = await Http.GetStringAsync($"http://localhost:5117/api/Encuesta/getnombreencuesta/{EncuestaId}");
+        }
+        catch (Exception)
+        {
+            tituloEncuesta = "Error al cargar el título de la encuesta";
         }
     }
 
@@ -121,6 +194,12 @@ else
 
     private async Task EnviarRespuestas()
     {
+        // Verificar si todas las respuestas están completas
+        if (respuestas.Values.Any(r => string.IsNullOrEmpty(r)))
+        {
+            await sweetAletNotify("Por favor, complete todas las respuestas antes de enviar.", "warning");
+            return; // Termina la ejecución de la función si hay respuestas incompletas
+        }
         var options = new
         {
             Title = "¿Desea enviar sus respuestas?",

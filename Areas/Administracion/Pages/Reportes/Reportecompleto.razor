@@ -1,0 +1,432 @@
+﻿@inject NavigationManager NavigationManager
+@page "/generar-reportecompleto"
+@inject IJSRuntime JSRuntime
+@using Microsoft.JSInterop
+@inject HttpClient Http
+@using ClosedXML.Excel;
+@using CurrieTechnologies.Razor.SweetAlert2
+@inject SweetAlertService Swal
+
+<h2 class="titulo-resultado">Generar reportes completos de curso</h2>
+<!--<h3 class="titulo-resultado">Lista de Cursos</h3>-->
+@if (isLoading)
+{
+    <SpinnerPage />
+}
+
+<EditForm Model="newCurso">
+    <div class="contenedor">
+        <label for="nombrePeriodo" class="label">Nombre del Periodo:</label>
+        <select id="nombrePeriodo" @bind="selectedPeriodo" class="select">
+            <option value="">Seleccione un periodo</option>
+            @foreach (var periodo in listaPeriodos)
+            {
+                <option value="@periodo.id_lista_periodo">@periodo.nombre_periodo</option>
+            }
+        </select>
+    </div>
+
+    <div class="contenedor">
+        <label for="nombreCurso" class="label">Nombre del Curso:</label>
+        <InputText id="nombreCurso" @bind-Value="@newPeriodocertificate" class="input-text"></InputText>
+    </div>
+
+    <div class="contenedor-botones">
+        <button @onclick="(() => BuscarPeriodos(selectedPeriodo, newPeriodocertificate))" class="btn btn-primary btn-buscar">Buscar Curso</button>
+        <button @onclick="(() => ListaPeriodos())" type="button" class="btn btn-secondary btn-listar">Listar Todos los Cursos</button>
+    </div>
+</EditForm>
+<table class="table table-striped table-resultado">
+    <thead>
+        <tr>
+            <th scope="col">Nombre Periodo</th>
+            <th scope="col">Inicio</th>
+            <th scope="col">Fin</th>
+            <th scope="col">Nombre Curso</th>
+            <th scope="col">Certificado</th>
+            <th scope="col">Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var en in Periodos)
+        {
+            var inputFileId = $"fileInput_{en.id_periodo}";
+
+            <tr>
+                <td>@en.nombre_periodo</td>
+                <td>@en.fecha_inicio_periodo</td>
+                <td>@en.fecha_fin_periodo</td>
+                <td>@en.nombre_curso</td>
+                <td>@(string.IsNullOrEmpty(en.nombre_certificado) ? "No asignado" : en.nombre_certificado)</td>
+                <td>
+                    <button type="button" class="btn btn-primary" @onclick="(() => GenerarReporte(en.id_periodo, en.nombre_periodo))">
+                        Reporte
+                    </button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<style>
+    .titulo-resultado {
+        text-align: center;
+        color: #007bff;
+        margin-bottom: 30px;
+        font-size: 28px;
+        font-weight: bold;
+    }
+
+    .contenedor {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .label {
+        flex: 1;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .select, .input-text {
+        flex: 2;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 16px;
+    }
+
+    .contenedor-botones {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+    }
+
+    .btn-buscar {
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+
+    .btn-listar {
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: #6c757d;
+        border-color: #6c757d;
+    }
+
+    .table-resultado {
+        width: 100%;
+        margin-top: 20px;
+        border-collapse: collapse;
+    }
+
+        .table-resultado th, .table-resultado td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .table-resultado th {
+            background-color: #f8f8f8;
+            font-weight: bold;
+        }
+
+        .table-resultado td {
+            color: #333;
+        }
+
+    .modal-title {
+        font-size: 22px;
+    }
+
+    .info-modal {
+        margin-bottom: 15px;
+        font-size: 16px;
+        color: #333;
+    }
+</style>
+
+@code {
+    private bool isLoading = false;
+    Curso newCurso = new Curso();
+    private List<ListaPeriodo> listaPeriodos = [];
+    public static List<PeriodoConNombreCurso> Periodos = new List<PeriodoConNombreCurso>();
+    private int selectedPeriodo;
+    string newPeriodocertificate;
+    public static List<UsuarioPeriodo> ListaEstudiantes = new List<UsuarioPeriodo>();
+    String nombreCurso;
+    String nombrePeriodo;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ListaNombresPeriodos();
+    }
+    public async Task BuscarPeriodos(int id_lista_periodo, string nombre_curso)
+    {
+        isLoading = true;
+        StateHasChanged();
+        // Construir la URL con los parámetros de consulta
+        var url = $"http://localhost:5117/api/Periodo/PeriodoByName?id_lista_periodo={id_lista_periodo}&nombre_curso={nombre_curso}";
+
+        var response = await Http.GetAsync(url);
+
+        if (response.IsSuccessStatusCode)
+        {
+            isLoading = false;
+            StateHasChanged();
+            Periodos = await response.Content.ReadFromJsonAsync<List<PeriodoConNombreCurso>>();
+        }
+        else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            //await JSRuntime.InvokeVoidAsync("alert", "No se encontraron coincidencias");
+            var options = new
+            {
+                Title = "No se encontraron coincidencias",
+                Icon = "info",
+                ConfirmButtonText = "OK"
+            };
+            await JSRuntime.InvokeVoidAsync("FireSweetAlert", options);
+            Periodos = new List<PeriodoConNombreCurso>();
+            isLoading = false;
+            StateHasChanged();
+        }
+        else
+        {
+            Console.WriteLine("Error al buscar los periodos.");
+            var options = new
+            {
+                Title = "Error al buscar los periodos",
+                Icon = "error",
+                ConfirmButtonText = "OK"
+            };
+            isLoading = false;
+            StateHasChanged();
+            await JSRuntime.InvokeVoidAsync("FireSweetAlert", options);
+        }
+    }
+
+    //FUNCIONES PARA Periodo
+    public async Task ListaPeriodos()
+    {
+        isLoading = true;
+        StateHasChanged();
+        Periodos = await Http.GetFromJsonAsync<List<PeriodoConNombreCurso>>("http://localhost:5117/api/Periodo");
+        isLoading = false;
+        StateHasChanged();
+    }
+    //FUNCIONES PARA Periodo
+    public async Task ListaNombresPeriodos()
+    {
+        isLoading = true;
+        StateHasChanged();
+        listaPeriodos = await Http.GetFromJsonAsync<List<ListaPeriodo>>("http://localhost:5117/api/Periodo/getNamePeriodoList");
+        isLoading = false;
+        StateHasChanged();
+    }
+    private async Task GenerarReporte(int idPeriodo, string nombre_periodo)
+    {
+        try
+        {
+            isLoading = true;
+            StateHasChanged();
+
+            // Intentar obtener el reporte desde el API
+            var reporte = await Http.GetFromJsonAsync<ReporteCursoDTO>($"http://localhost:5117/api/File/GetReporte/{idPeriodo}");
+
+            isLoading = false;
+            StateHasChanged();
+
+            using (var workbook = new XLWorkbook())
+            {
+                isLoading = true;
+                StateHasChanged();
+
+                // Crear la hoja de cálculo y agregar datos
+                var worksheet = workbook.Worksheets.Add("Reporte del Curso");
+
+                worksheet.Cell(1, 1).Value = "Periodo";
+                worksheet.Cell(1, 2).Value = nombre_periodo;
+                worksheet.Cell(2, 1).Value = "Fecha Inicio";
+                worksheet.Cell(2, 2).Value = reporte.Periodo.fecha_inicio_periodo;
+                worksheet.Cell(3, 1).Value = "Fecha Fin";
+                worksheet.Cell(3, 2).Value = reporte.Periodo.fecha_fin_periodo;
+                worksheet.Cell(4, 1).Value = "Duración (Horas)";
+                worksheet.Cell(4, 2).Value = reporte.Periodo.duracion_periodo_horas;
+
+                worksheet.Cell(6, 1).Value = "Curso";
+                worksheet.Cell(6, 2).Value = reporte.Curso.nombre_curso;
+                worksheet.Cell(7, 1).Value = "Tipo de Curso";
+                worksheet.Cell(7, 2).Value = reporte.Curso.tipo_curso;
+                worksheet.Cell(8, 1).Value = "Horas";
+                worksheet.Cell(8, 2).Value = reporte.Curso.horas;
+
+                worksheet.Cell(10, 1).Value = "Grupos";
+                worksheet.Cell(11, 1).Value = "ID Grupo";
+                worksheet.Cell(11, 2).Value = "Nombre Grupo";
+                worksheet.Cell(11, 3).Value = "ID Instructor";
+
+                int row = 12;
+                foreach (var grupo in reporte.Grupos)
+                {
+                    worksheet.Cell(row, 1).Value = grupo.id_grupo;
+                    worksheet.Cell(row, 2).Value = grupo.nombre_grupo;
+                    worksheet.Cell(row, 3).Value = grupo.id_instructor;
+                    row++;
+                }
+
+                worksheet.Cell(row + 1, 1).Value = "Horarios";
+                worksheet.Cell(row + 2, 1).Value = "ID Horario";
+                worksheet.Cell(row + 2, 2).Value = "ID Grupo";
+                worksheet.Cell(row + 2, 3).Value = "Día de la Semana";
+                worksheet.Cell(row + 2, 4).Value = "Hora Inicio";
+                worksheet.Cell(row + 2, 5).Value = "Hora Fin";
+
+                row += 3;
+                foreach (var horario in reporte.Horarios)
+                {
+                    worksheet.Cell(row, 1).Value = horario.id_horario;
+                    worksheet.Cell(row, 2).Value = horario.id_grupo;
+                    worksheet.Cell(row, 3).Value = horario.dia_semana;
+                    worksheet.Cell(row, 4).Value = horario.hora_inicio.ToString();
+                    worksheet.Cell(row, 5).Value = horario.hora_fin.ToString();
+                    row++;
+                }
+
+                worksheet.Cell(row + 1, 1).Value = "Horas de Instructores";
+                worksheet.Cell(row + 2, 1).Value = "ID Horas Instructor";
+                worksheet.Cell(row + 2, 2).Value = "ID Instructor";
+                worksheet.Cell(row + 2, 3).Value = "ID Periodo";
+                worksheet.Cell(row + 2, 4).Value = "Horas Ganadas";
+
+                row += 3;
+                foreach (var horasInstructor in reporte.HorasInstructores)
+                {
+                    worksheet.Cell(row, 1).Value = horasInstructor.id_horas_instructor;
+                    worksheet.Cell(row, 2).Value = horasInstructor.id_instructor;
+                    worksheet.Cell(row, 3).Value = horasInstructor.id_periodo;
+                    worksheet.Cell(row, 4).Value = horasInstructor.horas_ganadas_instructor;
+                    row++;
+                }
+
+                worksheet.Cell(row + 1, 1).Value = "Instructores";
+                worksheet.Cell(row + 2, 1).Value = "ID Instructor";
+                worksheet.Cell(row + 2, 2).Value = "ID Usuario";
+
+                row += 3;
+                foreach (var instructor in reporte.Instructores)
+                {
+                    worksheet.Cell(row, 1).Value = instructor.id_instructor;
+                    worksheet.Cell(row, 2).Value = instructor.id_usuario;
+                    row++;
+                }
+
+                worksheet.Cell(row + 1, 1).Value = "Estudiantes";
+                worksheet.Cell(row + 2, 1).Value = "ID Estudiante";
+                worksheet.Cell(row + 2, 2).Value = "Tipo de Estudiante";
+                worksheet.Cell(row + 2, 3).Value = "ID Usuario";
+                worksheet.Cell(row + 2, 4).Value = "ID Grupo";
+                worksheet.Cell(row + 2, 5).Value = "Horas Asignadas";
+
+                row += 3;
+                foreach (var estudiante in reporte.Estudiantes)
+                {
+                    worksheet.Cell(row, 1).Value = estudiante.id_estudiante;
+                    worksheet.Cell(row, 2).Value = estudiante.tipo_estudiante;
+                    worksheet.Cell(row, 3).Value = estudiante.id_usuario;
+                    worksheet.Cell(row, 4).Value = estudiante.id_grupo;
+                    worksheet.Cell(row, 5).Value = estudiante.horas_asignadas_estudiante;
+                    row++;
+                }
+
+                worksheet.Cell(row + 1, 1).Value = "Usuarios";
+                worksheet.Cell(row + 2, 1).Value = "ID Usuario";
+                worksheet.Cell(row + 2, 2).Value = "Cédula";
+                worksheet.Cell(row + 2, 3).Value = "Nombre";
+                worksheet.Cell(row + 2, 4).Value = "Apellidos";
+                worksheet.Cell(row + 2, 5).Value = "Edad";
+                worksheet.Cell(row + 2, 6).Value = "Correo";
+                worksheet.Cell(row + 2, 7).Value = "Celular";
+                worksheet.Cell(row + 2, 8).Value = "Teléfono";
+
+                row += 3;
+                foreach (var usuario in reporte.Usuarios)
+                {
+                    worksheet.Cell(row, 1).Value = usuario.id_usuario;
+                    worksheet.Cell(row, 2).Value = usuario.cedula_usuario;
+                    worksheet.Cell(row, 3).Value = usuario.nombre_usuario;
+                    worksheet.Cell(row, 4).Value = usuario.apellidos_usuario;
+                    worksheet.Cell(row, 5).Value = usuario.edad_usuario;
+                    worksheet.Cell(row, 6).Value = usuario.correo_usuario;
+                    worksheet.Cell(row, 7).Value = usuario.celular_usuario;
+                    worksheet.Cell(row, 8).Value = usuario.telefono_usuario;
+                    row++;
+                }
+
+                isLoading = false;
+                StateHasChanged();
+
+                // Convertir el archivo a base64 y llamar a la función JavaScript para descargar el archivo
+                using (var stream = new MemoryStream())
+                {
+                    isLoading = true;
+                    StateHasChanged();
+                    workbook.SaveAs(stream);
+                    var content = stream.ToArray();
+                    var base64 = Convert.ToBase64String(content);
+
+                    // Llamar a la función JavaScript para descargar el archivo
+                    var nombreExcel = string.Concat(reporte.Curso.nombre_curso + "_Reporte", DateTime.Now.ToString(), ".xlsx");
+                    await JSRuntime.InvokeVoidAsync("DescargarExel", nombreExcel, base64);
+                    isLoading = false;
+                    StateHasChanged();
+                    await sweetAletNotify("Reporte descargado exitosamente", "success");
+                }
+            }
+        }
+        catch (HttpRequestException httpEx)
+        {
+            isLoading = false;
+            StateHasChanged();
+            await sweetAletNotify("Error al obtener el reporte desde el servidor: " + httpEx.Message, "error");
+        }
+        catch (InvalidOperationException invalidOpEx)
+        {
+            isLoading = false;
+            StateHasChanged();
+            await sweetAletNotify("Operación inválida: " + invalidOpEx.Message, "error");
+        }
+        catch (Exception ex)
+        {
+            isLoading = false;
+            StateHasChanged();
+            await sweetAletNotify("Ocurrió un error inesperado: " + ex.Message, "error");
+        }
+    }
+
+
+    private async Task sweetAletNotify(string texto, string tipo)
+    {
+        var options = new
+        {
+            Title = texto,
+            Icon = tipo,
+            ConfirmButtonText = "OK"
+        };
+        await JSRuntime.InvokeVoidAsync("FireSweetAlert", options);
+    }
+
+    public class ReporteCursoDTO
+    {
+        public Periodo Periodo { get; set; }
+        public Curso Curso { get; set; }
+        public List<Grupo> Grupos { get; set; }
+        public List<Horario> Horarios { get; set; }
+        public List<Horas_instructor> HorasInstructores { get; set; }
+        public List<Instructor> Instructores { get; set; }
+        public List<Estudiante> Estudiantes { get; set; }
+        public List<Usuario> Usuarios { get; set; }
+    }
+}

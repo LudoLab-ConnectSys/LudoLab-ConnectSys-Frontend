@@ -8,15 +8,13 @@
 @using ClosedXML.Excel;
 @using System.IO
 
-<h2>Generar informes de prácticas profesionales</h2>
-<br />
+<h2 class="titulo-resultado">Generar informes de prácticas profesionales</h2>
 
 <h3>Subir Archivo Excel</h3>
 @if (isLoading)
 {
     <SpinnerPage />
 }
-<br />
 <div>
     <label class="btn btn-success">
         <i class="bi bi-file-earmark-spreadsheet-fill"></i>
@@ -31,9 +29,6 @@
         <!-- Button trigger modal -->
         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
             Editar Posiciones
-        </button>
-        <button type="button" class="btn btn-success" @onclick="(()=> ImprimirTodosInformesPracticas())">
-            Descargar todos
         </button>
         <!-- Modal -->
         <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
@@ -50,11 +45,11 @@
                                 <div class="d-flex">
                                     <div class="mr-2">
                                         <label class="d-block">Fila 1:</label>
-                                        <input type="number" @bind="row1" class="form-control" style="width: 80px;" />
+                                        <input type="number" min="1" @bind="row1" class="form-control" style="width: 80px;" />
                                     </div>
                                     <div>
                                         <label class="d-block">Columna 1 (A-Z):</label>
-                                        <input type="text" @bind="col1Excel" class="form-control" style="width: 120px;" />
+                                        <input type="text" @bind="col1Excel" class="form-control" style="width: 120px;" maxlength="1" />
                                     </div>
                                 </div>
                             </div><br/>
@@ -64,11 +59,11 @@
                                 <div class="d-flex">
                                     <div class="mr-2">
                                         <label class="d-block">Fila 2:</label>
-                                        <input type="number" @bind="row2" class="form-control" style="width: 80px;" />
+                                        <input type="number" min="1" @bind="row2" class="form-control" style="width: 80px;" />
                                     </div>
                                     <div>
                                         <label class="d-block">Columna 2 (A-Z):</label>
-                                        <input type="text" @bind="col2Excel" class="form-control" style="width: 120px;" />
+                                        <input type="text" @bind="col2Excel" class="form-control" style="width: 120px;" maxlength="1" />
                                     </div>
                                 </div>
                             </div><br />
@@ -78,11 +73,11 @@
                                 <div class="d-flex">
                                     <div class="mr-2">
                                         <label class="d-block">Fila 3:</label>
-                                        <input type="number" @bind="row3" class="form-control" style="width: 80px;" />
+                                        <input type="number" min="1" @bind="row3" class="form-control" style="width: 80px;" />
                                     </div>
                                     <div>
                                         <label class="d-block">Columna 3 (A-Z):</label>
-                                        <input type="text" @bind="col3Excel" class="form-control" style="width: 120px;" />
+                                        <input type="text" @bind="col3Excel" class="form-control" style="width: 120px;" maxlength="1" />
                                     </div>
                                 </div>
                             </div><br />
@@ -107,9 +102,9 @@
                                         <tr>
                                             <td>Hora Inicio</td>
                                             <td>
-                                                <label class="d-block">Fila 3:</label>
-                                                <input type="number" @bind="rowT" class="form-control" style="width: 60px;" min="0" />
-                                                <label class="d-block">Columna 3 (A-Z):</label>
+                                                <label class="d-block">Fila: </label>
+                                                <input type="number" min="1" @bind="rowT" class="form-control" style="width: 60px;" />
+                                                <label class="d-block">Columna: </label>
                                                 <input type="text" @bind="colTExcel" class="form-control" style="width: 60px;" maxlength="1" />
                                             </td>
                                             <td>@(rowT) - @(ConvertirColumnaALetra(ConvertirColumna(colTExcel) + 1))</td>
@@ -134,8 +129,8 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        <button type="button" class="btn btn-primary">Save changes</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                        <!--<button type="button" class="btn btn-primary">Save changes</button>-->
                     </div>
                 </div>
             </div>
@@ -145,7 +140,68 @@
     }
 </div>
 
-<h3>Lista de tutores</h3>
+
+
+<EditForm Model="newCurso">
+    <div class="contenedor">
+        <label for="nombrePeriodo" class="label">Nombre del Periodo:</label>
+        <select id="nombrePeriodo" @bind="selectedPeriodo" class="select">
+            <option value=0>Seleccione un periodo</option>
+            @foreach (var periodo in listaPeriodos)
+            {
+                <option value="@periodo.id_lista_periodo">@periodo.nombre_periodo</option>
+            }
+        </select>
+    </div>
+
+    <div class ="contenedor">
+        <label for="nombreCurso" class="label">Nombre del Curso:</label>
+        <InputText id="nombreCurso" @bind-Value="@newPeriodocertificate" class="input-text"></InputText>
+    </div>
+
+        <div class="contenedor-botones">
+            <button @onclick="(() => BuscarPeriodos(selectedPeriodo, newPeriodocertificate))" class="btn btn-primary btn-buscar">Buscar Curso</button>
+            <button @onclick="(() => ListaPeriodos())" type="button" class="btn btn-secondary btn-listar">Listar Todos los Cursos</button>
+        </div>
+</EditForm>
+
+<table class="table table-striped table-resultado">
+    <thead>
+        <tr>
+            <th scope="col">Nombre Periodo</th>
+            <th scope="col">Inicio</th>
+            <th scope="col">Fin</th>
+            <th scope="col">Nombre Curso</th>
+            <th scope="col">Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var en in Periodos)
+        {
+            var inputFileId = $"fileInput_{en.id_periodo}";
+
+            <tr>
+                <td>@en.nombre_periodo</td>
+                <td>@en.fecha_inicio_periodo</td>
+                <td>@en.fecha_fin_periodo</td>
+                <td>@en.nombre_curso</td>
+                <td>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#ModalInstructores" @onclick="(() => LoadInstructoresAsync(1, 3, en.id_periodo))">
+                        <i class=" bi bi-person-lines-fill"></i>
+                    </button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+<!-- Modal -->
+<div class="modal fade" id="ModalInstructores" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Lista de instructores</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
 @if (instructores == null)
 {
     <p><em>Cargando...</em></p>
@@ -184,7 +240,7 @@ else
                     <td>@instructor.TotalHorasGanadas</td>
                     <td>
                         <button type="button" class="btn btn-warning" @onclick="(()=> InsertTextsIntoExcel(instructor.NombreUsuario +' '+ instructor.ApellidosUsuario, instructor.CedulaUsuario, instructor.TotalHorasGanadas, instructor.Grupos.SelectMany(g => g.Horarios).ToList(), 1))">
-                            <i class="bi bi-cloud-arrow-down-fill"></i>
+                             Descargar
                         </button>
                     </td>
                 </tr>
@@ -192,13 +248,111 @@ else
         </tbody>
     </table>
 }
-    <div class="text-center">
-        <button class="btn btn-primary" disabled="@IsFirstPage" @onclick="PreviousPage">Anterior</button>
-        <span>Página @CurrentPage de @TotalPages</span>
-        <button class="btn btn-primary" disabled="@IsLastPage" @onclick="NextPage">Siguiente</button>
-    </div>
+<div class="text-center">
+    <button class="btn btn-primary" disabled="@IsFirstPage" @onclick="PreviousPage">Anterior</button>
+    <span>Página @CurrentPage de @TotalPages</span>
+    <button class="btn btn-primary" disabled="@IsLastPage" @onclick="NextPage">Siguiente</button>
+</div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-success" @onclick="(()=> ImprimirTodosInformesPracticas())">Descargar todos</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+<style>
+    .titulo-resultado {
+        text-align: center;
+        color: #007bff;
+        margin-bottom: 30px;
+        font-size: 28px;
+        font-weight: bold;
+    }
+
+    .contenedor {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .label {
+        flex: 1;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .select, .input-text {
+        flex: 2;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 16px;
+    }
+
+    .contenedor-botones {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+    }
+
+    .btn-buscar {
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+
+    .btn-listar {
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: #6c757d;
+        border-color: #6c757d;
+    }
+
+    .table-resultado {
+        width: 100%;
+        margin-top: 20px;
+        border-collapse: collapse;
+    }
+
+        .table-resultado th, .table-resultado td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .table-resultado th {
+            background-color: #f8f8f8;
+            font-weight: bold;
+        }
+
+        .table-resultado td {
+            color: #333;
+        }
+
+    .modal-title {
+        font-size: 22px;
+    }
+
+    .info-modal {
+        margin-bottom: 15px;
+        font-size: 16px;
+        color: #333;
+    }
+</style>
 
 @code {
+    /*inicio para valores de lista de cursios*/
+    Curso newCurso = new Curso();
+    private List<ListaPeriodo> listaPeriodos = [];
+    public static List<PeriodoConNombreCurso> Periodos = new List<PeriodoConNombreCurso>();
+    private int selectedPeriodo;
+    string newPeriodocertificate;
+    int generalid_periodo;
+    /*fin para valores de lista de cursios*/
     private bool isLoading = false;
     private int rowT = 46;
     private string colTExcel = "B"; // Inicialmente "A", equivalente a columna 1 en Excel
@@ -222,7 +376,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadInstructoresAsync();
+        await ListaNombresPeriodos();
     }
     // Función para convertir número de columna a letra (1 = A, 2 = B, ...)
     private int ConvertirColumna(string letraColumna)
@@ -249,14 +403,15 @@ else
         // Convertir el número de columna a letra equivalente en Excel
         return ((char)('A' + numeroColumna - 1)).ToString();
     }
-    private async Task LoadInstructoresAsync(int currentPage = 1, int pageSize = 3)
+    private async Task LoadInstructoresAsync(int currentPage, int pageSize, int id_periodo)
     {
         isLoading = true;
         StateHasChanged();
+        generalid_periodo = id_periodo;
         try
         {
             var response = await Http.GetFromJsonAsync<InstructoresPaginadosDto>(
-                $"http://localhost:5117/api/Instructor/instructoresPracticas?pageIndex={currentPage}&pageSize={pageSize}");
+                $"http://localhost:5117/api/Instructor/instructoresPracticas?pageIndex={currentPage}&pageSize={pageSize}&id_periodo={id_periodo}");
 
             if (response != null)
             {
@@ -282,7 +437,7 @@ else
         if (CurrentPage > 1)
         {
             CurrentPage--;
-            await LoadInstructoresAsync(CurrentPage, PageSize); // Pasar currentPage y pageSize actualizados
+            await LoadInstructoresAsync(CurrentPage, PageSize, generalid_periodo); // Pasar currentPage y pageSize actualizados
         }
     }
 
@@ -291,7 +446,7 @@ else
         if (CurrentPage < TotalPages)
         {
             CurrentPage++;
-            await LoadInstructoresAsync(CurrentPage, PageSize); // Pasar currentPage y pageSize actualizados
+            await LoadInstructoresAsync(CurrentPage, PageSize, generalid_periodo); // Pasar currentPage y pageSize actualizados
         }
     }
 
@@ -450,7 +605,7 @@ else
         while (currentPage <= TotalPages)
         {
             // Cargar los instructores de la página actual
-            await LoadInstructoresAsync(currentPage, pageSize);
+            await LoadInstructoresAsync(currentPage, pageSize, generalid_periodo);
 
             foreach (var instructor in instructores)
             {
@@ -495,6 +650,56 @@ else
             ConfirmButtonText = "OK"
         };
         await JSRuntime.InvokeVoidAsync("FireSweetAlert", options);
+    }
+    //FUNCIONES PARA Periodo
+    public async Task ListaPeriodos()
+    {
+        isLoading = true;
+        StateHasChanged();
+        Periodos = await Http.GetFromJsonAsync<List<PeriodoConNombreCurso>>("http://localhost:5117/api/Periodo");
+        isLoading = false;
+        StateHasChanged();
+    }
+    public async Task BuscarPeriodos(int id_lista_periodo, string nombre_curso)//lista de periodos con filtros
+    {
+        isLoading = true;
+        StateHasChanged();
+        Console.WriteLine($"ID Lista Periodo: {id_lista_periodo}, Nombre Curso: {nombre_curso}");
+        // Construir la URL con los parámetros de consulta
+        var url = $"http://localhost:5117/api/Periodo/PeriodoByName?id_lista_periodo={id_lista_periodo}&nombre_curso={nombre_curso}";
+
+        var response = await Http.GetAsync(url);
+
+        if (response.IsSuccessStatusCode)
+        {
+            isLoading = false;
+            StateHasChanged();
+            Periodos = await response.Content.ReadFromJsonAsync<List<PeriodoConNombreCurso>>();
+        }
+        else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            isLoading = false;
+            StateHasChanged();
+            //await JSRuntime.InvokeVoidAsync("alert", "No se encontraron coincidencias");
+            await sweetAletNotify("No se encontraron coincidencias", "info");
+            Periodos = new List<PeriodoConNombreCurso>();
+        }
+        else
+        {
+            isLoading = false;
+            StateHasChanged();
+            Console.WriteLine("Error al buscar los periodos.");
+            await sweetAletNotify("Error al buscar los periodos", "error");
+        }
+    }
+    //FUNCIONES PARA Periodo
+    public async Task ListaNombresPeriodos()
+    {
+        isLoading = true;
+        StateHasChanged();
+        listaPeriodos = await Http.GetFromJsonAsync<List<ListaPeriodo>>("http://localhost:5117/api/Periodo/getNamePeriodoList");
+        isLoading = false;
+        StateHasChanged();
     }
 
 }

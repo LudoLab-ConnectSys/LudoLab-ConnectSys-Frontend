@@ -7,31 +7,36 @@
 @using CurrieTechnologies.Razor.SweetAlert2
 @inject SweetAlertService Swal
 
-<h3>Generar reportes de curso</h3>
-<h3>Lista de cursos</h3>
+<h2 class="titulo-resultado">Generar reportes de curso</h2>
+<!--<h3 class="titulo-resultado">Lista de Cursos</h3>-->
 @if (isLoading)
 {
     <SpinnerPage />
 }
+
 <EditForm Model="newCurso">
     <div class="contenedor">
-        Nombre del Periodo:    Nombre del Curso:
-    </div>
-
-    <div>
-        <select @bind="selectedPeriodo">
+        <label for="nombrePeriodo" class="label">Nombre del Periodo:</label>
+        <select id="nombrePeriodo" @bind="selectedPeriodo" class="select">
             <option value="">Seleccione un periodo</option>
             @foreach (var periodo in listaPeriodos)
             {
                 <option value="@periodo.id_lista_periodo">@periodo.nombre_periodo</option>
             }
         </select>
-        <InputText @bind-Value="@newPeriodocertificate"></InputText>
-        <button @onclick="(() => BuscarPeriodos(selectedPeriodo, newPeriodocertificate))" class="btn btn-primary">Buscar Curso</button>
+    </div>
+
+    <div class="contenedor">
+        <label for="nombreCurso" class="label">Nombre del Curso:</label>
+        <InputText id="nombreCurso" @bind-Value="@newPeriodocertificate" class="input-text"></InputText>
+    </div>
+
+    <div class="contenedor-botones">
+        <button @onclick="(() => BuscarPeriodos(selectedPeriodo, newPeriodocertificate))" class="btn btn-primary btn-buscar">Buscar Curso</button>
+        <button @onclick="(() => ListaPeriodos())" type="button" class="btn btn-secondary btn-listar">Listar Todos los Cursos</button>
     </div>
 </EditForm>
-<button @onclick="(() => ListaPeriodos())" type="button" class="btn btn-primary">Listar Cursos</button>
-<table class="table table-striped">
+<table class="table table-striped table-resultado">
     <thead>
         <tr>
             <th scope="col">Nombre Periodo</th>
@@ -55,7 +60,7 @@
                 <td>@(string.IsNullOrEmpty(en.nombre_certificado) ? "No asignado" : en.nombre_certificado)</td>
                 <td>
                     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" @onclick="(() => EstudiantesPorPeriodo(en.id_periodo, en.nombre_curso, en.nombre_periodo))">
-                        <i class=" bi bi-person-lines-fill"></i>
+                        Reporte
                     </button>
                 </td>
             </tr>
@@ -110,6 +115,86 @@
     </div>
 </div>
 
+<style>
+    .titulo-resultado {
+        text-align: center;
+        color: #007bff;
+        margin-bottom: 30px;
+        font-size: 28px;
+        font-weight: bold;
+    }
+
+    .contenedor {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .label {
+        flex: 1;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .select, .input-text {
+        flex: 2;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 16px;
+    }
+
+    .contenedor-botones {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+    }
+
+    .btn-buscar {
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+
+    .btn-listar {
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: #6c757d;
+        border-color: #6c757d;
+    }
+
+    .table-resultado {
+        width: 100%;
+        margin-top: 20px;
+        border-collapse: collapse;
+    }
+
+        .table-resultado th, .table-resultado td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .table-resultado th {
+            background-color: #f8f8f8;
+            font-weight: bold;
+        }
+
+        .table-resultado td {
+            color: #333;
+        }
+
+    .modal-title {
+        font-size: 22px;
+    }
+
+    .info-modal {
+        margin-bottom: 15px;
+        font-size: 16px;
+        color: #333;
+    }
+</style>
 
 @code {
     private bool isLoading = false;
@@ -218,7 +303,7 @@
             isLoading = false;
             StateHasChanged();
             Console.WriteLine("Error al buscar los periodos.");
-            sweetAletNotify("Error al buscar los periodos.", "error");
+            await sweetAletNotify("Error al buscar los periodos.", "error");
         }
     }
 

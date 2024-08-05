@@ -8,33 +8,35 @@
 @inject IJSRuntime JSRuntime
 @using Microsoft.JSInterop
 
-<h2>Generar Certificados para Instructores</h2>
-<h3>Lista de cursos</h3>
+<h2 class="titulo-resultado">Generar Certificados para Instructores</h2>
+<!--<h3 class="titulo-resultado">Lista de Cursos</h3>-->
 @if (isLoading)
 {
     <SpinnerPage />
 }
 <EditForm Model="newCurso">
     <div class="contenedor">
-        <label for="nombrePeriodo">Nombre del Periodo:</label>
-        <label for="nombreCurso">Nombre del Curso:</label>
-    </div>
-
-    <div>
-        <select @bind="selectedPeriodo">
-            <option value=0 >Seleccione un periodo</option>
+        <label for="nombrePeriodo" class="label">Nombre del Periodo:</label>
+        <select id="nombrePeriodo" @bind="selectedPeriodo" class="select">
+            <option value="">Seleccione un periodo</option>
             @foreach (var periodo in listaPeriodos)
             {
                 <option value="@periodo.id_lista_periodo">@periodo.nombre_periodo</option>
             }
         </select>
-        <InputText @bind-Value="@newPeriodocertificate"></InputText>
-        <button @onclick="(() => BuscarPeriodos(selectedPeriodo, newPeriodocertificate))" class="btn btn-primary">Buscar Curso</button>
+    </div>
+
+    <div class="contenedor">
+        <label for="nombreCurso" class="label">Nombre del Curso:</label>
+        <InputText id="nombreCurso" @bind-Value="@newPeriodocertificate" class="input-text"></InputText>
+    </div>
+
+    <div class="contenedor-botones">
+        <button @onclick="(() => BuscarPeriodos(selectedPeriodo, newPeriodocertificate))" class="btn btn-primary btn-buscar">Buscar Curso</button>
+        <button @onclick="(() => ListaPeriodos())" type="button" class="btn btn-secondary btn-listar">Listar Todos los Cursos</button>
     </div>
 </EditForm>
-
-<button @onclick="(() => ListaPeriodos())" type="button" class="btn btn-primary">Listar Cursos</button>
-<table class="table table-striped">
+<table class="table table-striped table-resultado">
     <thead>
         <tr>
             <th scope="col">Nombre Periodo</th>
@@ -59,14 +61,15 @@
                 <td>
                     <!--<button type="button" class="btn btn-success"></button>-->
                     <label for="@inputFileId" class="btn btn-success">
-                        <i class="bi bi-cloud-upload-fill"></i>
+                        Cargar Plantilla
+                        <!--<i class="bi bi-cloud-upload-fill"></i>-->
                     </label>
                     <InputFile id="@inputFileId" OnChange="@(e => OnInputFileChange(e, en.id_periodo, en.nombre_certificado))" class="d-none" accept=".pdf" />
 
                     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" @onclick="(() => InstructoresPorPeriodo(en.id_periodo, en.nombre_curso, en.nombre_periodo))">
-                        <i class=" bi bi-person-lines-fill"></i>
+                        Instructores
                     </button>
-                    <button type="button" class="btn btn-info" @onclick="(()=> OpenPdf(en.nombre_certificado))"><i class="bi bi-eye-fill"></i></button>
+                    <button type="button" class="btn btn-info" @onclick="(()=> OpenPdf(en.nombre_certificado))">Ver</button>
                 </td>
             </tr>
         }
@@ -120,6 +123,87 @@
         </div>
     </div>
 </div>
+
+<style>
+    .titulo-resultado {
+        text-align: center;
+        color: #007bff;
+        margin-bottom: 30px;
+        font-size: 28px;
+        font-weight: bold;
+    }
+
+    .contenedor {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .label {
+        flex: 1;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .select, .input-text {
+        flex: 2;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 16px;
+    }
+
+    .contenedor-botones {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+    }
+
+    .btn-buscar {
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+
+    .btn-listar {
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: #6c757d;
+        border-color: #6c757d;
+    }
+
+    .table-resultado {
+        width: 100%;
+        margin-top: 20px;
+        border-collapse: collapse;
+    }
+
+        .table-resultado th, .table-resultado td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .table-resultado th {
+            background-color: #f8f8f8;
+            font-weight: bold;
+        }
+
+        .table-resultado td {
+            color: #333;
+        }
+
+    .modal-title {
+        font-size: 22px;
+    }
+
+    .info-modal {
+        margin-bottom: 15px;
+        font-size: 16px;
+        color: #333;
+    }
+</style>
 
 @code {
     private bool isLoading = false;
@@ -254,10 +338,15 @@
             //textos y sus posiciones para insertar en el pdf
             var texts = new List<object>
             {
-                new { content = "Nombre del Estudiante:", x = 100, y = 150, size = 24 },
-                new { content = "Curso:", x = 100, y = 120, size = 18 },
-                new { content = "Periodo:", x = 100, y = 90, size = 18 },
-                new { content = "Horas Asignadas:", x = 100, y = 60, size = 18 }
+                new { content = "LA ESCUELA POLITÉCNICA NACIONAL Y LA FACULTAD DE INGENIERÍA DE SISTEMAS", x = 0, y = 0, size = 18 },
+                new { content = "CONFIERE EL PRESENTE", x = 0, y = 0, size = 18 },
+                new { content = "CERTIFICADO A:", x = 0, y = 0, size = 18 },
+                new { content = "Dra. Mayra Carrión", x = 0, y = 0, size = 14 },
+                new { content = "DIRECTORA:", x = 0, y = 0, size = 14 },
+                new { content = "PROYECTO INCLUSIÓN DIGITAL", x = 0, y = 0, size = 14 },
+                new { content = "Dr. Jose Lucio", x = 0, y = 0, size = 14 },
+                new { content = "DECANO", x = 0, y = 0, size = 14 },
+                new { content = "FACULTAD DE INGENIERÍA DE SISTEMAS", x = 0, y = 0, size = 14 }
             };
             // Llamar a la función de JavaScript para modificar el PDF
             var pdfBytes = await JSRuntime.InvokeAsync<byte[]>("modificarPDF", memoryStream.ToArray(), texts);
@@ -380,9 +469,10 @@
             //textos y sus posiciones para insertar en el pdf
             var texts = new List<object>
             {
-                new { content = fullname, x = 400, y = 150, size = 24 },
-                new { content = nombbreCurso, x = 300, y = 120, size = 18 },
-                new { content = nombbrePeiodo, x = 300, y = 90, size = 18 },
+                new { content = fullname, x = 400, y = 150, size = 30 },
+                new { content = "Por haber participado en el Proyecto de “Inclusión Digital” 18ava edición de la Escuela Politécnica Nacional", x = 400, y = 150, size = 14 },
+                new { content = "desarrollado del 19 de abril de 2023 al 08 de septiembre.", x = 300, y = 120, size = 14 },
+                new { content = " ", x = 300, y = 90, size = 14 },
                 new { content = Convert.ToString(horasAsignadas), x = 300, y = 60, size = 18 }
             };
             var fileStream = response.Content.ReadAsStream();

@@ -11,44 +11,45 @@
 @using OfficeOpenXml;
 @using ClosedXML.Excel;
 
-<h2>Resultados de Encuesta de satisfación</h2>
+<h2 class="titulo-resultado">Resultados de Encuesta de Satisfacción</h2>
 
 <EditForm Model="newCurso">
     <div class="contenedor">
-        <label for="nombrePeriodo">Nombre del Periodo:</label>
-        <label for="nombreCurso">Nombre del Curso:</label>
-    </div>
-
-    <div>
-        <select @bind="selectedPeriodo">
+        <label for="nombrePeriodo" class="label">Nombre del Periodo:</label>
+        <select id="nombrePeriodo" @bind="selectedPeriodo" class="select">
             <option value=0>Seleccione un periodo</option>
             @foreach (var periodo in listaPeriodos)
             {
                 <option value="@periodo.id_lista_periodo">@periodo.nombre_periodo</option>
             }
         </select>
-        <InputText @bind-Value="@newPeriodocertificate"></InputText>
-        <button @onclick="(() => BuscarPeriodos(selectedPeriodo, newPeriodocertificate))" class="btn btn-primary">Buscar Curso</button>
     </div>
+    <div class="contenedor">
+        <label for="nombreCurso" class="label">Nombre del Curso:</label>
+        <InputText id="nombreCurso" @bind-Value="@newPeriodocertificate" class="input-text"></InputText>
+    </div>
+    <div class="contenedor-botones">
+        <button @onclick="(() => BuscarPeriodos(selectedPeriodo, newPeriodocertificate))" class="btn btn-primary btn-buscar">Buscar Curso</button>
+        <button @onclick="(() => ListarPeriodos())" type="button" class="btn btn-secondary btn-listar">Listar Todos los Cursos</button>
+        <button @onclick="NavigateToEncuestas" class="btn btn-info btn-ver-encuestas">Ver Encuestas</button>
+    </div>
+
 </EditForm>
 
-<button @onclick="(() => ListarPeriodos())" type="button" class="btn btn-primary">Listar Cursos</button>
-<table class="table table-striped">
+<table class="table table-striped table-resultado">
     <thead>
         <tr>
-            <th scope="col">Nombre Periodo</th>
-            <th scope="col">Inicio</th>
-            <th scope="col">Fin</th>
-            <th scope="col">Nombre Curso</th>
-            <th scope="col">Certificado</th>
-            <th scope="col">Acciones</th>
+            <th>Nombre Periodo</th>
+            <th>Inicio</th>
+            <th>Fin</th>
+            <th>Nombre Curso</th>
+            <th>Certificado</th>
+            <th>Acciones</th>
         </tr>
     </thead>
     <tbody>
         @foreach (var en in Periodos)
         {
-            var inputFileId = $"fileInput_{en.id_periodo}";
-
             <tr>
                 <td>@en.nombre_periodo</td>
                 <td>@en.fecha_inicio_periodo</td>
@@ -56,11 +57,8 @@
                 <td>@en.nombre_curso</td>
                 <td>@(string.IsNullOrEmpty(en.nombre_certificado) ? "No asignado" : en.nombre_certificado)</td>
                 <td>
-                    <!--<button type="button" class="btn btn-warning" @onclick="(()=> ImprimirResultadosEncuestas(en.id_periodo))">
-                        <i class="bi bi-cloud-arrow-down-fill"></i>
-                    </button>-->
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" @onclick="(() => OntenerEncuestas(en.id_periodo, en.nombre_curso) )">
-                        <i class="bi bi-card-checklist"></i>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" @onclick="(() => OntenerEncuestas(en.id_periodo, en.nombre_curso))">
+                        Descargar
                     </button>
                 </td>
             </tr>
@@ -73,11 +71,10 @@
     <div class="modal-dialog modal-dialog-scrollable modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h1 class="modal-title fs-5" id="exampleModalLabel">Lista de encuestas</h1>
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Descargar resultados de Encuestas</h1>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                
                 <div class="encuesta-list">
                     <div class="encuesta-grid">
                         @foreach (var encuesta in encuestas)
@@ -89,17 +86,102 @@
                         }
                     </div>
                 </div>
-
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                <button type="button" class="btn btn-primary">Save changes</button>
+                <button type="button" class="btn btn-primary">Guardar cambios</button>
             </div>
         </div>
     </div>
 </div>
+
 <style>
-    /* Estilos CSS para EncuestasList.razor */
+    .titulo-resultado {
+        text-align: center;
+        color: #007bff;
+        margin-bottom: 30px;
+        font-size: 28px;
+        font-weight: bold;
+    }
+
+    .contenedor {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .label {
+        flex: 1;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .select, .input-text {
+        flex: 2;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 16px;
+    }
+
+    .contenedor-botones {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+    }
+
+    .btn-ver-encuestas {
+        background-color: #5bc0de;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        padding: 10px 15px;
+        cursor: pointer;
+    }
+
+        .btn-ver-encuestas:hover {
+            opacity: 0.8;
+        }
+
+
+    .btn-buscar {
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+
+    .btn-listar {
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: #6c757d;
+        border-color: #6c757d;
+    }
+
+    .table-resultado {
+        width: 100%;
+        margin-top: 20px;
+        border-collapse: collapse;
+    }
+
+        .table-resultado th, .table-resultado td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .table-resultado th {
+            background-color: #f8f8f8;
+            font-weight: bold;
+        }
+
+        .table-resultado td {
+            color: #333;
+        }
+
+    .modal-title {
+        font-size: 22px;
+    }
 
     .encuesta-list {
         padding: 20px;
@@ -112,28 +194,32 @@
     }
 
     .encuesta-card {
-        background-color: #f0f0f0;
+        background-color: #ffffff;
         border: 1px solid #ddd;
         border-radius: 8px;
         padding: 10px;
         cursor: pointer;
-        transition: transform 0.2s ease-in-out;
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
     }
 
         .encuesta-card:hover {
             transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
 
         .encuesta-card h4 {
             margin-bottom: 8px;
+            font-size: 18px;
+            color: #333;
+            font-weight: 600;
         }
 
         .encuesta-card p {
             font-size: 14px;
             color: #666;
         }
-
 </style>
+
 
 @code {
     Curso newCurso = new Curso();
@@ -292,6 +378,10 @@
             ConfirmButtonText = "OK"
         };
         await JSRuntime.InvokeVoidAsync("FireSweetAlert", options);
+    }
+    private void NavigateToEncuestas()
+    {
+        NavigationManager.NavigateTo("/todas-encuestas");
     }
 
     public class SumatoriaRespuestasModel

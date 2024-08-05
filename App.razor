@@ -3,13 +3,13 @@
     <Router AppAssembly="@typeof(App).Assembly">
         <Found Context="routeData">
             <RouteView RouteData="@routeData" DefaultLayout="@typeof(AdminLayout)" />
-            <!-- <RouteView RouteData="@routeData" DefaultLayout="@typeof(EstudianteLayout)" />-->
+            <!--<RouteView RouteData="@routeData" DefaultLayout="@typeof(EstudianteLayout)" />-->
             <!-- <RouteView RouteData="@routeData" DefaultLayout="@typeof(InstructorLayout)" /> -->
             <FocusOnNavigate RouteData="@routeData" Selector="h1" />
         </Found>
         <NotFound>
             <LayoutView Layout="@typeof(AdminLayout)">
-                <!-- <LayoutView Layout="@typeof(EstudianteLayout)">-->
+                <!--<LayoutView Layout="@typeof(EstudianteLayout)">-->
                 <!-- <LayoutView Layout="@typeof(InstructorLayout)">-->
                 <p>Sorry, there's nothing at this address.</p>
             </LayoutView>
