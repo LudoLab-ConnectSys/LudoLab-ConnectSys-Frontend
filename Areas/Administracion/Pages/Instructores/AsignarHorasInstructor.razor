@@ -1,0 +1,244 @@
+﻿@page "/asignar-horas-instructor/{InstructorId:int}"
+@layout AdminLayout
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+
+<h3 class="text-center my-4">Asignar Horas al Instructor</h3>
+
+<EditForm Model="horasModel" OnValidSubmit="ConfirmarGuardarCambios" class="container">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <!-- Selección de Curso -->
+                    <div class="form-group mb-3">
+                        <label for="curso">Curso:</label>
+                        <select id="curso" class="form-control" @onchange="OnCursoSeleccionadoChange">
+                            <option value="">Seleccione un curso</option>
+                            @foreach (var curso in cursos)
+                            {
+                                <option value="@curso.id_curso">@curso.nombre_curso</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Selección de Periodo -->
+                    <div class="form-group mb-3">
+                        <label for="periodo">Periodo:</label>
+                        <select id="periodo" class="form-control" @onchange="OnPeriodoChange">
+                            <option value="">Seleccione un periodo</option>
+                            @foreach (var periodo in periodosUnicos)
+                            {
+                                <option value="@periodo.id_periodo">@periodo.nombre_periodo</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Campo para ingresar horas -->
+                    <div class="form-group mb-3">
+                        <label for="horas">Horas:</label>
+                        <InputNumber id="horas" class="form-control" @bind-Value="horasModel.horas_ganadas_instructor" />
+                    </div>
+                </div>
+                <div class="card-footer text-center">
+                    <button type="submit" class="btn btn-primary me-2">Asignar Horas</button>
+                    <button type="button" class="btn btn-secondary" @onclick="Regresar">Cancelar</button>
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger mt-2">@errorMessage</div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter]
+    public int InstructorId { get; set; }
+
+    private Horas_instructor horasModel = new Horas_instructor();
+    private int idCursoSeleccionado;
+    private List<Curso> cursos = new List<Curso>();
+    private List<PeriodoConDetalles> periodosUnicos = new List<PeriodoConDetalles>();
+    private string errorMessage;
+    private bool isEdit = false; // Indicador para saber si es un PUT o un POST
+
+    protected override async Task OnInitializedAsync()
+    {
+        horasModel.id_instructor = InstructorId;
+        await CargarCursos();
+    }
+
+    // Cargar lista de cursos desde la API
+    private async Task CargarCursos()
+    {
+        try
+        {
+            cursos = await Http.GetFromJsonAsync<List<Curso>>("http://localhost:5117/api/Curso");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error al cargar los cursos: {ex.Message}";
+            Console.WriteLine(errorMessage); // Impresión por consola
+        }
+    }
+
+    // Evento que se dispara al cambiar de curso
+    private async Task OnCursoSeleccionadoChange(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value.ToString(), out int cursoId))
+        {
+            idCursoSeleccionado = cursoId;
+            Console.WriteLine($"Curso seleccionado: {cursoId}"); // Impresión por consola
+            await CargarPeriodos(cursoId);
+        }
+    }
+
+    // Cargar lista de periodos según el curso seleccionado
+    private async Task CargarPeriodos(int cursoId)
+    {
+        try
+        {
+            periodosUnicos = await Http.GetFromJsonAsync<List<PeriodoConDetalles>>($"http://localhost:5117/api/Periodo/por-curso/{cursoId}");
+            if (!periodosUnicos.Any())
+            {
+                errorMessage = "No se encontraron periodos para el curso seleccionado.";
+                Console.WriteLine(errorMessage); // Impresión por consola
+            }
+            else
+            {
+                errorMessage = string.Empty; // Limpia el mensaje de error si se encontraron periodos
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error al cargar los periodos: {ex.Message}";
+            Console.WriteLine(errorMessage); // Impresión por consola
+        }
+    }
+
+    // Evento que se dispara al cambiar de periodo
+    private async Task OnPeriodoChange(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value.ToString(), out int periodoId))
+        {
+            horasModel.id_periodo = periodoId;
+            Console.WriteLine($"Periodo seleccionado: {periodoId}"); // Impresión por consola
+            await ComprobarHorasExistentes();
+        }
+    }
+
+    // Comprueba si ya existen horas registradas para el instructor y periodo seleccionado
+    private async Task ComprobarHorasExistentes()
+    {
+        Console.WriteLine($"Comprobando horas para InstructorId: {horasModel.id_instructor}, PeriodoId: {horasModel.id_periodo}"); // Impresión por consola
+
+        if (horasModel.id_instructor != 0 && horasModel.id_periodo != 0)
+        {
+            var response = await Http.GetAsync($"http://localhost:5117/api/Instructor/{horasModel.id_instructor}/Periodo/{horasModel.id_periodo}/Horas");
+            if (response.IsSuccessStatusCode)
+            {
+                var horasExistentes = await response.Content.ReadFromJsonAsync<Horas_instructor>();
+                Console.WriteLine($"Horas existentes: {horasExistentes.horas_ganadas_instructor}"); // Impresión por consola
+                horasModel.horas_ganadas_instructor = horasExistentes.horas_ganadas_instructor; // Actualiza el modelo con las horas existentes
+                isEdit = true;
+            }
+            else
+            {
+                Console.WriteLine("No existen horas para este periodo"); // Impresión por consola
+                horasModel.horas_ganadas_instructor = 0; // No existen horas para este periodo
+                isEdit = false;
+            }
+        }
+    }
+
+    // Confirma si desea guardar los cambios y llama al método adecuado
+    private async Task ConfirmarGuardarCambios()
+    {
+        var confirmed = await sweetAletConfirm("¿Estás seguro de que deseas guardar los cambios?", "warning");
+        if (confirmed)
+        {
+            await HandleValidSubmit();
+        }
+    }
+
+    // Maneja el envío del formulario
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            HttpResponseMessage response;
+            if (isEdit)
+            {
+                // Si es una edición (PUT)
+                response = await Http.PutAsJsonAsync($"http://localhost:5117/api/Instructor/HorasInstructor/{horasModel.id_instructor}/{horasModel.id_periodo}", horasModel);
+            }
+            else
+            {
+                // Si es una nueva asignación (POST)
+                response = await Http.PostAsJsonAsync("http://localhost:5117/api/Instructor/HorasInstructor", horasModel);
+            }
+
+            if (response.IsSuccessStatusCode)
+            {
+                await sweetAletNotify("Horas asignadas correctamente", "success");
+                NavigationManager.NavigateTo("/instructores");
+            }
+            else
+            {
+                errorMessage = $"Error al asignar horas. Status code: {response.StatusCode}";
+                Console.WriteLine(errorMessage); // Impresión por consola
+                await sweetAletNotify(errorMessage, "error");
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+            Console.WriteLine(errorMessage); // Impresión por consola
+            await sweetAletNotify($"Error: {ex.Message}", "error");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+            Console.WriteLine(errorMessage); // Impresión por consola
+            await sweetAletNotify($"Error: {ex.Message}", "error");
+        }
+    }
+
+    // Navega de regreso a la lista de instructores
+    private void Regresar()
+    {
+        NavigationManager.NavigateTo("/instructores");
+    }
+
+    // Muestra una alerta de notificación
+    private async Task sweetAletNotify(string texto, string tipo)
+    {
+        var options = new
+        {
+            Title = texto,
+            Icon = tipo,
+            ConfirmButtonText = "OK"
+        };
+        await JSRuntime.InvokeVoidAsync("FireSweetAlert", options);
+    }
+
+    // Muestra una alerta de confirmación
+    private async Task<bool> sweetAletConfirm(string texto, string tipo)
+    {
+        var options = new
+        {
+            Title = texto,
+            Icon = tipo,
+            ShowCancelButton = true,
+            ConfirmButtonText = "Sí",
+            CancelButtonText = "No"
+        };
+        return await JSRuntime.InvokeAsync<bool>("FireSweetAlertConfirm", options);
+    }
+}

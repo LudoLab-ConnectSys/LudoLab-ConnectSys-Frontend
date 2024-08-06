@@ -22,23 +22,36 @@ else
     <br />
     <div>
         <h4>Cursos Inscritos</h4>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Curso</th>
-                    <th>Periodo</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var curso in instructor.cursos)
-                {
+        @if (instructor.cursos != null && instructor.periodos != null)
+        {
+            <table class="table">
+                <thead>
                     <tr>
-                        <td>@curso</td>
-                        <td>@instructor.periodos[instructor.cursos.IndexOf(curso)]</td>
+                        <th>Curso</th>
+                        <th>Periodo</th>
                     </tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @foreach (var curso in instructor.cursos)
+                    {
+                        <tr>
+                            <td>@curso</td>
+                            <td>@instructor.periodos[instructor.cursos.IndexOf(curso)]</td>
+                        </tr>
+                    }
+                    if (instructor.cursos.Count == 0)
+                    {
+                    <tr>
+                        <td colspan="2"><em>No hay cursos inscritos.</em></td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p><em>No hay información de cursos disponible.</em></p>
+        }
     </div>
 }
 

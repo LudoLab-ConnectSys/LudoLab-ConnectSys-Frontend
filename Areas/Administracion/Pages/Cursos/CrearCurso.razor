@@ -2,6 +2,8 @@
 @layout AdminLayout
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
+@inject SweetAlertService Swal
+@inject IJSRuntime JSRuntime
 
 <h3>Crear Nuevo Curso</h3>
 
@@ -56,11 +58,26 @@
         {
             cursoCreado = true;
             nuevoCurso = new Curso(); // Reiniciar el formulario
+
+            await sweetAletNotify("Curso creado con éxito", "success");
+
             NavigationManager.NavigateTo("/cursos");
         }
         else
         {
             // Manejar el error
+            await sweetAletNotify("Error al crear el curso", "error");
         }
+    }
+
+    private async Task sweetAletNotify(string texto, string tipo)
+    {
+        var options = new
+        {
+            Title = texto,
+            Icon = tipo,
+            ConfirmButtonText = "OK"
+        };
+        await JSRuntime.InvokeVoidAsync("FireSweetAlert", options);
     }
 }

@@ -2,7 +2,7 @@
 @layout AdminLayout
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
-
+@inject IJSRuntime JSRuntime
 
 @if (instructor == null)
 {
@@ -10,7 +10,7 @@
 }
 else
 {
-    <EditForm Model="instructorUpdateModel" OnValidSubmit="GuardarCambios">
+    <EditForm Model="instructorUpdateModel" OnValidSubmit="ConfirmarGuardarCambios">
         <DataAnnotationsValidator />
         <ValidationSummary />
 
@@ -44,9 +44,13 @@ else
                 <label>Edad:</label>
                 <InputNumber @bind-Value="instructorUpdateModel.edad_usuario" class="form-control" />
             </div>
+            <div class="form-group">
+                <label>Horas Totales Asignadas:</label>
+                <InputNumber @bind-Value="horasTotales" class="form-control" readonly />
+            </div>
 
             <button type="submit" class="btn btn-primary">Guardar Cambios</button>
-            <button type="button" class="btn btn-danger" @onclick="EliminarInstructor">Eliminar</button>
+            <button type="button" class="btn btn-danger" @onclick="ConfirmarEliminarInstructor">Eliminar</button>
             <button type="button" class="btn btn-secondary" @onclick="VerCursosInscritos">Ver Cursos Registrados</button>
         </div>
     </EditForm>
@@ -58,10 +62,22 @@ else
 
     private InstructorConDetallesCompleto instructor;
     private InstructorUpdateModel instructorUpdateModel;
+    private int horasTotales;
 
     protected override async Task OnInitializedAsync()
     {
         instructor = await Http.GetFromJsonAsync<InstructorConDetallesCompleto>($"http://localhost:5117/api/Instructor/DetallesById/{InstructorId}");
+        var horasResponse = await Http.GetAsync($"http://localhost:5117/api/Instructor/{InstructorId}/HorasTotales");
+
+        if (horasResponse.IsSuccessStatusCode)
+        {
+            var horas = await horasResponse.Content.ReadFromJsonAsync<HorasModel>();
+            horasTotales = horas?.horas_ganadas_instructor ?? 0;
+        }
+        else
+        {
+            horasTotales = 0;
+        }
 
         instructorUpdateModel = new InstructorUpdateModel
             {
@@ -76,34 +92,91 @@ else
             };
     }
 
+    private async Task ConfirmarGuardarCambios()
+    {
+        var confirmed = await sweetAletConfirm("¿Estás seguro de que deseas guardar los cambios?", "warning");
+        if (confirmed)
+        {
+            await GuardarCambios();
+        }
+    }
+
     private async Task GuardarCambios()
     {
         var response = await Http.PutAsJsonAsync($"http://localhost:5117/api/Instructor/{InstructorId}", instructorUpdateModel);
         if (response.IsSuccessStatusCode)
         {
+            await sweetAletNotify("Los cambios se guardaron correctamente.", "success");
             NavigationManager.NavigateTo("/instructores");
         }
         else
         {
-            // Manejar el error
+            await sweetAletNotify("Ocurrió un error al guardar los cambios.", "error");
+        }
+    }
+
+    private async Task ConfirmarEliminarInstructor()
+    {
+        var confirmed = await sweetAletConfirm("¿Estás seguro de que deseas eliminar este instructor?", "warning");
+        if (confirmed)
+        {
+            await EliminarInstructor();
         }
     }
 
     private async Task EliminarInstructor()
     {
-        var response = await Http.DeleteAsync($"http://localhost:5117/api/Instructor/{InstructorId}");
-        if (response.IsSuccessStatusCode)
+        try
         {
-            NavigationManager.NavigateTo("/instructores");
+            var response = await Http.DeleteAsync($"http://localhost:5117/api/Instructor/{InstructorId}");
+            if (response.IsSuccessStatusCode)
+            {
+                await sweetAletNotify("Instructor eliminado exitosamente.", "success");
+                NavigationManager.NavigateTo("/instructores");
+            }
+            else
+            {
+                await sweetAletNotify("Ocurrió un error al eliminar el instructor.", "error");
+            }
         }
-        else
+        catch (Exception)
         {
-            // Manejar el error
+            await sweetAletNotify("Ocurrió un error al eliminar el instructor.", "error");
         }
     }
 
     private void VerCursosInscritos()
     {
         NavigationManager.NavigateTo($"/cursos-inscritos-instructor/{InstructorId}");
+    }
+
+    private async Task sweetAletNotify(string texto, string tipo)
+    {
+        var options = new
+        {
+            Title = texto,
+            Icon = tipo,
+            ConfirmButtonText = "OK"
+        };
+        await JSRuntime.InvokeVoidAsync("FireSweetAlert", options);
+    }
+
+    private async Task<bool> sweetAletConfirm(string texto, string tipo)
+    {
+        var options = new
+        {
+            Title = texto,
+            Icon = tipo,
+            ShowCancelButton = true,
+            ConfirmButtonText = "Sí",
+            CancelButtonText = "No"
+        };
+        return await JSRuntime.InvokeAsync<bool>("FireSweetAlertConfirm", options);
+    }
+
+    public class HorasModel
+    {
+        public int id_instructor { get; set; }
+        public int horas_ganadas_instructor { get; set; }
     }
 }

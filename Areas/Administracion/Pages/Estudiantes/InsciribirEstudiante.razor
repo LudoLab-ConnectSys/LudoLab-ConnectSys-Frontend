@@ -2,6 +2,8 @@
 @layout AdminLayout
 @inject NavigationManager NavigationManager
 @inject HttpClient Http
+@inject SweetAlertService Swal
+@inject IJSRuntime JSRuntime
 
 <h3 class="text-center my-4">Registrar y Matricular Estudiante</h3>
 
@@ -110,9 +112,9 @@
         {
             cursos = await Http.GetFromJsonAsync<List<Curso>>("http://localhost:5117/api/Curso");
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            errorMessage = $"Error al cargar los cursos: {ex.Message}";
+            errorMessage = "Error al cargar los cursos. Por favor, recarga la página o inténtalo más tarde.";
         }
     }
 
@@ -124,13 +126,13 @@
             periodosUnicos = await Http.GetFromJsonAsync<List<PeriodoConNombre>>($"http://localhost:5117/api/Periodo/por-curso/{idCurso}");
             Console.WriteLine($"Periodos cargados: {periodosUnicos.Count}");
         }
-        catch (HttpRequestException ex)
+        catch (HttpRequestException)
         {
-            errorMessage = $"Error al cargar los periodos: {ex.Message}";
+            errorMessage = "Error al cargar los periodos. Por favor, recarga la página o inténtalo más tarde.";
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            errorMessage = $"Error inesperado al cargar los periodos: {ex.Message}";
+            errorMessage = "Ocurrió un error inesperado al cargar los periodos. Por favor, inténtalo de nuevo más tarde.";
         }
     }
 
@@ -158,15 +160,17 @@
             var estudianteId = await GuardarEstudiante(nuevoEstudiante);
             await RegistrarMatricula(estudianteId, idCursoSeleccionado, idPeriodoSeleccionado);
 
-            NavigationManager.NavigateTo("/");
+            await sweetAletNotify("Estudiante creado y matriculado exitosamente", "success");
+
+            NavigationManager.NavigateTo("/estudiantes");
         }
-        catch (HttpRequestException ex)
+        catch (HttpRequestException)
         {
-            errorMessage = $"Error: {ex.Message}";
+            await HandleErrorAsync("Hubo un problema al comunicarse con el servidor. Por favor, inténtalo de nuevo más tarde.");
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            errorMessage = $"Error: {ex.Message}";
+            await HandleErrorAsync("Ocurrió un error inesperado. Por favor, inténtalo de nuevo más tarde.");
         }
     }
 
@@ -203,5 +207,22 @@
     private void Regresar()
     {
         NavigationManager.NavigateTo("/estudiantes");
+    }
+
+    private async Task sweetAletNotify(string texto, string tipo)
+    {
+        var options = new
+        {
+            Title = texto,
+            Icon = tipo,
+            ConfirmButtonText = "OK"
+        };
+        await JSRuntime.InvokeVoidAsync("FireSweetAlert", options);
+    }
+
+    private async Task HandleErrorAsync(string friendlyMessage)
+    {
+        errorMessage = friendlyMessage;
+        await sweetAletNotify(errorMessage, "error");
     }
 }

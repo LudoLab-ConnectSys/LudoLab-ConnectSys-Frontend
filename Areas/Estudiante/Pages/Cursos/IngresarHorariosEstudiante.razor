@@ -3,6 +3,8 @@
 @inject HttpClient Http
 @inject NavigationManager Navigation
 @inject IJSRuntime Js
+@inject SweetAlertService Swal
+
 
 <h3>Ingresar Horarios Preferentes</h3>
 
@@ -81,26 +83,6 @@
 
     }
 
-    private async Task GuardarHorarios()
-    {
-        // Añadir el ID del estudiante a cada horario antes de enviarlo
-        foreach (var horario in horarios)
-        {
-            horario.id_estudiante = idEstudiante;
-        }
-
-        // Enviar la lista de horarios al controlador
-        var response = await Http.PostAsJsonAsync($"http://localhost:5117/api/Estudiante/HorariosPreferentes/{cursoId}", horarios);
-        if (response.IsSuccessStatusCode)
-        {
-            Navigation.NavigateTo("/cursos-disponibles");
-        }
-        else
-        {
-            // Manejo de errores
-        }
-    }
-
     private void AgregarHorario()
     {
         horarios.Add(new HorarioPreferenteEstudiante
@@ -113,9 +95,44 @@
         nuevoHorario = new HorarioPreferenteEstudiante();
     }
 
+
+    private async Task GuardarHorarios()
+    {
+        // Añadir el ID del estudiante a cada horario antes de enviarlo
+        foreach (var horario in horarios)
+        {
+            horario.id_estudiante = idEstudiante;
+        }
+
+        // Enviar la lista de horarios al controlador
+        var response = await Http.PostAsJsonAsync($"http://localhost:5117/api/Estudiante/HorariosPreferentes/{cursoId}/{idEstudiante}", horarios);
+        if (response.IsSuccessStatusCode)
+        {
+            Navigation.NavigateTo("/cursos-disponibles");
+            await sweetAletNotify("Horarios Ingresados con éxito", "success");
+        }
+        else
+        {
+            // Manejo de errores
+            await sweetAletNotify("Error al ingresar horarios", "error");
+        }
+    }
+
     private void EliminarHorario(HorarioPreferenteEstudiante horario)
     {
         horarios.Remove(horario);
     }
+
+    private async Task sweetAletNotify(string texto, string tipo)
+    {
+        var options = new
+        {
+            Title = texto,
+            Icon = tipo,
+            ConfirmButtonText = "OK"
+        };
+        await Js.InvokeVoidAsync("FireSweetAlert", options);
+    }
+
 
 }

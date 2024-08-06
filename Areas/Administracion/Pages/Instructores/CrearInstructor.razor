@@ -2,6 +2,8 @@
 @layout AdminLayout
 @inject NavigationManager NavigationManager
 @inject HttpClient Http
+@inject SweetAlertService Swal
+@inject IJSRuntime JSRuntime
 
 <h3 class="text-center my-4">Registrar Instructor</h3>
 
@@ -130,15 +132,19 @@
             var instructorId = await GuardarInstructor(usuarioId);
             await RegistrarInstructor(instructorId, idCursoSeleccionado, idPeriodoSeleccionado);
 
-            NavigationManager.NavigateTo("/");
+            await sweetAletNotify("Instructor registrado exitosamente", "success");
+
+            NavigationManager.NavigateTo("/instructores");
         }
         catch (HttpRequestException ex)
         {
             errorMessage = $"Error: {ex.Message}";
+            await sweetAletNotify($"Error: {ex.Message}", "error");
         }
         catch (Exception ex)
         {
             errorMessage = $"Error: {ex.Message}";
+            await sweetAletNotify($"Error: {ex.Message}", "error");
         }
     }
 
@@ -180,5 +186,16 @@
     private void Regresar()
     {
         NavigationManager.NavigateTo("/");
+    }
+
+    private async Task sweetAletNotify(string texto, string tipo)
+    {
+        var options = new
+        {
+            Title = texto,
+            Icon = tipo,
+            ConfirmButtonText = "OK"
+        };
+        await JSRuntime.InvokeVoidAsync("FireSweetAlert", options);
     }
 }

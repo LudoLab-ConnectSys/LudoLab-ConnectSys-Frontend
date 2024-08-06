@@ -2,6 +2,7 @@
 @layout AdminLayout
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
 
 @if (estudiante == null)
 {
@@ -82,32 +83,71 @@ else
 
     private async Task GuardarCambios()
     {
-        var response = await Http.PutAsJsonAsync($"http://localhost:5117/api/Estudiante/{EstudianteId}", estudianteUpdateModel);
-        if (response.IsSuccessStatusCode)
+        try
         {
-            NavigationManager.NavigateTo("/estudiantes");
+            var response = await Http.PutAsJsonAsync($"http://localhost:5117/api/Estudiante/{EstudianteId}", estudianteUpdateModel);
+            if (response.IsSuccessStatusCode)
+            {
+                await sweetAlertNotify("Cambios guardados exitosamente", "success");
+                NavigationManager.NavigateTo("/estudiantes");
+            }
+            else
+            {
+                await HandleErrorAsync(response);
+            }
         }
-        else
+        catch (Exception ex)
         {
-            // Manejar el error
+            await HandleErrorAsync(ex, "Error inesperado al guardar los cambios.");
         }
     }
 
     private async Task EliminarEstudiante()
     {
-        var response = await Http.DeleteAsync($"http://localhost:5117/api/Estudiante/{EstudianteId}");
-        if (response.IsSuccessStatusCode)
+        try
         {
-            NavigationManager.NavigateTo("/estudiantes");
+            var response = await Http.DeleteAsync($"http://localhost:5117/api/Estudiante/{EstudianteId}");
+            if (response.IsSuccessStatusCode)
+            {
+                await sweetAlertNotify("Estudiante eliminado exitosamente", "success");
+                NavigationManager.NavigateTo("/estudiantes");
+            }
+            else
+            {
+                await HandleErrorAsync(response);
+            }
         }
-        else
+        catch (Exception ex)
         {
-            // Manejar el error
+            await HandleErrorAsync(ex, "Error inesperado al eliminar el estudiante.");
         }
     }
 
     private void VerCursosInscritos()
     {
         NavigationManager.NavigateTo($"/cursos-inscritos/{EstudianteId}");
+    }
+
+    private async Task sweetAlertNotify(string message, string type)
+    {
+        var options = new
+        {
+            Title = message,
+            Icon = type,
+            ConfirmButtonText = "OK"
+        };
+        await JSRuntime.InvokeVoidAsync("FireSweetAlert", options);
+    }
+
+    private async Task HandleErrorAsync(HttpResponseMessage response)
+    {
+        var errorContent = await response.Content.ReadAsStringAsync();
+        await sweetAlertNotify($"Error: {errorContent}", "error");
+    }
+
+    private async Task HandleErrorAsync(Exception ex, string customMessage)
+    {
+        var errorMessage = $"{customMessage} {ex.Message}";
+        await sweetAlertNotify(errorMessage, "error");
     }
 }

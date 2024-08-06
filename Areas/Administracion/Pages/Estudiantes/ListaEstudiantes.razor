@@ -2,6 +2,7 @@
 @layout AdminLayout
 @inject NavigationManager NavigationManager
 @inject HttpClient Http
+@inject IJSRuntime JSRuntime
 
 <h3>Listado de Estudiantes</h3>
 
@@ -28,6 +29,7 @@
             {
                 <option value="@periodo.id_lista_periodo">@periodo.nombre_periodo</option>
             }
+            }
         </select>
     </div>
 }
@@ -38,6 +40,7 @@
     <thead>
         <tr>
             <th>ID</th>
+            <th>Cédula</th>
             <th>Nombre</th>
             <th>Apellido</th>
             <th>Edad</th>
@@ -48,29 +51,41 @@
         </tr>
     </thead>
     <tbody>
-        @foreach (var estudiante in estudiantesFiltrados)
+        @if (estudiantesFiltrados.Any())
+        {
+            @foreach (var estudiante in estudiantesFiltrados)
+            {
+                <tr>
+                    <td>@estudiante.id_estudiante</td>
+                    <td>@estudiante.cedula_usuario</td>
+                    <td>@estudiante.nombre_usuario</td>
+                    <td>@estudiante.apellidos_usuario</td>
+                    <td>@estudiante.edad_usuario</td>
+                    <td>@estudiante.correo_usuario</td>
+                    <td>@(estudiante.cursos.Any() ? string.Join(", ", estudiante.cursos) : "NO ASIGNADO")</td>
+                    <td>@(estudiante.periodos.Any() ? string.Join(", ", estudiante.periodos) : "NO ASIGNADO")</td>
+                    <td>
+                        <button class="btn btn-info" @onclick="() => VerDetalles(estudiante.id_estudiante)">Ver</button>
+                        <button class="btn btn-danger" @onclick="() => ConfirmarEliminarEstudiante(estudiante.id_estudiante)">Eliminar</button>
+                    </td>
+                </tr>
+            }
+        }
+        else
         {
             <tr>
-                <td>@estudiante.id_estudiante</td>
-                <td>@estudiante.nombre_usuario</td>
-                <td>@estudiante.apellidos_usuario</td>
-                <td>@estudiante.edad_usuario</td>
-                <td>@estudiante.correo_usuario</td>
-                <td>@string.Join(", ", estudiante.cursos)</td>
-                <td>@string.Join(", ", estudiante.periodos)</td>
-                <td>
-                    <button class="btn btn-info" @onclick="() => VerDetalles(estudiante.id_estudiante)">Ver</button>
-                    <button class="btn btn-danger" @onclick="() => EliminarEstudiante(estudiante.id_estudiante)">Eliminar</button>
-                </td>
+                <td colspan="9">No hay estudiantes disponibles con los filtros seleccionados.</td>
             </tr>
         }
     </tbody>
 </table>
 
-@if (!estudiantesFiltrados.Any())
-{
-    <p>No hay estudiantes disponibles con los filtros seleccionados.</p>
-}
+<!-- Paginación -->
+<div class="pagination-container">
+    <button @onclick="PreviousPage" class="btn btn-primary btn-sm" disabled="@(!hasPreviousPage)">Anterior</button>
+    <span>Página @currentPage de @totalPages</span>
+    <button @onclick="NextPage" class="btn btn-primary btn-sm" disabled="@(!hasNextPage)">Siguiente</button>
+</div>
 
 @code {
     private List<EstudianteConDetalles> estudiantes = new List<EstudianteConDetalles>();
@@ -81,13 +96,31 @@
     private int selectedPeriodo = 0;
     private int selectedCurso = 0;
     private string errorMessage;
+    private int currentPage = 1;
+    private int totalPages;
+    private const int pageSize = 10;
 
     protected override async Task OnInitializedAsync()
     {
-        estudiantes = await Http.GetFromJsonAsync<List<EstudianteConDetalles>>("http://localhost:5117/api/Estudiante/Detalles");
+        await LoadEstudiantes();
         periodos = await Http.GetFromJsonAsync<List<ListaPeriodo>>("http://localhost:5117/api/ListaPeriodo");
         cursos = await Http.GetFromJsonAsync<List<Curso>>("http://localhost:5117/api/Curso");
-        estudiantesFiltrados = estudiantes;
+    }
+
+    private async Task LoadEstudiantes()
+    {
+        try
+        {
+            var response = await Http.GetFromJsonAsync<PagedResponse<EstudianteConDetalles>>($"http://localhost:5117/api/Estudiante/Detalles?pageNumber={currentPage}&pageSize={pageSize}&cursoId={selectedCurso}&periodoId={selectedPeriodo}");
+            estudiantes = response.Items.ToList();
+            totalPages = (int)Math.Ceiling((double)response.TotalCount / pageSize);
+
+            estudiantesFiltrados = estudiantes;
+        }
+        catch (Exception ex)
+        {
+            await sweetAletNotify($"Error al cargar los datos. Exception: {ex.Message}", "error");
+        }
     }
 
     private async Task OnCursoSeleccionadoChange(ChangeEventArgs e)
@@ -102,7 +135,7 @@
             selectedCurso = 0;
             selectedPeriodo = 0; // Reset periodo filter
             periodosFiltrados = new List<ListaPeriodo>();
-            FiltrarEstudiantes();
+            await LoadEstudiantes();
         }
     }
 
@@ -114,6 +147,7 @@
             if (!periodosFiltrados.Any())
             {
                 errorMessage = "No se encontraron periodos para el curso seleccionado.";
+                await sweetAletNotify(errorMessage, "info");
             }
             else
             {
@@ -122,11 +156,14 @@
         }
         catch (Exception ex)
         {
-            errorMessage = $"Error al cargar los periodos: {ex.Message}";
+            errorMessage = $"Error al cargar los periodos. Exception: {ex.Message}";
+            await sweetAletNotify(errorMessage, "error");
         }
+
+        await LoadEstudiantes();
     }
 
-    private void OnPeriodoSeleccionadoChange(ChangeEventArgs e)
+    private async Task OnPeriodoSeleccionadoChange(ChangeEventArgs e)
     {
         var selectedValue = e.Value.ToString();
         if (string.IsNullOrEmpty(selectedValue))
@@ -138,15 +175,7 @@
             selectedPeriodo = int.Parse(selectedValue);
         }
 
-        FiltrarEstudiantes();
-    }
-
-    private void FiltrarEstudiantes()
-    {
-        estudiantesFiltrados = estudiantes
-            .Where(est => (selectedCurso == 0 || est.id_cursos.Contains(selectedCurso)) &&
-                          (selectedPeriodo == 0 || est.id_periodos.Contains(selectedPeriodo)))
-            .ToList();
+        await LoadEstudiantes();
     }
 
     private void VerDetalles(int id)
@@ -159,13 +188,80 @@
         NavigationManager.NavigateTo("/matricular-estudiante");
     }
 
-    private async Task EliminarEstudiante(int id)
+    private async Task ConfirmarEliminarEstudiante(int id)
     {
-        var response = await Http.DeleteAsync($"http://localhost:5117/api/Estudiante/{id}");
-        if (response.IsSuccessStatusCode)
+        var confirmed = await sweetAletConfirm("¿Estás seguro de que deseas eliminar este estudiante?", "warning");
+        if (confirmed)
         {
-            estudiantes.RemoveAll(e => e.id_estudiante == id);
-            FiltrarEstudiantes();
+            await EliminarEstudiante(id);
         }
     }
+
+    private async Task EliminarEstudiante(int id)
+    {
+        try
+        {
+            var response = await Http.DeleteAsync($"http://localhost:5117/api/Estudiante/{id}");
+            if (response.IsSuccessStatusCode)
+            {
+                estudiantes.RemoveAll(e => e.id_estudiante == id);
+                await LoadEstudiantes();
+                await sweetAletNotify("Estudiante eliminado exitosamente.", "success");
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                await sweetAletNotify($"Error al eliminar el estudiante. Status Code: {response.StatusCode}, Details: {errorContent}", "error");
+            }
+        }
+        catch (Exception ex)
+        {
+            await sweetAletNotify($"Error al eliminar el estudiante. Exception: {ex.Message}", "error");
+        }
+    }
+
+    private async Task sweetAletNotify(string texto, string tipo)
+    {
+        var options = new
+        {
+            Title = texto,
+            Icon = tipo,
+            ConfirmButtonText = "OK"
+        };
+        await JSRuntime.InvokeVoidAsync("FireSweetAlert", options);
+    }
+
+    private async Task<bool> sweetAletConfirm(string texto, string tipo)
+    {
+        var options = new
+        {
+            Title = texto,
+            Icon = tipo,
+            ShowCancelButton = true,
+            ConfirmButtonText = "Sí",
+            CancelButtonText = "No"
+        };
+        return await JSRuntime.InvokeAsync<bool>("FireSweetAlertConfirm", options);
+    }
+
+    private async Task PreviousPage()
+    {
+        if (currentPage > 1)
+        {
+            currentPage--;
+            await LoadEstudiantes();
+        }
+    }
+
+    private async Task NextPage()
+    {
+        if (currentPage < totalPages)
+        {
+            currentPage++;
+            await LoadEstudiantes();
+        }
+    }
+
+    private bool hasPreviousPage => currentPage > 1;
+    private bool hasNextPage => currentPage < totalPages;
 }

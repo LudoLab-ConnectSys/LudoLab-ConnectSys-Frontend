@@ -2,6 +2,7 @@
 @layout AdminLayout
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
 
 <h3>Cursos Disponibles</h3>
 
@@ -30,7 +31,7 @@
                 <td>
                     <button class="btn btn-info" @onclick="() => VerPeriodos(curso.id_curso)">Ver Periodos</button>
                     <button class="btn btn-primary" @onclick="() => EditarCurso(curso.id_curso)">Editar</button>
-                    <button class="btn btn-danger" @onclick="() => EliminarCurso(curso.id_curso)">Eliminar</button>
+                    <button class="btn btn-danger" @onclick="() => ConfirmarEliminarCurso(curso.id_curso)">Eliminar</button>
                 </td>
             </tr>
         }
@@ -55,7 +56,7 @@
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error fetching data: {ex.Message}");
+            await MostrarNotificacion($"Error al cargar los datos: {ex.Message}", "error");
         }
     }
 
@@ -74,12 +75,68 @@
         NavigationManager.NavigateTo($"/editar-curso/{id_curso}");
     }
 
+    private async Task ConfirmarEliminarCurso(int id_curso)
+    {
+        var confirmed = await MostrarConfirmacion("¿Estás seguro de que deseas eliminar este curso?", "warning");
+        if (confirmed)
+        {
+            await EliminarCurso(id_curso);
+        }
+    }
+
     private async Task EliminarCurso(int id_curso)
     {
-        var response = await Http.DeleteAsync($"http://localhost:5117/api/Curso/{id_curso}");
-        if (response.IsSuccessStatusCode)
+        try
         {
-            cursos.RemoveAll(c => c.id_curso == id_curso);
+            var response = await Http.DeleteAsync($"http://localhost:5117/api/Curso/{id_curso}");
+            if (response.IsSuccessStatusCode)
+            {
+                cursos.RemoveAll(c => c.id_curso == id_curso);
+                await MostrarNotificacion("Curso eliminado exitosamente.", "success");
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+            {
+                var errorContent = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+                await MostrarNotificacion(errorContent.Message, "error");
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                await MostrarNotificacion($"Error al eliminar el curso. Status Code: {response.StatusCode}, Details: {errorContent}", "error");
+            }
         }
+        catch (Exception ex)
+        {
+            await MostrarNotificacion($"Error al eliminar el curso. Exception: {ex.Message}", "error");
+        }
+    }
+
+    private async Task MostrarNotificacion(string mensaje, string tipo)
+    {
+        var options = new
+        {
+            Title = mensaje,
+            Icon = tipo,
+            ConfirmButtonText = "OK"
+        };
+        await JSRuntime.InvokeVoidAsync("FireSweetAlert", options);
+    }
+
+    private async Task<bool> MostrarConfirmacion(string mensaje, string tipo)
+    {
+        var options = new
+        {
+            Title = mensaje,
+            Icon = tipo,
+            ShowCancelButton = true,
+            ConfirmButtonText = "Sí",
+            CancelButtonText = "No"
+        };
+        return await JSRuntime.InvokeAsync<bool>("FireSweetAlertConfirm", options);
+    }
+
+    public class ErrorResponse
+    {
+        public string Message { get; set; }
     }
 }
