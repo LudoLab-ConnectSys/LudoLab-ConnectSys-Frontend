@@ -160,8 +160,8 @@
     </div>
 
         <div class="contenedor-botones">
-            <button @onclick="(() => BuscarPeriodos(selectedPeriodo, newPeriodocertificate))" class="btn btn-primary btn-buscar">Buscar Curso</button>
-            <button @onclick="(() => ListaPeriodos())" type="button" class="btn btn-secondary btn-listar">Listar Todos los Cursos</button>
+        <button @onclick="(() => BuscarPeriodos(selectedPeriodo, newPeriodocertificate))" class="btn btn-primary btn-buscar">Buscar Curso</button>
+        <!--<button @onclick="(() => ListaPeriodos())" type="button" class="btn btn-secondary btn-listar">Listar Todos los Cursos</button>-->
         </div>
 </EditForm>
 
@@ -194,6 +194,12 @@
         }
     </tbody>
 </table>
+
+<div class="d-flex justify-content-between">
+    <button @onclick="(() => BuscarPeriodos(selectedPeriodo, newPeriodocertificate, CurrentPage - 1))" class="btn btn-primary" disabled="@(CurrentPage == 1 || isLoading)">Anterior</button>
+    <span>Página @CurrentPage de @TotalPages</span>
+    <button @onclick="(() => BuscarPeriodos(selectedPeriodo, newPeriodocertificate, CurrentPage + 1))" class="btn btn-primary" disabled="@(CurrentPage == TotalPages || isLoading)">Siguiente</button>
+</div>
 <!-- Modal -->
 <div class="modal fade" id="ModalInstructores" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable modal-xl">
@@ -250,7 +256,7 @@ else
 }
 <div class="text-center">
     <button class="btn btn-primary" disabled="@IsFirstPage" @onclick="PreviousPage">Anterior</button>
-    <span>Página @CurrentPage de @TotalPages</span>
+    <span>Página @CurrentPageTut de @TotalPagesTut</span>
     <button class="btn btn-primary" disabled="@IsLastPage" @onclick="NextPage">Siguiente</button>
 </div>
 
@@ -358,7 +364,7 @@ else
     private string colTExcel = "B"; // Inicialmente "A", equivalente a columna 1 en Excel
 
     private List<InstructorDto> instructores = [];//lista de instructores para generar informes de prácticas
-    private int CurrentPage = 1;//datos para paginación
+    private int CurrentPageTut = 1;//datos para paginación
     private int PageSize = 3; // Tamaño de página
     private int TotalCount { get; set; }
 
@@ -373,10 +379,14 @@ else
     private string col1Excel = "D";
     private string col2Excel = "D";
     private string col3Excel = "H";
+    private int CurrentPage { get; set; } = 1;// propiedades para paginación
+    private int TotalPages { get; set; }
+    private int registerNumber { get; set; } = 3;
 
     protected override async Task OnInitializedAsync()
     {
         await ListaNombresPeriodos();
+        await BuscarPeriodos(0, "", 1);
     }
     // Función para convertir número de columna a letra (1 = A, 2 = B, ...)
     private int ConvertirColumna(string letraColumna)
@@ -434,25 +444,25 @@ else
 
     private async Task PreviousPage()//paginación: retroseder una pagina
     {
-        if (CurrentPage > 1)
+        if (CurrentPageTut > 1)
         {
-            CurrentPage--;
-            await LoadInstructoresAsync(CurrentPage, PageSize, generalid_periodo); // Pasar currentPage y pageSize actualizados
+            CurrentPageTut--;
+            await LoadInstructoresAsync(CurrentPageTut, PageSize, generalid_periodo); // Pasar currentPage y pageSize actualizados
         }
     }
 
     private async Task NextPage()//paginación: ir a la siguiente pagina
     {
-        if (CurrentPage < TotalPages)
+        if (CurrentPageTut < TotalPagesTut)
         {
-            CurrentPage++;
-            await LoadInstructoresAsync(CurrentPage, PageSize, generalid_periodo); // Pasar currentPage y pageSize actualizados
+            CurrentPageTut++;
+            await LoadInstructoresAsync(CurrentPageTut, PageSize, generalid_periodo); // Pasar currentPage y pageSize actualizados
         }
     }
 
-    private bool IsFirstPage => CurrentPage == 1;
-    private bool IsLastPage => CurrentPage == TotalPages;
-    private int TotalPages => (int)Math.Ceiling((decimal)TotalCount / PageSize); // Calcular el total de páginas
+    private bool IsFirstPage => CurrentPageTut == 1;
+    private bool IsLastPage => CurrentPageTut == TotalPagesTut;
+    private int TotalPagesTut => (int)Math.Ceiling((decimal)TotalCount / PageSize); // Calcular el total de páginas
 
     private async Task HandleFileSelected(InputFileChangeEventArgs e)
     {
@@ -602,7 +612,7 @@ else
         int currentPage = 1;
         int pageSize = 3;  // Asumo que el tamaño de página es 3. Puedes ajustar este valor si es necesario.
 
-        while (currentPage <= TotalPages)
+        while (currentPage <= TotalPagesTut)
         {
             // Cargar los instructores de la página actual
             await LoadInstructoresAsync(currentPage, pageSize, generalid_periodo);
@@ -660,46 +670,91 @@ else
         isLoading = false;
         StateHasChanged();
     }
-    public async Task BuscarPeriodos(int id_lista_periodo, string nombre_curso)//lista de periodos con filtros
+    public async Task BuscarPeriodos(int id_lista_periodo, string nombre_curso, int pageNumber = 1)
     {
-        isLoading = true;
-        StateHasChanged();
-        Console.WriteLine($"ID Lista Periodo: {id_lista_periodo}, Nombre Curso: {nombre_curso}");
-        // Construir la URL con los parámetros de consulta
-        var url = $"http://localhost:5117/api/Periodo/PeriodoByName?id_lista_periodo={id_lista_periodo}&nombre_curso={nombre_curso}";
-
-        var response = await Http.GetAsync(url);
-
-        if (response.IsSuccessStatusCode)
+        try
         {
+            if (pageNumber < 1 || (TotalPages > 0 && pageNumber > TotalPages))
+            {
+                return;
+            }
+
+            isLoading = true;
+            StateHasChanged();
+
+            var url = $"http://localhost:5117/api/Periodo/PeriodoByName?id_lista_periodo={id_lista_periodo}&nombre_curso={nombre_curso}&pageNumber={pageNumber}&pageSize={registerNumber}";
+            var response = await Http.GetAsync(url);
+
             isLoading = false;
             StateHasChanged();
-            Periodos = await response.Content.ReadFromJsonAsync<List<PeriodoConNombreCurso>>();
+
+            if (response.IsSuccessStatusCode)
+            {
+                var pagedResult = await response.Content.ReadFromJsonAsync<PagedResult<PeriodoConNombreCurso>>();
+                Periodos = pagedResult.Items;
+                TotalPages = pagedResult.TotalPages;
+                CurrentPage = pagedResult.CurrentPage;
+
+                if (Periodos == null || Periodos.Count == 0)
+                {
+                    await sweetAletNotify("No se encontraron coincidencias", "info");
+                }
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                await sweetAletNotify("No se encontraron coincidencias", "info");
+                Periodos = new List<PeriodoConNombreCurso>();
+            }
+            else
+            {
+                await sweetAletNotify("Error al buscar los periodos", "error");
+            }
         }
-        else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        catch (Exception ex)
         {
-            isLoading = false;
-            StateHasChanged();
-            //await JSRuntime.InvokeVoidAsync("alert", "No se encontraron coincidencias");
-            await sweetAletNotify("No se encontraron coincidencias", "info");
+            // Maneja la excepción, por ejemplo, registrándola o mostrando un mensaje de error
+            Console.WriteLine($"Error al buscar los periodos: {ex.Message}");
+            await sweetAletNotify("Error al buscar los periodos", "error");
+
+            // Puedes asignar Periodos a una lista vacía en caso de error
             Periodos = new List<PeriodoConNombreCurso>();
         }
-        else
+        finally
         {
             isLoading = false;
             StateHasChanged();
-            Console.WriteLine("Error al buscar los periodos.");
-            await sweetAletNotify("Error al buscar los periodos", "error");
         }
     }
     //FUNCIONES PARA Periodo
     public async Task ListaNombresPeriodos()
     {
-        isLoading = true;
-        StateHasChanged();
-        listaPeriodos = await Http.GetFromJsonAsync<List<ListaPeriodo>>("http://localhost:5117/api/Periodo/getNamePeriodoList");
-        isLoading = false;
-        StateHasChanged();
+        try
+        {
+            isLoading = true;
+            StateHasChanged();
+
+            // Intenta obtener la lista de periodos
+            listaPeriodos = await Http.GetFromJsonAsync<List<ListaPeriodo>>("http://localhost:5117/api/Periodo/getNamePeriodoList");
+        }
+        catch (Exception ex)
+        {
+            // Maneja la excepción, por ejemplo, registrándola o mostrando un mensaje de error
+            Console.WriteLine($"Error al obtener la lista de periodos: {ex.Message}");
+
+            // Puedes asignar listaPeriodos a una lista vacía en caso de error
+            listaPeriodos = new List<ListaPeriodo>();
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+    public class PagedResult<T>
+    {
+        public List<T> Items { get; set; }
+        public int TotalPages { get; set; }
+        public int CurrentPage { get; set; }
     }
 
 }

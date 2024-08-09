@@ -49,7 +49,7 @@
 
     <div class="contenedor-botones">
         <button @onclick="(() => BuscarPeriodos(selectedPeriodo, newPeriodocertificate))" class="btn btn-primary btn-buscar">Buscar Curso</button>
-        <button @onclick="(() => ListaPeriodos())" type="button" class="btn btn-secondary btn-listar">Listar Todos los Cursos</button>
+        <!--<button @onclick="(() => ListaPeriodos())" type="button" class="btn btn-secondary btn-listar">Listar Todos los Cursos</button>-->
     </div>
 </EditForm>
 
@@ -95,6 +95,11 @@
         }
     </tbody>
 </table>
+<div class="d-flex justify-content-between">
+    <button @onclick="(() => BuscarPeriodos(selectedPeriodo, newPeriodocertificate, CurrentPage - 1))" class="btn btn-primary" disabled="@(CurrentPage == 1 || isLoading)">Anterior</button>
+    <span>Página @CurrentPage de @TotalPages</span>
+    <button @onclick="(() => BuscarPeriodos(selectedPeriodo, newPeriodocertificate, CurrentPage + 1))" class="btn btn-primary" disabled="@(CurrentPage == TotalPages || isLoading)">Siguiente</button>
+</div>
 
 <style>
     .d-none {
@@ -302,9 +307,14 @@
     string NombreBuscado = "";
     string nombbreCurso;
     string nombbrePeiodo;
+    private int CurrentPage { get; set; } = 1;// propiedades para paginación
+    private int TotalPages { get; set; }
+    private int registerNumber { get; set; } = 3;
+
     protected override async Task OnInitializedAsync()
     {
         await ListaNombresPeriodos();
+        await BuscarPeriodos(0, "", 1);
     }
     //FUNCIONES PARA Certificados
     public async Task CrearCertificado(Certificado certificado)
@@ -335,11 +345,27 @@
     //FUNCIONES PARA Periodo
     public async Task ListaNombresPeriodos()
     {
-        isLoading = true;
-        StateHasChanged();
-        listaPeriodos = await Http.GetFromJsonAsync<List<ListaPeriodo>>("http://localhost:5117/api/Periodo/getNamePeriodoList");
-        isLoading = false;
-        StateHasChanged();
+        try
+        {
+            isLoading = true;
+            StateHasChanged();
+
+            // Intenta obtener la lista de periodos
+            listaPeriodos = await Http.GetFromJsonAsync<List<ListaPeriodo>>("http://localhost:5117/api/Periodo/getNamePeriodoList");
+        }
+        catch (Exception ex)
+        {
+            // Maneja la excepción, por ejemplo, registrándola o mostrando un mensaje de error
+            Console.WriteLine($"Error al obtener la lista de periodos: {ex.Message}");
+
+            // Puedes asignar listaPeriodos a una lista vacía en caso de error
+            listaPeriodos = new List<ListaPeriodo>();
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
     }
     //FUNCIONES PARA Periodo
     public async Task ListaPeriodos()
@@ -350,36 +376,60 @@
         isLoading = false;
         StateHasChanged();
     }
-    public async Task BuscarPeriodos(int id_lista_periodo, string nombre_curso)
+    public async Task BuscarPeriodos(int id_lista_periodo, string nombre_curso, int pageNumber = 1)
     {
-        isLoading = true;
-        StateHasChanged();
-        // Construir la URL con los parámetros de consulta
-        var url = $"http://localhost:5117/api/Periodo/PeriodoByName?id_lista_periodo={id_lista_periodo}&nombre_curso={nombre_curso}";
-
-        var response = await Http.GetAsync(url);
-
-        if (response.IsSuccessStatusCode)
+        try
         {
-            Periodos = await response.Content.ReadFromJsonAsync<List<PeriodoConNombreCurso>>();
-        }
-        else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
-        {
+            if (pageNumber < 1 || (TotalPages > 0 && pageNumber > TotalPages))
+            {
+                return;
+            }
+
+            isLoading = true;
+            StateHasChanged();
+
+            var url = $"http://localhost:5117/api/Periodo/PeriodoByName?id_lista_periodo={id_lista_periodo}&nombre_curso={nombre_curso}&pageNumber={pageNumber}&pageSize={registerNumber}";
+            var response = await Http.GetAsync(url);
+
             isLoading = false;
             StateHasChanged();
-            //await JSRuntime.InvokeVoidAsync("alert", "No se encontraron coincidencias");
-            await sweetAletNotify("No se encontraron coincidencias", "info");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var pagedResult = await response.Content.ReadFromJsonAsync<PagedResult<PeriodoConNombreCurso>>();
+                Periodos = pagedResult.Items;
+                TotalPages = pagedResult.TotalPages;
+                CurrentPage = pagedResult.CurrentPage;
+
+                if (Periodos == null || Periodos.Count == 0)
+                {
+                    await sweetAletNotify("No se encontraron coincidencias", "info");
+                }
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                await sweetAletNotify("No se encontraron coincidencias", "info");
+                Periodos = new List<PeriodoConNombreCurso>();
+            }
+            else
+            {
+                await sweetAletNotify("Error al buscar los periodos", "error");
+            }
+        }
+        catch (Exception ex)
+        {
+            // Maneja la excepción, por ejemplo, registrándola o mostrando un mensaje de error
+            Console.WriteLine($"Error al buscar los periodos: {ex.Message}");
+            await sweetAletNotify("Error al buscar los periodos", "error");
+
+            // Puedes asignar Periodos a una lista vacía en caso de error
             Periodos = new List<PeriodoConNombreCurso>();
         }
-        else
+        finally
         {
             isLoading = false;
             StateHasChanged();
-            Console.WriteLine("Error al buscar los periodos.");
-            await sweetAletNotify("Error al buscar los periodos.", "error");
         }
-        isLoading = false;
-        StateHasChanged();
     }
 
 
@@ -673,5 +723,11 @@
             var url = $"http://localhost:5117/uploads/{fileName}";
             JSRuntime.InvokeVoidAsync("open", url, "_blank");
         }
+    }
+    public class PagedResult<T>
+    {
+        public List<T> Items { get; set; }
+        public int TotalPages { get; set; }
+        public int CurrentPage { get; set; }
     }
 }
