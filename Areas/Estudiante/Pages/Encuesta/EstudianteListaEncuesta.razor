@@ -77,6 +77,7 @@
 @code {
     private bool isLoading = false;
     List<Encuesta> encuestas = new List<Encuesta>();
+    private int id_estudiante = 1;
 
     protected override async Task OnInitializedAsync()
     {
@@ -98,11 +99,16 @@
         isLoading = false;
         StateHasChanged();
     }
-
+    private string Encrypt(int id)
+    {
+        // Implementa tu lógica de cifrado aquí
+        return Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(id.ToString()));
+    }
 
     void VerDetalles(int encuestaId)
     {
-        NavigationManager.NavigateTo($"/encuestas/{encuestaId}");
+        string encryptedId = Encrypt(id_estudiante);
+        NavigationManager.NavigateTo($"/encuestas/{encuestaId}?x9zQmP={encryptedId}");
     }
     private async Task sweetAletNotify(string texto, string tipo)
     {

@@ -1,6 +1,7 @@
 ﻿@page "/encuestas/{EncuestaId:int}"
 @inject HttpClient Http
 @inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
 @inject SweetAlertService Swal
 
 <div class="encuesta-container">
@@ -122,10 +123,15 @@
     [Parameter]
     public int EncuestaId { get; set; }
 
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "x9zQmP")]
+    public string EncryptedIdEstudiante { get; set; }
+
+    public int Id_Estudiantedes { get; set; }
+
 
     private string tituloEncuesta = "Cargando...";
     private bool isLoading = false;
-    private int idEstudiante;
     private List<Pregunta> preguntas = new List<Pregunta>();
     private Dictionary<int, string> respuestas = new Dictionary<int, string>();
     private bool encuestaCompletada = false;
@@ -134,17 +140,31 @@
     protected override async Task OnInitializedAsync()
     {
         isLoading = true;
-        StateHasChanged();
-        int initidEstudiante = 25; // Esto debería obtenerse dinámicamente según tu lógica
-        idEstudiante = initidEstudiante;
+        StateHasChanged(); 
+        try
+        {
+            if (!string.IsNullOrEmpty(EncryptedIdEstudiante))
+            {
+                Id_Estudiantedes = Decrypt(EncryptedIdEstudiante);
+            }
+        }
+        catch
+        {
+            NavigationManager.NavigateTo("./");
+        }
         await CargarTituloEncuesta();
-        await VerificarEncuestaCompletada(idEstudiante);
+        await VerificarEncuestaCompletada(Id_Estudiantedes);
         if (!encuestaCompletada)
         {
             await RecibirPreguntas();
         }
         isLoading = false;
         StateHasChanged();
+    }
+    private int Decrypt(string encryptedId)
+    {
+        // Implementa tu lógica de desencriptado aquí
+        return int.Parse(System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(encryptedId)));
     }
     private async Task CargarTituloEncuesta()
     {
@@ -160,6 +180,11 @@
 
     private async Task VerificarEncuestaCompletada(int idEstudiante)
     {
+        Console.WriteLine($"id est a enviar {idEstudiante}");
+        if (idEstudiante <= 0)
+        {
+            NavigationManager.NavigateTo("./");
+        }
         try
         {
             encuestaCompletada = await Http.GetFromJsonAsync<bool>($"http://localhost:5117/api/Encuesta/verificar-respuestas/{EncuestaId}/{idEstudiante}");
@@ -224,7 +249,7 @@
         }
         var respuestasEnviar = respuestas.Select(r => new RespuestaDto
             {
-                id_estudiante = idEstudiante,
+                id_estudiante = Id_Estudiantedes,
                 id_pregunta = r.Key,
                 texto_respuesta = r.Value
             }).ToList();
