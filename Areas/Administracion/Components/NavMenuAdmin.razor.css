@@ -18,7 +18,8 @@
     height: 1.25rem;
     margin-right: 0.75rem;
     top: -1px;
-    background-size: cover;
+    background-size: contain;
+    background-repeat: no-repeat;
 }
 
 .bi-house-door-fill-nav-menu {
@@ -38,36 +39,52 @@
     padding-bottom: 0.5rem;
 }
 
-    .nav-item:first-of-type {
-        padding-top: 1rem;
-    }
+.nav-item:first-of-type {
+    padding-top: 1rem;
+}
 
-    .nav-item:last-of-type {
-        padding-bottom: 1rem;
-    }
+.nav-item:last-of-type {
+    padding-bottom: 1rem;
+}
 
-    .nav-item ::deep a {
-        color: #d7d7d7;
-        border-radius: 4px;
-        height: 3rem;
-        display: flex;
-        align-items: center;
-        line-height: 3rem;
-    }
+.nav-item ::deep a {
+    color: #d7d7d7;
+    border-radius: 4px;
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    line-height: 3rem;
+}
 
-        .nav-item ::deep a.active {
-            background-color: rgba(255,255,255,0.37);
-            color: white;
-        }
+.nav-item ::deep a.active {
+    background-color: rgba(255,255,255,0.37);
+    color: white;
+}
 
-        .nav-item ::deep a:hover {
-            background-color: rgba(255,255,255,0.1);
-            color: white;
-        }
+.nav-item ::deep a:hover {
+    background-color: rgba(255,255,255,0.1);
+    color: white;
+}
 
 .menu-icon {
     vertical-align: middle;
     margin-right: 4px; /* Ajusta según tu preferencia */
+    width: 1rem; /* Ajuste de tamaño */
+    height: 1rem; /* Ajuste de tamaño */
+}
+
+.sub-menu .nav-link {
+    padding-left: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.sub-menu-icon {
+    margin-right: 8px; /* Espacio entre el icono y el texto */
+    font-size: 1rem;
+}
+.sub-menu{
+    margin-left: 5px;
 }
 @media (min-width: 641px) {
     .navbar-toggler {

@@ -1,6 +1,5 @@
 ﻿@inject NavigationManager NavigationManager
-@page "/generar-reportes"
-@layout AdminLayout
+@page "/generar-reportecompleto"
 @inject IJSRuntime JSRuntime
 @using Microsoft.JSInterop
 @inject HttpClient Http
@@ -36,7 +35,31 @@
         <button @onclick="(() => BuscarPeriodos(selectedPeriodo, newPeriodocertificate))" class="btn btn-primary btn-buscar">Buscar Curso</button>
         <!--<button @onclick="(() => ListaPeriodos())" type="button" class="btn btn-secondary btn-listar">Listar Todos los Cursos</button>-->
     </div>
-</EditForm>
+
+</EditForm><br/>
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="form-group">
+            <label for="incluirTutores" class="font-weight-bold">Incluir Tutores:</label>
+            <select id="incluirTutores" class="custom-select" @bind="incluirTutores">
+                <option value="true">Sí</option>
+                <option value="false">No</option>
+            </select>
+        </div>
+    </div>
+        
+    <div class="col-md-6">
+        <div class="form-group">
+            <label for="incluirEstudiantes" class="font-weight-bold">Incluir Estudiantes:</label>
+            <select id="incluirEstudiantes" class="custom-select" @bind="incluirEstudiantes">
+                <option value="true">Sí</option>
+                <option value="false">No</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+
 <table class="table table-striped table-resultado">
     <thead>
         <tr>
@@ -60,7 +83,7 @@
                 <td>@en.nombre_curso</td>
                 <td>@(string.IsNullOrEmpty(en.nombre_certificado) ? "No asignado" : en.nombre_certificado)</td>
                 <td>
-                    <button type="button" class="btn btn-primary" @onclick="(() => GenerarReporte(en.id_periodo, en.nombre_periodo, en.nombre_curso))">
+                    <button type="button" class="btn btn-primary" @onclick="(() => GenerarReporte(en.id_periodo, en.nombre_periodo, en.nombre_curso, incluirTutores, incluirEstudiantes))">
                         Reporte
                     </button>
                 </td>
@@ -153,6 +176,18 @@
         font-size: 16px;
         color: #333;
     }
+
+.custom-select {
+    border: 2px solid #007bff;
+    border-radius: 5px;
+    padding: 10px;
+    background-color: #f8f9fa;
+}
+
+.custom-select:focus {
+    border-color: #0056b3;
+    box-shadow: 0 0 0 0.2rem rgba(38, 143, 255, 0.25);
+}
 </style>
 
 @code {
@@ -168,12 +203,16 @@
     private int CurrentPage { get; set; } = 1;// propiedades para paginación
     private int TotalPages { get; set; }
     private int registerNumber { get; set; } = 3;
+    //filtros para obtener reporte con filtros
+    private string incluirTutores = "false";
+    private string incluirEstudiantes = "false";
 
     protected override async Task OnInitializedAsync()
     {
         await ListaNombresPeriodos();
         await BuscarPeriodos(0, "", 1);
     }
+
 
     public async Task BuscarPeriodos(int id_lista_periodo, string nombre_curso, int pageNumber = 1)
     {
@@ -265,7 +304,8 @@
             StateHasChanged();
         }
     }
-    private async Task GenerarReporte(int idPeriodo, string nombre_periodo, string nombre_curso)
+
+    private async Task GenerarReporte(int idPeriodo, string nombre_periodo, string nombre_curso, string incluirTutores, string incluirEstudiantes)
     {
         try
         {
@@ -273,7 +313,7 @@
             StateHasChanged();
 
             // Intentar obtener el reporte desde el API
-            var reporte = await Http.GetFromJsonAsync<ReporteCursoDTO>($"http://localhost:5117/api/File/GetReporte/{idPeriodo}");
+            var reporte = await Http.GetFromJsonAsync<ReporteCursoDTO>($"http://localhost:5117/api/File/GetReporteFilter/{idPeriodo}?incluirTutores={bool.Parse(incluirTutores)}&incluirEstudiantes={bool.Parse(incluirEstudiantes)}");
 
             isLoading = false;
             StateHasChanged();
@@ -302,6 +342,7 @@
                 dataStyle.Border.LeftBorder = XLBorderStyleValues.Thin;
                 dataStyle.Border.RightBorder = XLBorderStyleValues.Thin;
 
+                // Agregar datos de periodo y curso
                 worksheet.Cell(1, 1).Value = "Periodo";
                 worksheet.Cell(1, 2).Value = nombre_periodo;
                 worksheet.Range("A1:B1").Style = headerStyle;
@@ -322,6 +363,7 @@
                 worksheet.Cell(7, 2).Value = reporte.Curso.Horas;
                 worksheet.Range("A7:B7").Style = dataStyle;
 
+                // Agregar datos de grupos
                 worksheet.Cell(9, 1).Value = "Grupos";
                 worksheet.Range("A9:C9").Merge().Style = headerStyle;
                 worksheet.Cell(10, 1).Value = "ID Grupo";
@@ -339,13 +381,14 @@
                     row++;
                 }
 
+                // Agregar datos de horarios
                 worksheet.Cell(row + 1, 1).Value = "Horarios";
                 worksheet.Range(row + 1, 1, row + 1, 5).Merge().Style = headerStyle;
                 worksheet.Cell(row + 2, 1).Value = "ID Horario";
                 worksheet.Cell(row + 2, 2).Value = "Día de la Semana";
                 worksheet.Cell(row + 2, 3).Value = "Hora Inicio";
                 worksheet.Cell(row + 2, 4).Value = "Hora Fin";
-                worksheet.Range(row + 2, 1, row + 2, 5).Style = headerStyle;
+                worksheet.Range(row + 2, 1, row + 2, 4).Style = headerStyle;
 
                 row += 3;
                 foreach (var horario in reporte.Horarios)
@@ -358,6 +401,7 @@
                     row++;
                 }
 
+                // Agregar datos de horas de instructores
                 worksheet.Cell(row + 1, 1).Value = "Horas de Instructores";
                 worksheet.Range(row + 1, 1, row + 1, 4).Merge().Style = headerStyle;
                 worksheet.Cell(row + 2, 1).Value = "ID Horas Instructor";
@@ -375,40 +419,49 @@
                     row++;
                 }
 
-                worksheet.Cell(row + 1, 1).Value = "Instructores";
-                worksheet.Range(row + 1, 1, row + 1, 2).Merge().Style = headerStyle;
-                worksheet.Cell(row + 2, 1).Value = "ID Instructor";
-                worksheet.Cell(row + 2, 2).Value = "Nombre";
-                worksheet.Range(row + 2, 1, row + 2, 2).Style = headerStyle;
-
-                row += 3;
-                foreach (var instructor in reporte.Instructores)
+                // Agregar datos de instructores si se incluye
+                if (bool.Parse(incluirTutores))
                 {
-                    worksheet.Cell(row, 1).Value = instructor.Id;
-                    worksheet.Cell(row, 2).Value = instructor.Nombre;
-                    worksheet.Range(row, 1, row, 2).Style = dataStyle;
-                    row++;
+                    worksheet.Cell(row + 1, 1).Value = "Instructores";
+                    worksheet.Range(row + 1, 1, row + 1, 2).Merge().Style = headerStyle;
+                    worksheet.Cell(row + 2, 1).Value = "ID Instructor";
+                    worksheet.Cell(row + 2, 2).Value = "Nombre";
+                    worksheet.Range(row + 2, 1, row + 2, 2).Style = headerStyle;
+
+                    row += 3;
+                    foreach (var instructor in reporte.Instructores)
+                    {
+                        worksheet.Cell(row, 1).Value = instructor.Id;
+                        worksheet.Cell(row, 2).Value = instructor.Nombre;
+                        worksheet.Range(row, 1, row, 2).Style = dataStyle;
+                        row++;
+                    }
                 }
 
-                worksheet.Cell(row + 1, 1).Value = "Estudiantes";
-                worksheet.Range(row + 1, 1, row + 1, 5).Merge().Style = headerStyle;
-                worksheet.Cell(row + 2, 1).Value = "ID Estudiante";
-                worksheet.Cell(row + 2, 2).Value = "Tipo de Estudiante";
-                worksheet.Cell(row + 2, 3).Value = "Nombre";
-                worksheet.Cell(row + 2, 4).Value = "Horas Asignadas";
-                worksheet.Range(row + 2, 1, row + 2, 4).Style = headerStyle;
-
-                row += 3;
-                foreach (var estudiante in reporte.Estudiantes)
+                // Agregar datos de estudiantes si se incluye
+                if (bool.Parse(incluirEstudiantes))
                 {
-                    worksheet.Cell(row, 1).Value = estudiante.Id;
-                    worksheet.Cell(row, 2).Value = estudiante.Tipo;
-                    worksheet.Cell(row, 3).Value = estudiante.Nombre;
-                    worksheet.Cell(row, 4).Value = estudiante.HorasAsignadas;
-                    worksheet.Range(row, 1, row, 4).Style = dataStyle;
-                    row++;
+                    worksheet.Cell(row + 1, 1).Value = "Estudiantes";
+                    worksheet.Range(row + 1, 1, row + 1, 5).Merge().Style = headerStyle;
+                    worksheet.Cell(row + 2, 1).Value = "ID Estudiante";
+                    worksheet.Cell(row + 2, 2).Value = "Tipo de Estudiante";
+                    worksheet.Cell(row + 2, 3).Value = "Nombre";
+                    worksheet.Cell(row + 2, 4).Value = "Horas Asignadas";
+                    worksheet.Range(row + 2, 1, row + 2, 4).Style = headerStyle;
+
+                    row += 3;
+                    foreach (var estudiante in reporte.Estudiantes)
+                    {
+                        worksheet.Cell(row, 1).Value = estudiante.Id;
+                        worksheet.Cell(row, 2).Value = estudiante.Tipo;
+                        worksheet.Cell(row, 3).Value = estudiante.Nombre;
+                        worksheet.Cell(row, 4).Value = estudiante.HorasAsignadas;
+                        worksheet.Range(row, 1, row, 4).Style = dataStyle;
+                        row++;
+                    }
                 }
 
+                // Agregar datos de usuarios
                 worksheet.Cell(row + 1, 1).Value = "Usuarios";
                 worksheet.Range(row + 1, 1, row + 1, 8).Merge().Style = headerStyle;
                 worksheet.Cell(row + 2, 1).Value = "ID Usuario";
@@ -439,7 +492,6 @@
                 isLoading = false;
                 StateHasChanged();
 
-                // Convertir el archivo a base64 y llamar a la función JavaScript para descargar el archivo
                 using (var stream = new MemoryStream())
                 {
                     isLoading = true;

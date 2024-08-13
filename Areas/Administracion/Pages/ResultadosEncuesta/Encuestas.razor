@@ -1,0 +1,575 @@
+﻿@page "/todas-encuestas"
+@using System.Net.Http.Json
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@inject SweetAlertService Swal
+
+<div class="contenedor-botones">
+    <button @onclick="NavigateBack" class="btn btn-secondary btn-regresar">Regresar</button>
+</div>
+@if (isLoading)
+{
+    <Spinner />
+}
+<h1 class="titulo-resultado">Encuestas</h1>
+
+<button class="btn-ver" data-bs-toggle="modal" data-bs-target="#crearEncuestaModal" >Crear Encuesta</button>
+<div class="contenedor">
+    @if (encuestas == null)
+    {
+        <p>Cargando encuestas...</p>
+    }
+    else if (encuestas.Count == 0)
+    {
+        <p>No hay encuestas disponibles.</p>
+    }
+    else
+    {
+        <table class="table table-striped table-resultado">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Título</th>
+                    <th>Fecha de Creación</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var encuesta in encuestas)
+                {
+                    <tr>
+                        <td>@encuesta.id_encuesta</td>
+                        <td>@encuesta.titulo</td>
+                        <td>@encuesta.fecha_creacion.ToString("dd/MM/yyyy")</td>
+                        <td class="contenedor-botones">
+                            <button class="btn-ver" data-bs-toggle="modal" data-bs-target="#exampleModal" @onclick="() => VerEncuesta(encuesta.id_encuesta)">Ver</button>
+                            <button class="btn-editar" data-bs-toggle="modal" data-bs-target="#editarpreguntasModal" @onclick="() => VerEncuesta(encuesta.id_encuesta)">Editar</button>
+                            <button class="btn-eliminar" @onclick="() => EliminarEncuesta(encuesta.id_encuesta)">Eliminar</button><!---->
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+<!-- Modal para lista de preguntas de una encuesta-->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Preguntas de la Encuesta</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-contentpreguntas">
+                <ul>
+                    @foreach (var pregunta in preguntas)
+                    {
+                        <li>@pregunta.texto_pregunta</li>
+                    }
+                </ul>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Modal para editar preguntas de una encuesta-->
+<div class="modal fade" id="editarpreguntasModal" tabindex="-1" aria-labelledby="editarModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="editarModalLabel">Editar Preguntas de la Encuesta</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                @if (preguntas == null)
+                {
+                    <p>Cargando preguntas...</p>
+                }
+                else if (preguntas.Count == 0)
+                {
+                    <p>No hay preguntas disponibles para editar.</p>
+                }
+                else
+                {
+                    <form>
+                        @foreach (var pregunta in preguntas)
+                        {
+                            <div class="form-group">
+                                <label for="pregunta_@pregunta.id_pregunta">Pregunta @pregunta.id_pregunta</label>
+                                <input type="text" class="form-control" id="pregunta_@pregunta.id_pregunta" @bind="pregunta.texto_pregunta" />
+                            </div>
+                        }
+                    </form>
+                }
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" @onclick="() => EditarEncuesta(id_pregunta)">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Modal para crear nueva encuesta -->
+<div class="modal fade" id="crearEncuestaModal" tabindex="-1" aria-labelledby="crearEncuestaModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="crearEncuestaModalLabel">Crear Nueva Encuesta</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form @onsubmit="CrearEncuesta">
+                    <div class="mb-3">
+                        <label for="titulo" class="form-label">Título de la Encuesta</label>
+                        <input type="text" class="form-control" id="titulo" @bind="titulo" required />
+                    </div>
+                    <div id="preguntas-container">
+                        @for (int i = 0; i < preguntasNew.Count; i++)
+                        {
+                            <div class="input-group mb-3">
+                                <input type="text" class="form-control" value="@preguntasNew[i]" @oninput="(e) => UpdatePregunta(i, e.Value.ToString())" placeholder="Pregunta" required />
+                                <button type="button" class="btn btn-danger" @onclick="() => EliminarPregunta(i)">x</button>
+                            </div>
+                        }
+                    </div>
+                    <button type="button" class="btn btn-primary" @onclick="AgregarPregunta">Agregar Pregunta</button>
+                    <button type="submit" class="btn btn-success">Crear Encuesta</button>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .titulo-resultado {
+        text-align: center;
+        color: #333;
+        margin-bottom: 10px;
+        font-size: 2em;
+    }
+
+    .contenedor {
+        width: 100%;
+        margin: 0 auto;
+    }
+
+    .table-resultado {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+    }
+
+        .table-resultado th, .table-resultado td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .table-resultado th {
+            background-color: #f4f4f4;
+        }
+
+    .contenedor-botones {
+        display: flex;
+        gap: 10px;
+    }
+
+    .btn-ver, .btn-editar, .btn-eliminar {
+        padding: 5px 10px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    .btn-ver {
+        background-color: #5bc0de;
+        color: white;
+    }
+
+    .btn-editar {
+        background-color: #f0ad4e;
+        color: white;
+    }
+
+    .btn-eliminar {
+        background-color: #d9534f;
+        color: white;
+    }
+
+        .btn-ver:hover, .btn-editar:hover, .btn-eliminar:hover {
+            opacity: 0.8;
+        }
+
+    .btn-regresar {
+        background-color: #6c757d;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        padding: 10px 15px;
+        cursor: pointer;
+        margin-top: 20px;
+    }
+
+        .btn-regresar:hover {
+            opacity: 0.8;
+        }
+
+    .modal-contentpreguntas {
+        padding: 10px;
+        width: 90%;
+    }
+
+    ul {
+        list-style-type: none;
+        padding: 0;
+    }
+
+    li {
+        margin: 10px 0;
+        padding: 10px;
+        background-color: #f4f4f4;
+        border-radius: 5px;
+    }
+
+    .modal-body {
+        padding: 20px;
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+            .form-group input:focus {
+                border-color: #80bdff;
+                outline: none;
+                box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+            }
+
+    .input-group {
+        margin-bottom: 15px;
+    }
+
+        .input-group .btn-danger {
+            margin-left: 10px;
+        }
+</style>
+@code {
+    private List<Encuesta> encuestas = new();
+    private List<Pregunta> preguntas = new();
+    private int id_pregunta;
+    private bool isLoading = false;
+    private string titulo = string.Empty;
+    private List<string> preguntasNew = new() { string.Empty };
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+        StateHasChanged();
+        try
+        {
+            encuestas = await Http.GetFromJsonAsync<List<Encuesta>>("http://localhost:5117/api/Encuesta/GetTodaEncuesta");
+            isLoading = false;
+            StateHasChanged();
+            if (encuestas == null)
+            {// Manejar el caso en que no se obtienen encuestas
+                await sweetAletNotify("No se encontraron encuestas.", "warning");
+            }
+        }
+        catch (HttpRequestException httpEx)
+        {// Manejar errores específicos de la solicitud HTTP
+            Console.WriteLine($"Error al obtener encuestas: {httpEx.Message}");
+        }
+        catch (Exception ex)
+        {// Manejar errores generales
+            Console.WriteLine($"Error inesperado: {ex.Message}");
+        }
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task VerEncuesta(int id)
+    {
+        isLoading = true;
+        StateHasChanged();
+        try
+        {
+            id_pregunta = id;
+            preguntas = new();
+            preguntas = await Http.GetFromJsonAsync<List<Pregunta>>($"http://localhost:5117/api/Encuesta/preguntasporID/{id}");
+            isLoading = false;
+            StateHasChanged();
+            if (preguntas == null)
+            {// Manejar el caso en que no se obtienen preguntas
+                await sweetAletNotify("No se encontraron preguntas para esta encuesta.", "warning");
+            }
+        }
+        catch (HttpRequestException httpEx)
+        {// Manejar errores específicos de la solicitud HTTP
+            Console.WriteLine($"Error al obtener preguntas: {httpEx.Message}");
+        }
+        catch (Exception ex)
+        {// Manejar errores generales
+            Console.WriteLine($"Error inesperado: {ex.Message}");
+        }
+        isLoading = false;
+        StateHasChanged();
+     }
+
+    private async Task EditarEncuesta(int id)
+    {
+        try
+        {
+            var options = new
+            {
+                Title = "¿Esta seguro de querer editar esta encuesta?",
+                Icon = "question",
+                ShowCancelButton = true,
+                ConfirmButtonText = "Sí",
+                CancelButtonText = "No"
+            };
+            var result = await JSRuntime.InvokeAsync<bool>("FireSweetAlertConfirm", options);
+            if (!result)
+            {
+                return; // Termina la ejecución de la función si el usuario selecciona "No"
+            }
+            isLoading = true;
+            StateHasChanged();
+
+            // Asignar id_encuesta a cada pregunta antes de enviar
+            preguntas.ForEach(p => p.id_encuesta = id);
+
+            var response = await Http.PutAsJsonAsync($"http://localhost:5117/api/Encuesta/ActualizarPreguntas/{id}", preguntas);
+            isLoading = false;
+            StateHasChanged();
+            if (response.IsSuccessStatusCode)
+            {
+                // Éxito al guardar los cambios
+                await sweetAletNotify("Cambios guardados exitosamente.", "success");
+            }
+            else
+            {
+                // Manejar errores de la API
+                await sweetAletNotify("Error al guardar los cambios.", "error");
+            }
+        }
+        catch (Exception ex)
+        {
+            // Manejar excepciones
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task EliminarEncuesta(int id)
+    {
+        try
+        {
+            // Confirmar la eliminación con el usuario
+            var options = new
+            {
+                Title = "¿Está seguro de eliminar esta encuesta?",
+                Icon = "warning",
+                ShowCancelButton = true,
+                ConfirmButtonText = "Sí",
+                CancelButtonText = "No"
+            };
+            var result = await JSRuntime.InvokeAsync<bool>("FireSweetAlertConfirm", options);
+            if (!result)
+            {
+                return; // Termina la ejecución si el usuario selecciona "No"
+            }
+
+            // Eliminar las preguntas asociadas
+            isLoading = true;
+            StateHasChanged();
+            var eliminarPreguntasResponse = await Http.DeleteAsync($"http://localhost:5117/api/Encuesta/EliminarPreguntas/{id}");
+            isLoading = false;
+            StateHasChanged();
+            if (!eliminarPreguntasResponse.IsSuccessStatusCode)
+            {
+                await sweetAletNotify("No se pudo eliminar las preguntas asociadas a la encuesta.", "error");
+                return;
+            }
+
+            // Luego eliminar la encuesta
+            isLoading = true;
+            StateHasChanged();
+            var eliminarEncuestaResponse = await Http.DeleteAsync($"http://localhost:5117/api/Encuesta/EliminarEncuesta/{id}");
+            isLoading = false;
+            StateHasChanged();
+
+            isLoading = true;
+            StateHasChanged();
+            encuestas = await Http.GetFromJsonAsync<List<Encuesta>>("http://localhost:5117/api/Encuesta/GetTodaEncuesta");
+            isLoading = false;
+            StateHasChanged();
+
+            if (eliminarEncuestaResponse.IsSuccessStatusCode)
+            {
+                // Manejar éxito
+                await sweetAletNotify("Encuesta eliminada exitosamente.", "success");
+                // Actualizar la lista de encuestas
+                encuestas = await Http.GetFromJsonAsync<List<Encuesta>>("http://localhost:5117/api/Encuesta/GetTodaEncuesta");
+            }
+            else
+            {
+                // Manejar errores
+                await sweetAletNotify("Error al eliminar la encuesta.", "error");
+            }
+        }
+        catch (Exception ex)
+        {
+            // Manejar excepciones
+            Console.WriteLine($"Error: {ex.Message}");
+            await sweetAletNotify("Error al eliminar la encuesta.", "error");
+        }
+    }
+
+
+
+    private void NavigateBack()
+    {
+        NavigationManager.NavigateTo("/resultados-encuestas"); // Reemplaza "/ruta-anterior" con la URL de la página anterior
+    }
+    private async Task sweetAletNotify(string texto, string tipo)
+    {
+        var options = new
+        {
+            Title = texto,
+            Icon = tipo,
+            ConfirmButtonText = "OK"
+        };
+        await JSRuntime.InvokeVoidAsync("FireSweetAlert", options);
+    }
+    /*------------------------------------- Crear encuestas -------------------------------------*/
+    private void AgregarPregunta()
+    {
+        preguntasNew.Add(string.Empty);
+        //Console.WriteLine("Pregunta agregada: " + System.Text.Json.JsonSerializer.Serialize(preguntasNew));
+        StateHasChanged(); // Forzar renderizado
+    }
+
+    private void EliminarPregunta(int index)
+    {
+        preguntasNew.RemoveAt(index-1);
+        StateHasChanged(); // Forzar renderizado
+    }
+
+    private void UpdatePregunta(int index, string value)
+    {
+        preguntasNew[index-1] = value;
+        //Console.WriteLine($"Preguntas actualizadas: {System.Text.Json.JsonSerializer.Serialize(preguntasNew)}");
+    }
+
+    private async Task CrearEncuesta()
+    {
+        // Eliminar preguntas vacías
+        var preguntasValidas = preguntasNew.Where(p => !string.IsNullOrWhiteSpace(p)).ToList();
+
+        // Verificar que al menos haya una pregunta
+        if (!preguntasValidas.Any())
+        {
+            await sweetAletNotify("La encuesta debe tener al menos una pregunta.", "warning");
+            return; // Terminar la ejecución si no hay preguntas válidas
+        }
+
+        var encuesta = new EncuestaConPreguntasModel
+            {
+                Titulo = titulo,
+                Preguntas = preguntasValidas
+            };
+
+        // Imprimir la estructura del objeto encuesta
+        //Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(preguntasNew));
+        //Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(encuesta));
+
+        try
+        {
+            var options = new
+            {
+                Title = "¿Esta seguro de crear esta encuesta?",
+                Icon = "question",
+                ShowCancelButton = true,
+                ConfirmButtonText = "Sí",
+                CancelButtonText = "No"
+            };
+            var result = await JSRuntime.InvokeAsync<bool>("FireSweetAlertConfirm", options);
+            if (!result)
+            {
+                return; // Termina la ejecución de la función si el usuario selecciona "No"
+            }
+            isLoading = true;
+            StateHasChanged();
+            var response = await Http.PostAsJsonAsync("http://localhost:5117/api/Encuesta/CrearEncuesta", encuesta);
+            isLoading = false;
+            StateHasChanged();
+
+            isLoading = true;
+            StateHasChanged();
+            encuestas = await Http.GetFromJsonAsync<List<Encuesta>>("http://localhost:5117/api/Encuesta/GetTodaEncuesta");
+            isLoading = false;
+            StateHasChanged();
+            if (response.IsSuccessStatusCode)
+            {
+                // Manejar éxito
+                await sweetAletNotify("Encuesta creada exitosamente.", "success");
+                // Cerrar el modal y limpiar el formulario si es necesario
+                await JSRuntime.InvokeVoidAsync("$('#crearEncuestaModal').modal('hide')");
+                ResetForm();
+            }
+            else
+            {
+                // Manejar errores
+                await sweetAletNotify("Error al crear la encuesta.", "error");
+            }
+        }
+        catch (Exception ex)
+        {
+            // Manejar excepciones
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private void ResetForm()
+    {
+        titulo = string.Empty;
+        preguntasNew.Clear();
+        preguntasNew.Add(string.Empty);
+        StateHasChanged(); // Forzar renderizado
+    }
+
+    // Modelo para la solicitud de creación de encuesta
+    public class EncuestaConPreguntasModel
+    {
+        public string Titulo { get; set; }
+        public List<string> Preguntas { get; set; }
+    }
+}
