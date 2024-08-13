@@ -154,10 +154,14 @@
     {
         try
         {
+            // Guardar el usuario y obtener su ID, especificando que es un Estudiante
             var usuarioId = await GuardarUsuario();
 
+            // Guardar los datos del estudiante
             nuevoEstudiante.id_usuario = usuarioId;
             var estudianteId = await GuardarEstudiante(nuevoEstudiante);
+
+            // Registrar la matrícula del estudiante
             await RegistrarMatricula(estudianteId, idCursoSeleccionado, idPeriodoSeleccionado);
 
             await sweetAletNotify("Estudiante creado y matriculado exitosamente", "success");
@@ -176,7 +180,7 @@
 
     private async Task<int> GuardarUsuario()
     {
-        var response = await Http.PostAsJsonAsync("http://localhost:5117/api/Usuario", nuevoUsuario);
+        var response = await Http.PostAsJsonAsync($"http://localhost:5117/api/Usuario?tipoUsuario=Estudiante", nuevoUsuario);
         response.EnsureSuccessStatusCode();
         var usuarioCreado = await response.Content.ReadFromJsonAsync<DirectorioDeArchivos.Shared.Usuario>();
         return usuarioCreado.id_usuario;

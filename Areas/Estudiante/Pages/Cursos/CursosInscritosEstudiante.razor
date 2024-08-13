@@ -2,53 +2,85 @@
 @layout EstudianteLayout
 @inject HttpClient Http
 @inject NavigationManager Navigation
+@inject IJSRuntime Js
+@inject SweetAlertService Swal
 
-<h3>Cursos Inscritos</h3>
+<h3>Mis Cursos Inscritos</h3>
 
-@if (cursosInscritos == null)
+@if (cursosInscritos != null && cursosInscritos.Any())
 {
-    <p>Cargando cursos...</p>
-}
-else if (!cursosInscritos.Any())
-{
-    <p>No estás inscrito en ningún curso.</p>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Nombre del Curso</th>
+                <th>Periodo</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var curso in cursosInscritos)
+            {
+                <tr>
+                    <td>@curso.nombre_curso</td>
+                    <td>@curso.nombre_periodo</td>
+                    <td>
+                        <button class="btn btn-info" @onclick="() => VerDetalleCurso(curso.id_curso)">Ver Detalle</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
 }
 else
 {
-    <div class="row">
-        @foreach (var curso in cursosInscritos)
-        {
-            <div class="col-md-4">
-                <div class="card mb-4 shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title">@curso.nombre_curso</h5>
-                        <p class="card-text"><strong>Periodo:</strong> @curso.nombre_periodo</p>
-                        <button class="btn btn-primary" @onclick="() => VerDetalles(curso.id_curso, curso.id_periodo)">Ver Detalles</button>
-                    </div>
-                </div>
-            </div>
-        }
-    </div>
+    <p>No tienes cursos inscritos actualmente.</p>
 }
 
 @code {
-    private List<CursoConPeriodoActivo> cursosInscritos;
+    private List<CursoInscritoEstudiante> cursosInscritos = new List<CursoInscritoEstudiante>();
+    private int idEstudiante;
 
     protected override async Task OnInitializedAsync()
     {
+        await CargarCursosInscritos();
+    }
+
+    private async Task CargarCursosInscritos()
+    {
         try
         {
-            cursosInscritos = await Http.GetFromJsonAsync<List<CursoConPeriodoActivo>>("http://localhost:5117/api/Estudiante/CursosInscritos");
+            var idEstudianteString = await Js.InvokeAsync<string>("localStorage.getItem", "IdEstudiante");
+            Console.WriteLine($"IdEstudiante string from local storage: {idEstudianteString}");
+            if (int.TryParse(idEstudianteString, out int estudianteId))
+            {
+                idEstudiante = estudianteId;
+                cursosInscritos = await Http.GetFromJsonAsync<List<CursoInscritoEstudiante>>($"http://localhost:5117/api/Estudiante/CursosInscritos/{idEstudiante}");
+            }
+            else
+            {
+                await sweetAletNotify("Error al obtener el ID del estudiante", "error");
+            }
         }
         catch (Exception ex)
         {
-            // Manejo de errores
-            Console.WriteLine($"Error: {ex.Message}");
+            await sweetAletNotify($"Error al cargar los cursos inscritos: {ex.Message}", "error");
         }
     }
 
-    private void VerDetalles(int cursoId, int periodoId)
+    private void VerDetalleCurso(int idCurso)
     {
-        Navigation.NavigateTo($"/curso-detalle/{cursoId}/{periodoId}");
+        // Navegar a la página de detalles del curso
+        Navigation.NavigateTo($"/detalle-curso/{idCurso}");
+    }
+
+    private async Task sweetAletNotify(string texto, string tipo)
+    {
+        var options = new
+        {
+            Title = texto,
+            Icon = tipo,
+            ConfirmButtonText = "OK"
+        };
+        await Js.InvokeVoidAsync("FireSweetAlert", options);
     }
 }

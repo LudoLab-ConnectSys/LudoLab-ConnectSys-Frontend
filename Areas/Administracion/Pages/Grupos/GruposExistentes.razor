@@ -1,0 +1,142 @@
+﻿@page "/grupos-existentes"
+@layout AdminLayout
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+
+<h3>Grupos Existentes</h3>
+
+<button class="btn btn-success" @onclick="CrearNuevoGrupo">Crear Nuevo Grupo</button>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Nombre del Grupo</th>
+            <th>Curso</th>
+            <th>Periodo</th>
+            <th>Fecha Inicio</th>
+            <th>Fecha Fin</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var grupo in grupos)
+        {
+            <tr>
+                <td>@grupo.id_grupo</td>
+                <td>@grupo.nombre_grupo</td>
+                <td>@grupo.nombre_curso</td>
+                <td>@grupo.nombre_periodo</td>
+                <td>@grupo.fecha_inicio_periodo</td>
+                <td>@grupo.fecha_fin_periodo</td>
+                <td>
+                    <button class="btn btn-info" @onclick="() => VerGrupoDetalles(grupo.id_grupo)">Ver</button>
+                    <button class="btn btn-primary" @onclick="() => EditarGrupo(grupo.id_grupo)">Editar</button>
+                    <button class="btn btn-danger" @onclick="() => ConfirmarEliminarGrupo(grupo.id_grupo)">Eliminar</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@if (!grupos.Any())
+{
+    <p>No hay grupos disponibles. ¿Desea <a href="crear-grupo">crear un nuevo grupo</a>?</p>
+}
+
+@code {
+    private List<GrupoConCursoPeriodo> grupos = new List<GrupoConCursoPeriodo>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            grupos = await Http.GetFromJsonAsync<List<GrupoConCursoPeriodo>>("http://localhost:5117/api/Grupo/todos");
+        }
+        catch (Exception ex)
+        {
+            await MostrarNotificacion($"Error al cargar los datos: {ex.Message}", "error");
+        }
+    }
+
+    private void CrearNuevoGrupo()
+    {
+        NavigationManager.NavigateTo("/crear-grupos");
+    }
+
+    private void VerGrupoDetalles(int id_grupo)
+    {
+        NavigationManager.NavigateTo($"/grupo/{id_grupo}/estudiantes");
+    }
+
+    private void EditarGrupo(int id_grupo)
+    {
+        NavigationManager.NavigateTo($"/grupo/{id_grupo}/detalles");
+    }
+
+    private async Task ConfirmarEliminarGrupo(int id_grupo)
+    {
+        var confirmed = await MostrarConfirmacion("¿Estás seguro de que deseas eliminar este grupo?", "warning");
+        if (confirmed)
+        {
+            await EliminarGrupo(id_grupo);
+        }
+    }
+
+    private async Task EliminarGrupo(int id_grupo)
+    {
+        try
+        {
+            var response = await Http.DeleteAsync($"http://localhost:5117/api/Grupo/{id_grupo}");
+            if (response.IsSuccessStatusCode)
+            {
+                grupos.RemoveAll(g => g.id_grupo == id_grupo);
+                await MostrarNotificacion("Grupo eliminado exitosamente.", "success");
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+            {
+                var errorContent = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+                await MostrarNotificacion(errorContent.Message, "error");
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                await MostrarNotificacion($"Error al eliminar el grupo. Status Code: {response.StatusCode}, Details: {errorContent}", "error");
+            }
+        }
+        catch (Exception ex)
+        {
+            await MostrarNotificacion($"Error al eliminar el grupo. Exception: {ex.Message}", "error");
+        }
+    }
+
+    private async Task MostrarNotificacion(string mensaje, string tipo)
+    {
+        var options = new
+        {
+            Title = mensaje,
+            Icon = tipo,
+            ConfirmButtonText = "OK"
+        };
+        await JSRuntime.InvokeVoidAsync("FireSweetAlert", options);
+    }
+
+    private async Task<bool> MostrarConfirmacion(string mensaje, string tipo)
+    {
+        var options = new
+        {
+            Title = mensaje,
+            Icon = tipo,
+            ShowCancelButton = true,
+            ConfirmButtonText = "Sí",
+            CancelButtonText = "No"
+        };
+        return await JSRuntime.InvokeAsync<bool>("FireSweetAlertConfirm", options);
+    }
+
+    public class ErrorResponse
+    {
+        public string Message { get; set; }
+    }
+}

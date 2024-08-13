@@ -2,6 +2,7 @@
 @layout AdminLayout
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
 
 <h3>Detalles del Grupo</h3>
 
@@ -18,33 +19,25 @@
 
         <div class="form-group">
             <label for="instructorSelect">Instructor:</label>
-            <input type="text" id="instructorInput" @bind="instructorSearchText" @oninput="BuscarInstructor" class="form-control" placeholder="Buscar instructor..." />
             <select id="instructorSelect" @bind="grupo.id_instructor" class="form-control">
                 <option value="">Seleccione un instructor</option>
-                @if (instructoresFiltrados != null)
+                @foreach (var instructor in instructores)
                 {
-                    @foreach (var instructor in instructoresFiltrados)
-                    {
-                        <option value="@instructor.id_instructor">@instructor.nombre_usuario @instructor.apellidos_usuario</option>
-                    }
+                    <option value="@instructor.id_instructor">@instructor.nombre_usuario @instructor.apellidos_usuario</option>
                 }
             </select>
         </div>
 
         <div class="form-group">
-            <label for="estudianteInput">Estudiantes:</label>
-            <input type="text" id="estudianteInput" @bind="estudianteSearchText" @oninput="BuscarEstudiante" class="form-control" placeholder="Buscar estudiante..." />
+            <label for="estudianteSelect">Estudiantes:</label>
             <select id="estudianteSelect" @bind="selectedEstudianteId" class="form-control">
                 <option value="">Seleccione un estudiante</option>
-                @if (estudiantesFiltrados != null)
+                @foreach (var estudiante in estudiantesSinGrupo)
                 {
-                    @foreach (var estudiante in estudiantesFiltrados)
-                    {
-                        <option value="@estudiante.id_estudiante">@estudiante.nombre_usuario @estudiante.apellidos_usuario</option>
-                    }
+                    <option value="@estudiante.id_estudiante">@estudiante.nombre_usuario @estudiante.apellidos_usuario</option>
                 }
             </select>
-            <button type="button" class="btn btn-secondary mt-2" @onclick="AgregarEstudianteSeleccionado">Agregar Estudiante</button>
+            <button type="button" class="btn btn-secondary mt-2" @onclick="ConfirmarAgregarEstudiante">Agregar Estudiante</button>
         </div>
 
         <div class="form-group">
@@ -57,7 +50,7 @@
                     {
                         <li>
                             @estudiante.nombre_usuario @estudiante.apellidos_usuario
-                            <button type="button" class="btn btn-danger btn-sm" @onclick="() => RemoverEstudianteSeleccionado(estudianteId)">Eliminar</button>
+                            <button type="button" class="btn btn-danger btn-sm" @onclick="() => ConfirmarEliminarEstudiante(estudianteId)">Eliminar</button>
                         </li>
                     }
                 }
@@ -78,7 +71,7 @@
                     </select>
                     <input type="time" value="@(new DateTime(horario.hora_inicio.Ticks).ToString("HH:mm"))" @oninput="e => horario.hora_inicio = TimeSpan.Parse(e.Value.ToString())" class="form-control mr-2" />
                     <input type="time" value="@(new DateTime(horario.hora_fin.Ticks).ToString("HH:mm"))" @oninput="e => horario.hora_fin = TimeSpan.Parse(e.Value.ToString())" class="form-control mr-2" />
-                    <button type="button" class="btn btn-danger" @onclick="() => EliminarHorario(horario)">Eliminar</button>
+                    <button type="button" class="btn btn-danger" @onclick="() => ConfirmarEliminarHorario(horario)">Eliminar</button>
                 </div>
             }
             <button type="button" class="btn btn-secondary" @onclick="AgregarHorario">Agregar Horario</button>
@@ -98,13 +91,9 @@ else
 
     private ActualizarGrupo grupo = new ActualizarGrupo();
     private List<InstructorConDetalles> instructores = new List<InstructorConDetalles>();
-    private List<InstructorConDetalles> instructoresFiltrados = new List<InstructorConDetalles>();
     private List<EstudianteConDetalles> todosEstudiantes = new List<EstudianteConDetalles>();
     private List<EstudianteConDetalles> estudiantesSinGrupo = new List<EstudianteConDetalles>();
-    private List<EstudianteConDetalles> estudiantesFiltrados = new List<EstudianteConDetalles>();
     private int selectedEstudianteId;
-    private string instructorSearchText = string.Empty;
-    private string estudianteSearchText = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -134,9 +123,9 @@ else
                     horarios = grupoDetalles.horarios
                 };
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error fetching data: {ex.Message}");
+            await MostrarNotificacion("Ocurrió un error al cargar los detalles del grupo. Por favor, intente nuevamente más tarde.", "error");
         }
     }
 
@@ -145,11 +134,10 @@ else
         try
         {
             instructores = await Http.GetFromJsonAsync<List<InstructorConDetalles>>("http://localhost:5117/api/Instructor/todos");
-            instructoresFiltrados = instructores;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error fetching instructors: {ex.Message}");
+            await MostrarNotificacion("Ocurrió un error al cargar los instructores. Por favor, intente nuevamente más tarde.", "error");
         }
     }
 
@@ -158,12 +146,11 @@ else
         try
         {
             todosEstudiantes = await Http.GetFromJsonAsync<List<EstudianteConDetalles>>($"http://localhost:5117/api/Estudiante/sin-grupo/{id_curso}/{id_periodo}");
-            estudiantesSinGrupo = todosEstudiantes; // Asignar directamente a estudiantesSinGrupo ya que no usamos id_grupo
-            estudiantesFiltrados = estudiantesSinGrupo;
+            estudiantesSinGrupo = todosEstudiantes;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error fetching students: {ex.Message}");
+            await MostrarNotificacion("Ocurrió un error al cargar los estudiantes. Por favor, intente nuevamente más tarde.", "error");
         }
     }
 
@@ -175,26 +162,19 @@ else
             todosEstudiantes.AddRange(estudiantesAsignados);
             grupo.estudiantes.AddRange(estudiantesAsignados.Select(e => e.id_estudiante));
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error fetching assigned students: {ex.Message}");
+            await MostrarNotificacion("Ocurrió un error al cargar los estudiantes asignados. Por favor, intente nuevamente más tarde.", "error");
         }
     }
 
-    private void BuscarInstructor(ChangeEventArgs e)
+    private async Task ConfirmarAgregarEstudiante()
     {
-        instructorSearchText = e.Value.ToString();
-        instructoresFiltrados = instructores
-            .Where(i => $"{i.nombre_usuario} {i.apellidos_usuario}".Contains(instructorSearchText, StringComparison.OrdinalIgnoreCase))
-            .ToList();
-    }
-
-    private void BuscarEstudiante(ChangeEventArgs e)
-    {
-        estudianteSearchText = e.Value.ToString();
-        estudiantesFiltrados = estudiantesSinGrupo
-            .Where(e => $"{e.nombre_usuario} {e.apellidos_usuario}".Contains(estudianteSearchText, StringComparison.OrdinalIgnoreCase))
-            .ToList();
+        var confirmed = await MostrarConfirmacion("¿Estás seguro de que deseas agregar este estudiante?", "warning");
+        if (confirmed)
+        {
+            AgregarEstudianteSeleccionado();
+        }
     }
 
     private void AgregarEstudianteSeleccionado()
@@ -205,9 +185,27 @@ else
         }
     }
 
+    private async Task ConfirmarEliminarEstudiante(int estudianteId)
+    {
+        var confirmed = await MostrarConfirmacion("¿Estás seguro de que deseas eliminar este estudiante?", "warning");
+        if (confirmed)
+        {
+            RemoverEstudianteSeleccionado(estudianteId);
+        }
+    }
+
     private void RemoverEstudianteSeleccionado(int estudianteId)
     {
         grupo.estudiantes.Remove(estudianteId);
+    }
+
+    private async Task ConfirmarEliminarHorario(HorarioGrupo horario)
+    {
+        var confirmed = await MostrarConfirmacion("¿Estás seguro de que deseas eliminar este horario?", "warning");
+        if (confirmed)
+        {
+            EliminarHorario(horario);
+        }
     }
 
     private void AgregarHorario()
@@ -227,18 +225,41 @@ else
             var response = await Http.PutAsJsonAsync($"http://localhost:5117/api/Grupo/{id_grupo}", grupo);
             if (response.IsSuccessStatusCode)
             {
+                await MostrarNotificacion("Cambios guardados exitosamente.", "success");
                 NavigationManager.NavigateTo($"/grupo/{id_grupo}");
             }
             else
             {
-                Console.WriteLine($"Error saving data: {response.ReasonPhrase}");
-                var errorContent = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"Error details: {errorContent}");
+                await MostrarNotificacion("Ocurrió un error al guardar los cambios. Por favor, intente nuevamente.", "error");
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error saving data: {ex.Message}");
+            await MostrarNotificacion("Ocurrió un error al guardar los cambios. Por favor, intente nuevamente.", "error");
         }
+    }
+
+    private async Task MostrarNotificacion(string mensaje, string tipo)
+    {
+        var options = new
+        {
+            Title = mensaje,
+            Icon = tipo,
+            ConfirmButtonText = "OK"
+        };
+        await JSRuntime.InvokeVoidAsync("FireSweetAlert", options);
+    }
+
+    private async Task<bool> MostrarConfirmacion(string mensaje, string tipo)
+    {
+        var options = new
+        {
+            Title = mensaje,
+            Icon = tipo,
+            ShowCancelButton = true,
+            ConfirmButtonText = "Sí",
+            CancelButtonText = "No"
+        };
+        return await JSRuntime.InvokeAsync<bool>("FireSweetAlertConfirm", options);
     }
 }

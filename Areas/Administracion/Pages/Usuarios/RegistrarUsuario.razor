@@ -1,7 +1,8 @@
 ﻿@page "/registrar-usuario"
 @layout AdminLayout
-@inject NavigationManager NavigationManager
 @inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
 
 <h3 class="text-center my-4">Crear Nuevo Usuario</h3>
 
@@ -65,10 +66,6 @@
                 <div class="card-footer text-center">
                     <button type="submit" class="btn btn-success me-2">Guardar</button>
                     <button type="button" class="btn btn-secondary" @onclick="Regresar">Cancelar</button>
-                    @if (!string.IsNullOrEmpty(errorMessage))
-                    {
-                        <div class="alert alert-danger mt-2">@errorMessage</div>
-                    }
                 </div>
             </div>
         </div>
@@ -81,50 +78,53 @@
     private string tipoUsuario;
     private string errorMessage;
 
+    protected override async Task OnInitializedAsync()
+    {
+        // Cargar cualquier dato necesario al iniciar
+    }
+
     private async Task HandleValidSubmit()
     {
         try
         {
-            var usuarioId = await GuardarUsuario();
+            // Confirmación antes de registrar el usuario
+            var confirmed = await MostrarConfirmacion("¿Está seguro de que desea registrar este usuario?", "warning");
+            if (!confirmed) return;
 
+            // Guardar el usuario y obtener su ID
+            var response = await Http.PostAsJsonAsync($"http://localhost:5117/api/Usuario?tipoUsuario={tipoUsuario}", nuevoUsuario);
+            response.EnsureSuccessStatusCode();
+
+            // Leer la respuesta para obtener el usuario creado
+            var usuarioCreado = await response.Content.ReadFromJsonAsync<DirectorioDeArchivos.Shared.Usuario>();
+            var usuarioId = usuarioCreado.id_usuario;
+
+            // Si es un estudiante, guardar en la tabla Estudiante
             if (tipoUsuario == "Estudiante")
             {
                 nuevoEstudiante.id_usuario = usuarioId;
                 await GuardarEstudiante(nuevoEstudiante);
             }
+            // Si es un instructor, guardar en la tabla Instructor
             else if (tipoUsuario == "Instructor")
             {
                 var nuevoInstructor = new DirectorioDeArchivos.Shared.Instructor { id_usuario = usuarioId };
                 await GuardarInstructor(nuevoInstructor);
             }
-            /*else if (tipoUsuario == "Administrador")
-            {
-                var nuevoAdministrador = new DirectorioDeArchivos.Shared.Administrador { id_usuario = usuarioId };
-                await GuardarAdministrador(nuevoAdministrador);
-            }*/
 
-            NavigationManager.NavigateTo("/");
+            // Mostrar alerta de éxito
+            await MostrarNotificacion("Usuario registrado correctamente.", "success");
+
+            NavigationManager.NavigateTo("/adminDashboard");
         }
         catch (HttpRequestException ex)
         {
-            // Manejar el error de solicitud HTTP aquí
-            errorMessage = $"Error: {ex.Message}";
-            Console.WriteLine(errorMessage);
+            await MostrarNotificacion($"Error: {ex.Message}", "error");
         }
         catch (Exception ex)
         {
-            // Manejar cualquier otro error aquí
-            errorMessage = $"Error: {ex.Message}";
-            Console.WriteLine(errorMessage);
+            await MostrarNotificacion($"Ocurrió un error inesperado. Por favor, intente nuevamente.", "error");
         }
-    }
-
-    private async Task<int> GuardarUsuario()
-    {
-        var response = await Http.PostAsJsonAsync("http://localhost:5117/api/Usuario", nuevoUsuario);
-        response.EnsureSuccessStatusCode();
-        var usuarioCreado = await response.Content.ReadFromJsonAsync<DirectorioDeArchivos.Shared.Usuario>();
-        return usuarioCreado.id_usuario;
     }
 
     private async Task GuardarEstudiante(DirectorioDeArchivos.Shared.Estudiante estudiante)
@@ -139,14 +139,32 @@
         response.EnsureSuccessStatusCode();
     }
 
-    /*private async Task GuardarAdministrador(DirectorioDeArchivos.Shared.Administrador administrador)
-    {
-        var response = await Http.PostAsJsonAsync("http://localhost:5117/api/Administrador", administrador);
-        response.EnsureSuccessStatusCode();
-    }*/
-
     private void Regresar()
     {
-        NavigationManager.NavigateTo("/");
+        NavigationManager.NavigateTo("/adminDashboard");
+    }
+
+    private async Task MostrarNotificacion(string mensaje, string tipo)
+    {
+        var options = new
+        {
+            Title = mensaje,
+            Icon = tipo,
+            ConfirmButtonText = "OK"
+        };
+        await JSRuntime.InvokeVoidAsync("FireSweetAlert", options);
+    }
+
+    private async Task<bool> MostrarConfirmacion(string mensaje, string tipo)
+    {
+        var options = new
+        {
+            Title = mensaje,
+            Icon = tipo,
+            ShowCancelButton = true,
+            ConfirmButtonText = "Sí",
+            CancelButtonText = "No"
+        };
+        return await JSRuntime.InvokeAsync<bool>("FireSweetAlertConfirm", options);
     }
 }

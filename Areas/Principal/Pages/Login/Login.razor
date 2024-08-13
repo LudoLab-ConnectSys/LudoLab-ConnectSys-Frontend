@@ -90,7 +90,7 @@
     {
         var response = await Http.PostAsJsonAsync("http://localhost:5000/auth/login", _loginRequest);
 
-        if (true)
+        if (response.IsSuccessStatusCode)
         {
             var loginResponse = await response.Content.ReadFromJsonAsync<LoginResponse>();
 

@@ -1,0 +1,42 @@
+﻿@page "/detalles-grupo/{grupoId:int}"
+@layout InstructorLayout
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<h3>Detalles del Grupo</h3>
+
+@if (grupoDetalles == null)
+{
+    <p>Cargando detalles del grupo...</p>
+}
+else
+{
+    <h4>Nombre del Grupo: @grupoDetalles.nombre_grupo</h4>
+    <h5>Instructor: @grupoDetalles.nombre_instructor</h5>
+
+    <h5>Horarios</h5>
+    <ul>
+        @foreach (var horario in grupoDetalles.horarios)
+        {
+            <li>@horario.dia_semana: @horario.hora_inicio - @horario.hora_fin</li>
+        }
+    </ul>
+
+    <h5>Estudiantes</h5>
+    <ul>
+        @foreach (var estudiante in grupoDetalles.estudiantes)
+        {
+            <li>@estudiante</li>
+        }
+    </ul>
+}
+
+@code {
+    [Parameter] public int grupoId { get; set; }
+    private GrupoConDetalles grupoDetalles;
+
+    protected override async Task OnInitializedAsync()
+    {
+        grupoDetalles = await Http.GetFromJsonAsync<GrupoConDetalles>($"http://localhost:5117/api/Grupo/{grupoId}/detalles-completos");
+    }
+}

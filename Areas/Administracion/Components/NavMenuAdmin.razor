@@ -16,13 +16,15 @@
         @if (isCursosMenuVisible)
         {
             <div class="sub-menu">
-                <NavLink class="nav-link" href="cursos">Todos los Cursos</NavLink>
-            </div>
-            <div class="sub-menu">
                 <NavLink class="nav-link" href="crear-curso">Crear Curso</NavLink>
             </div>
+
             <div class="sub-menu">
-                <NavLink class="nav-link" href="periodos">Periodos</NavLink>
+                <NavLink class="nav-link" href="cursos">Todos los Cursos</NavLink>
+            </div>
+           
+            <div class="sub-menu">
+                <NavLink class="nav-link" href="periodos">Todos los Periodos</NavLink>
             </div>
         }
     </div>
@@ -34,7 +36,11 @@
         @if (isGruposMenuVisible)
         {
             <div class="sub-menu">
-                <NavLink class="nav-link" href="/crear-grupos">Crear Grupos (Horarios)</NavLink>
+                <NavLink class="nav-link" href="/crear-grupos">Crear Grupos</NavLink>
+            </div>
+
+            <div class="sub-menu">
+                <NavLink class="nav-link" href="/grupos-existentes">Todos los grupos</NavLink>
             </div>
         }
     </div>
@@ -58,10 +64,10 @@
         @if (isEstudiantesMenuVisible)
         {
             <div class="sub-menu">
-                <NavLink class="nav-link" href="estudiantes">Todos</NavLink>
+                <NavLink class="nav-link" href="estudiantes">Todos los estudiantes</NavLink>
             </div>
             <div class="sub-menu">
-                <NavLink class="nav-link" href="matricular-estudiante">Inscripcion</NavLink>
+                <NavLink class="nav-link" href="matricular-estudiante">Inscribir estudiante</NavLink>
             </div>
         }
     </div>
@@ -73,7 +79,7 @@
         @if (isInstructoresMenuVisible)
         {
             <div class="sub-menu">
-                <NavLink class="nav-link" href="instructores">Lista Instructores</NavLink>
+                <NavLink class="nav-link" href="instructores">Todos los Instructores</NavLink>
             </div>
             <div class="sub-menu">
                 <NavLink class="nav-link" href="/registrar-instructor">Registrar Instructor</NavLink>

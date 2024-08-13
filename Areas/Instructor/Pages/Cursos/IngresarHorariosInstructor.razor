@@ -2,18 +2,31 @@
 @layout InstructorLayout
 @inject HttpClient Http
 @inject NavigationManager Navigation
-@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IJSRuntime Js
 
 <h3>Ingresar Horarios Preferentes</h3>
+
+@if (!string.IsNullOrEmpty(mensajeRegistro))
+{
+    <div class="alert alert-info">@mensajeRegistro</div>
+}
 
 <EditForm Model="@horarios" OnValidSubmit="RegistrarHorarios">
     <DataAnnotationsValidator />
     <ValidationSummary />
 
     <div class="form-group">
-        <label for="diaSemana">Día de la Semana:</label>
-        <InputText id="diaSemana" @bind-Value="nuevoHorario.dia_semana" class="form-control" />
+        <label>Día de la Semana:</label>
+        <select @bind="nuevoHorario.dia_semana" class="form-control">
+            <option value="">Seleccione un día</option>
+            <option value="Lunes">Lunes</option>
+            <option value="Martes">Martes</option>
+            <option value="Miércoles">Miércoles</option>
+            <option value="Jueves">Jueves</option>
+            <option value="Viernes">Viernes</option>
+        </select>
     </div>
+
     <div class="form-group">
         <label for="horaInicio">Hora de Inicio:</label>
         <input type="time" value="@(new DateTime(nuevoHorario.hora_inicio.Ticks).ToString("HH:mm"))" @oninput="e => nuevoHorario.hora_inicio = TimeSpan.Parse(e.Value.ToString())" class="form-control mr-2" />
@@ -44,19 +57,29 @@
     private List<HorarioPreferenteInstructor> horarios = new List<HorarioPreferenteInstructor>();
     private HorarioPreferenteInstructor nuevoHorario = new HorarioPreferenteInstructor();
     private int instructorId;
+    private string mensajeRegistro;
 
     protected override async Task OnInitializedAsync()
     {
-        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User;
-        if (user.Identity.IsAuthenticated)
+        try
         {
-            var userId = user.FindFirst(c => c.Type == "sub")?.Value;
-            instructorId = int.Parse(userId);
+            var idInstructorString = await Js.InvokeAsync<string>("localStorage.getItem", "IdInstructor");
+            Console.WriteLine($"IdInstructor string from local storage: {idInstructorString}");
+            if (int.TryParse(idInstructorString, out int idInstructor))
+            {
+                instructorId = idInstructor;
+                Console.WriteLine($"ID INSTRUCTOR: {instructorId}");
+            }
+            else
+            {
+                Console.WriteLine("No se pudo obtener el ID del instructor");
+                instructorId = 0; // o algún valor por defecto
+            }
         }
-        else
+        catch (Exception ex)
         {
-            Navigation.NavigateTo("/login");
+            Console.WriteLine($"Error al obtener el ID del instructor del local storage: {ex.Message}");
+            instructorId = 0; // o algún valor por defecto
         }
     }
 
@@ -74,10 +97,22 @@
 
         if (response.IsSuccessStatusCode)
         {
+            var responseContent = await response.Content.ReadAsStringAsync();
+            if (responseContent == "Instructor registrado previamente")
+            {
+                mensajeRegistro = "Instructor registrado previamente";
+                await sweetAletNotify(mensajeRegistro, "info");
+            }
+            else
+            {
+                mensajeRegistro = "Horarios registrados exitosamente";
+                await sweetAletNotify(mensajeRegistro, "success");
+            }
             Navigation.NavigateTo("/cursos-disponibles-instructor");
         }
         else
         {
+            await sweetAletNotify("Error al registrar horarios", "error");
             Console.WriteLine("Error al registrar horarios");
         }
     }
@@ -91,5 +126,16 @@
     private void EliminarHorario(HorarioPreferenteInstructor horario)
     {
         horarios.Remove(horario);
+    }
+
+    private async Task sweetAletNotify(string texto, string tipo)
+    {
+        var options = new
+        {
+            Title = texto,
+            Icon = tipo,
+            ConfirmButtonText = "OK"
+        };
+        await Js.InvokeVoidAsync("FireSweetAlert", options);
     }
 }
