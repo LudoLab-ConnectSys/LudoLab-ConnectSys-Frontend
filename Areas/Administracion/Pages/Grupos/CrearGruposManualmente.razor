@@ -2,6 +2,7 @@
 @layout AdminLayout
 @inject HttpClient Http
 @inject NavigationManager Navigation
+@inject IJSRuntime Js
 
 <h3>Crear Grupos Manualmente</h3>
 
@@ -36,30 +37,28 @@
         </div>
 
         <div class="form-group">
-            <label for="instructorInput">Instructor:</label>
-            <input type="text" id="instructorInput" @bind="instructorSearchText" @oninput="BuscarInstructor" class="form-control" placeholder="Buscar instructor..." />
+            <label for="instructorSelect">Instructor:</label>
             <select id="instructorSelect" @bind="parametros.InstructorId" class="form-control">
                 <option value="">Seleccione un instructor</option>
-                @if (instructoresFiltrados != null)
+                @if (instructoresSinGrupo != null)
                 {
-                    @foreach (var instructor in instructoresFiltrados)
+                    @foreach (var instructor in instructoresSinGrupo)
                     {
-                        <option value="@instructor.id_instructor">@instructor.nombre_usuario</option>
+                        <option value="@instructor.id_instructor">@instructor.nombre_usuario @instructor.apellidos_usuario</option>
                     }
                 }
             </select>
         </div>
 
         <div class="form-group">
-            <label for="estudianteInput">Estudiantes:</label>
-            <input type="text" id="estudianteInput" @bind="estudianteSearchText" @oninput="BuscarEstudiante" class="form-control" placeholder="Buscar estudiante..." />
+            <label for="estudianteSelect">Estudiantes:</label>
             <select id="estudianteSelect" @bind="selectedEstudianteId" class="form-control">
                 <option value="">Seleccione un estudiante</option>
-                @if (estudiantesFiltrados != null)
+                @if (estudiantesSinGrupo != null)
                 {
-                    @foreach (var estudiante in estudiantesFiltrados)
+                    @foreach (var estudiante in estudiantesSinGrupo)
                     {
-                        <option value="@estudiante.id_estudiante">@estudiante.nombre_usuario</option>
+                        <option value="@estudiante.id_estudiante">@estudiante.nombre_usuario @estudiante.apellidos_usuario</option>
                     }
                 }
             </select>
@@ -76,7 +75,7 @@
                     {
                         <div class="form-check">
                             <input type="checkbox" checked class="form-check-input" disabled />
-                            <label class="form-check-label">@estudiante.nombre_usuario</label>
+                            <label class="form-check-label">@estudiante.nombre_usuario @estudiante.apellidos_usuario</label>
                             <button type="button" class="btn btn-danger" @onclick="() => RemoverEstudianteSeleccionado(estudianteId)">Eliminar</button>
                         </div>
                     }
@@ -116,11 +115,7 @@
     private List<PeriodoConNombre> periodos;
     private List<EstudianteConDetalles> estudiantesSinGrupo;
     private List<InstructorConDetalles> instructoresSinGrupo;
-    private List<InstructorConDetalles> instructoresFiltrados;
-    private List<EstudianteConDetalles> estudiantesFiltrados;
     private int selectedEstudianteId;
-    private string instructorSearchText = string.Empty;
-    private string estudianteSearchText = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -141,27 +136,9 @@
         if (parametros.PeriodoId != 0)
         {
             estudiantesSinGrupo = await Http.GetFromJsonAsync<List<EstudianteConDetalles>>($"http://localhost:5117/api/Estudiante/sin-grupo/{parametros.CursoId}/{parametros.PeriodoId}");
-            estudiantesFiltrados = estudiantesSinGrupo;
-            instructoresSinGrupo = await Http.GetFromJsonAsync<List<InstructorConDetalles>>($"http://localhost:5117/api/Instructor/todos");
-            instructoresFiltrados = instructoresSinGrupo;
+            instructoresSinGrupo = await Http.GetFromJsonAsync<List<InstructorConDetalles>>($"http://localhost:5117/api/Instructor/sin-grupo/{parametros.CursoId}/{parametros.PeriodoId}");
             StateHasChanged();
         }
-    }
-
-    private void BuscarInstructor(ChangeEventArgs e)
-    {
-        instructorSearchText = e.Value.ToString();
-        instructoresFiltrados = instructoresSinGrupo
-            .Where(i => i.nombre_usuario.Contains(instructorSearchText, StringComparison.OrdinalIgnoreCase))
-            .ToList();
-    }
-
-    private void BuscarEstudiante(ChangeEventArgs e)
-    {
-        estudianteSearchText = e.Value.ToString();
-        estudiantesFiltrados = estudiantesSinGrupo
-            .Where(e => e.nombre_usuario.Contains(estudianteSearchText, StringComparison.OrdinalIgnoreCase))
-            .ToList();
     }
 
     private void AgregarEstudianteSeleccionado()
@@ -195,13 +172,24 @@
         var response = await Http.PostAsJsonAsync("http://localhost:5117/api/Grupo/CrearGrupoManual", parametros);
         if (response.IsSuccessStatusCode)
         {
-            Navigation.NavigateTo("/grupos");
+            await sweetAlertNotify("Grupo creado exitosamente", "success");
+            Navigation.NavigateTo("/grupos-existentes");
         }
         else
         {
-            // Manejo de errores
             var errorContent = await response.Content.ReadAsStringAsync();
-            Console.WriteLine(errorContent);
+            await sweetAlertNotify($"Error al crear grupo: {errorContent}", "error");
         }
+    }
+
+    private async Task sweetAlertNotify(string texto, string tipo)
+    {
+        var options = new
+        {
+            Title = texto,
+            Icon = tipo,
+            ConfirmButtonText = "OK"
+        };
+        await Js.InvokeVoidAsync("FireSweetAlert", options);
     }
 }

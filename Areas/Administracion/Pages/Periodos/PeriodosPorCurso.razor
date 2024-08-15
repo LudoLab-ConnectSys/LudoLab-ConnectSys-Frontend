@@ -2,6 +2,7 @@
 @layout AdminLayout
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
 
 <h3>Periodos del Curso: @cursoNombre</h3>
 
@@ -29,7 +30,7 @@
                 <td>@listaPeriodos.FirstOrDefault(lp => lp.id_lista_periodo == periodo.id_ListaPeriodo)?.nombre_periodo</td>
                 <td>
                     <button class="btn btn-primary" @onclick="() => EditarPeriodo(periodo.id_periodo)">Editar</button>
-                    <button class="btn btn-danger" @onclick="() => EliminarPeriodo(periodo.id_periodo)">Eliminar</button>
+                    <button class="btn btn-danger" @onclick="() => ConfirmarEliminarPeriodo(periodo.id_periodo)">Eliminar</button>
                     <button class="btn btn-info" @onclick="() => VerGrupos(periodo.id_periodo)">Ver Grupos</button>
                 </td>
             </tr>
@@ -60,7 +61,7 @@
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error fetching data: {ex.Message}");
+            await MostrarNotificacion("Error al cargar los datos.", "error");
         }
     }
 
@@ -74,17 +75,62 @@
         NavigationManager.NavigateTo($"/editar-periodo/{id_periodo}");
     }
 
+    private async Task ConfirmarEliminarPeriodo(int id_periodo)
+    {
+        var confirmed = await MostrarConfirmacion("¿Estás seguro de que deseas eliminar este periodo? No se puede eliminar un periodo con registros existentes.", "warning");
+        if (confirmed)
+        {
+            await EliminarPeriodo(id_periodo);
+        }
+    }
+
     private async Task EliminarPeriodo(int id_periodo)
     {
-        var response = await Http.DeleteAsync($"http://localhost:5117/api/Periodo/{id_periodo}");
-        if (response.IsSuccessStatusCode)
+        try
         {
-            periodos.RemoveAll(p => p.id_periodo == id_periodo);
+            var response = await Http.DeleteAsync($"http://localhost:5117/api/Periodo/{id_periodo}");
+            if (response.IsSuccessStatusCode)
+            {
+                periodos.RemoveAll(p => p.id_periodo == id_periodo);
+                await MostrarNotificacion("Periodo eliminado exitosamente.", "success");
+            }
+            else
+            {
+                await MostrarNotificacion("No se pudo eliminar el periodo. Verifique si hay registros asociados.", "error");
+            }
+        }
+        catch (Exception ex)
+        {
+            await MostrarNotificacion("Error de servidor al intentar eliminar el periodo.", "error");
         }
     }
 
     private void VerGrupos(int id_periodo)
     {
         NavigationManager.NavigateTo($"/periodos/{id_periodo}/grupos");
+    }
+
+    private async Task MostrarNotificacion(string mensaje, string tipo)
+    {
+        var options = new
+        {
+            Title = mensaje,
+            Icon = tipo,
+            ConfirmButtonText = "OK"
+        };
+        await JSRuntime.InvokeVoidAsync("FireSweetAlert", options);
+    }
+
+    private async Task<bool> MostrarConfirmacion(string mensaje, string tipo)
+    {
+        var options = new
+        {
+            Title = mensaje,
+            Icon = tipo,
+            ShowCancelButton = true,
+            ConfirmButtonText = "Sí",
+            CancelButtonText = "No"
+        };
+        return await JSRuntime.InvokeAsync<bool>("FireSweetAlertConfirm", options);
     }
 }

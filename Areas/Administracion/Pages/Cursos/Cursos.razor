@@ -97,7 +97,7 @@
             else if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
             {
                 var errorContent = await response.Content.ReadFromJsonAsync<ErrorResponse>();
-                await MostrarNotificacion(errorContent.Message, "error");
+                await MostrarNotificacion("No se pudo eliminar el periodo. Verifique si hay registros asociados.", "error");
             }
             else
             {

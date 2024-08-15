@@ -1,16 +1,19 @@
-﻿@page "/ingresar-horarios/{cursoId:int}"
+﻿@page "/ingresar-horarios-estudiante/{cursoId:int}/{periodoId:int}"
 @layout EstudianteLayout
 @inject HttpClient Http
 @inject NavigationManager Navigation
 @inject IJSRuntime Js
-@inject SweetAlertService Swal
-
 
 <h3>Ingresar Horarios Preferentes</h3>
 
-<EditForm Model="@horarios" OnValidSubmit="GuardarHorarios">
-    <DataAnnotationsValidator/>
-    <ValidationSummary/>
+@if (!string.IsNullOrEmpty(mensajeRegistro))
+{
+    <div class="alert alert-info">@mensajeRegistro</div>
+}
+
+<EditForm Model="@horarios" OnValidSubmit="RegistrarHorarios">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
 
     <div class="form-group">
         <label>Día de la Semana:</label>
@@ -25,97 +28,90 @@
     </div>
 
     <div class="form-group">
-        <label>Hora de Inicio:</label>
-        <input type="time" value="@(new DateTime(nuevoHorario.hora_inicio.Ticks).ToString("HH:mm"))" @oninput="e => nuevoHorario.hora_inicio = TimeSpan.Parse(e.Value.ToString())" class="form-control"/>
+        <label for="horaInicio">Hora de Inicio:</label>
+        <input type="time" value="@(new DateTime(nuevoHorario.hora_inicio.Ticks).ToString("HH:mm"))" @oninput="e => nuevoHorario.hora_inicio = TimeSpan.Parse(e.Value.ToString())" class="form-control mr-2" />
     </div>
-
     <div class="form-group">
-        <label>Hora de Fin:</label>
-        <input type="time" value="@(new DateTime(nuevoHorario.hora_fin.Ticks).ToString("HH:mm"))" @oninput="e => nuevoHorario.hora_fin = TimeSpan.Parse(e.Value.ToString())" class="form-control"/>
+        <label for="horaFin">Hora de Fin:</label>
+        <input type="time" value="@(new DateTime(nuevoHorario.hora_fin.Ticks).ToString("HH:mm"))" @oninput="e => nuevoHorario.hora_fin = TimeSpan.Parse(e.Value.ToString())" class="form-control mr-2" />
     </div>
-
     <button type="button" class="btn btn-primary" @onclick="AgregarHorario">Agregar Horario</button>
 
-    <h4>Horarios Preferentes</h4>
-    <ul>
-        @foreach (var horario in horarios)
-        {
-            <li>@horario.dia_semana: @horario.hora_inicio - @horario.hora_fin <button @onclick="() => EliminarHorario(horario)" class="btn btn-danger btn-sm">Eliminar</button></li>
-        }
-    </ul>
+    <div>
+        <h4>Horarios Preferentes</h4>
+        <ul>
+            @foreach (var horario in horarios)
+            {
+                <li>@horario.dia_semana: @horario.hora_inicio - @horario.hora_fin <button @onclick="() => EliminarHorario(horario)" class="btn btn-danger btn-sm">Eliminar</button></li>
+            }
+        </ul>
+    </div>
 
-    <button type="submit" class="btn btn-success">Guardar Horarios</button>
+    <button type="submit" class="btn btn-success">Registrar Horarios y Matricular</button>
 </EditForm>
 
 @code {
     [Parameter] public int cursoId { get; set; }
+    [Parameter] public int periodoId { get; set; }
 
     private List<HorarioPreferenteEstudiante> horarios = new List<HorarioPreferenteEstudiante>();
     private HorarioPreferenteEstudiante nuevoHorario = new HorarioPreferenteEstudiante();
-
-    // Quemar el ID del estudiante
-    //private const int estudianteId = 10; // Reemplaza con el ID real del estudiante
-    private int idEstudiante;
+    private int estudianteId;
+    private string mensajeRegistro;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
             var idEstudianteString = await Js.InvokeAsync<string>("localStorage.getItem", "IdEstudiante");
-            Console.WriteLine($"IdEstudiante string from local storage: {idEstudianteString}");
-            if (int.TryParse(idEstudianteString, out int estudianteId))
+            if (int.TryParse(idEstudianteString, out int idEstudiante))
             {
-                idEstudiante = estudianteId;
-                Console.WriteLine($"id ESTUDIANTE: {idEstudiante}");
+                estudianteId = idEstudiante;
             }
             else
             {
-                Console.WriteLine("No se pudo obtener el ID del estudiante");
-                idEstudiante = 0; // o algún valor por defecto
+                estudianteId = 0; // Valor por defecto o manejo de error
             }
-
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error al obtener el ID del estudiante del local storage: {ex.Message}");
-            idEstudiante = 0; // o algún valor por defecto
+            estudianteId = 0; // Valor por defecto o manejo de error
         }
+    }
 
+    private async Task RegistrarHorarios()
+    {
+        var registroEstudiante = new RegistrarHorarioEstudiante
+            {
+                id_estudiante = estudianteId,
+                id_curso = cursoId,
+                id_periodo = periodoId,
+                horarios = horarios
+            };
+
+        var response = await Http.PostAsJsonAsync("http://localhost:5117/api/Estudiante/RegistrarHorarioEstudiante", registroEstudiante);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+        {
+            mensajeRegistro = "El estudiante ya está registrado previamente en este curso y periodo.";
+            await sweetAletNotify(mensajeRegistro, "info");
+        }
+        else if (response.IsSuccessStatusCode)
+        {
+            mensajeRegistro = "Horarios registrados y matrícula realizada exitosamente";
+            await sweetAletNotify(mensajeRegistro, "success");
+            Navigation.NavigateTo("/cursos-disponibles");
+        }
+        else
+        {
+            await sweetAletNotify("Error al registrar horarios y matrícula", "error");
+        }
     }
 
     private void AgregarHorario()
     {
-        horarios.Add(new HorarioPreferenteEstudiante
-            {
-                dia_semana = nuevoHorario.dia_semana,
-                hora_inicio = nuevoHorario.hora_inicio,
-                hora_fin = nuevoHorario.hora_fin,
-                id_estudiante = idEstudiante // Quemar el ID del estudiante en el nuevo horario
-            });
+        horarios.Add(nuevoHorario);
         nuevoHorario = new HorarioPreferenteEstudiante();
-    }
-
-
-    private async Task GuardarHorarios()
-    {
-        // Añadir el ID del estudiante a cada horario antes de enviarlo
-        foreach (var horario in horarios)
-        {
-            horario.id_estudiante = idEstudiante;
-        }
-
-        // Enviar la lista de horarios al controlador
-        var response = await Http.PostAsJsonAsync($"http://localhost:5117/api/Estudiante/HorariosPreferentes/{cursoId}/{idEstudiante}", horarios);
-        if (response.IsSuccessStatusCode)
-        {
-            Navigation.NavigateTo("/cursos-disponibles");
-            await sweetAletNotify("Horarios Ingresados con éxito", "success");
-        }
-        else
-        {
-            // Manejo de errores
-            await sweetAletNotify("Error al ingresar horarios", "error");
-        }
     }
 
     private void EliminarHorario(HorarioPreferenteEstudiante horario)
@@ -133,6 +129,4 @@
         };
         await Js.InvokeVoidAsync("FireSweetAlert", options);
     }
-
-
 }

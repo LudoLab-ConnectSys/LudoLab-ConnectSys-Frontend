@@ -12,7 +12,7 @@
 
     <div class="nav-item px-3">
         <a class="nav-link" @onclick="ToggleCursosMenu">
-            <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Cursos
+            <span class="bi bi-bank2" aria-hidden="true"></span> Cursos
         </a>
         @if (isCursosMenuVisible)
         {
@@ -25,13 +25,25 @@
         }
     </div>
 
+    <div class="nav-item px-3">
+        <a class="nav-link" @onclick="ToggleRepositorioMenu">
+            <span class="bi bi-share-fill" aria-hidden="true"></span> Repositorio
+        </a>
+        @if (isRepositorioMenuVisible)
+        {
+            <div class="sub-menu">
+                <NavLink class="nav-link" href="instructor-repositorio">Subir Archivo</NavLink>
+            </div>
+        }
+    </div>
+
 </div>
 
 
 @code {
     private bool collapseNavMenu = false;
     private bool isCursosMenuVisible = false;
-
+    private bool isRepositorioMenuVisible = false;
 
     private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
 
@@ -43,6 +55,11 @@
     private void ToggleCursosMenu()
     {
         isCursosMenuVisible = !isCursosMenuVisible;
+    }
+
+    private void ToggleRepositorioMenu()
+    {
+        isRepositorioMenuVisible = !isRepositorioMenuVisible;
     }
 
 
