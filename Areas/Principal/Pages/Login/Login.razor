@@ -1,0 +1,124 @@
+﻿@page "/login"
+@using LudoLab_ConnectSys_Frontend.Services.Security
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+@inject IJSRuntime Js
+
+<style>
+    html, body {
+        height: 100%;
+        margin: 0;
+    }
+
+    body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: url('img/fondo.jpg') no-repeat center center fixed;
+        background-size: cover;
+        filter: brightness(0.6) blur(5px);
+        z-index: -1;
+    }
+</style>
+
+<div class="container d-flex flex-column align-items-center justify-content-start">
+    <div class="content-overlay shadow-box mb-4 mt-5">
+        <div class="row equal-height">
+            <div class="col-6 d-flex justify-content-center align-items-center">
+                <img src="img/imagenLateral.jpg" class="img-fluid" alt="Imagen Lateral" style="height: 80vh">
+            </div>
+            <div class="col-6 d-flex flex-column justify-content-center align-items-center pt-2">
+                <h1 class="mb-4 text-center">Bienvenido</h1>
+                <p>Por favor, ingrese a su cuenta</p>
+                <div class="w-100">
+                    <EditForm Model="@_loginRequest" OnValidSubmit="@HandleValidSubmit">
+                        <DataAnnotationsValidator/>
+                        <ValidationSummary/>
+
+                        <div class="mb-3">
+                            <label for="Identification" class="form-label">Cédula/RUC o pasaporte</label>
+                            <InputText class="form-control" id="Identification" @bind-Value="_loginRequest.Identification"/>
+                            <ValidationMessage For="@(() => _loginRequest.Identification)"/>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Contraseña</label>
+                            <InputText type="password" class="form-control" id="password" @bind-Value="_loginRequest.Password"/>
+                            <ValidationMessage For="@(() => _loginRequest.Password)"/>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="profileType" class="form-label">Tipo de perfil</label>
+                            <InputSelect class="form-select" id="profileType" @bind-Value="_loginRequest.Rol">
+                                <option value="">Seleccione uno</option>
+                                <option value="Administrador">Administrador</option>
+                                <option value="Estudiante">Estudiante</option>
+                                <option value="Instructor">Instructor</option>
+                            </InputSelect>
+                            <ValidationMessage For="@(() => _loginRequest.Rol)"/>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100" style="background-color: #F28D1E; border-color: #F28D1E;">Ingresar</button>
+                        <div class="mt-3 text-center">
+                            <a @onclick="NavigateToPassword">¿Has olvidado tu contraseña?</a>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content-overlay shadow-box mb-4">
+        <div class="row justify-content-center">
+            <p>Consultar, sugerencias o dudas con algún programa o curso de capacitación hacerlo al email <a href="mailto:iseasyfis@epn.edu.ec">iseasyfis@epn.edu.ec</a>, además si aún no se encuentra registrado en el sistema lo puede hacer haciendo clic en el siguiente botón.</p>
+            <button class="btn btn-register" @onclick="NavigateToRegister">Registrarse</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    private LoginRequest _loginRequest = new LoginRequest();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await AuthService.LimpiarLocalStorageAsync();
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            await AuthService.ManejarInicioSesionAsync(_loginRequest);
+        }
+        catch (HttpRequestException ex)
+        {
+            Console.WriteLine(ex.Message);
+            await SweetAlertNotify("Credenciales incorrectas", "error");
+        }
+    }
+
+    private async Task SweetAlertNotify(string texto, string tipo)
+    {
+        var opciones = new
+        {
+            Title = texto,
+            Icon = tipo,
+            ConfirmButtonText = "OK"
+        };
+        await Js.InvokeVoidAsync("FireSweetAlert", opciones);
+    }
+
+    private void NavigateToRegister()
+    {
+        Navigation.NavigateTo("/register");
+    }
+
+    private void NavigateToPassword()
+    {
+        Navigation.NavigateTo("/password");
+    }
+
+}
