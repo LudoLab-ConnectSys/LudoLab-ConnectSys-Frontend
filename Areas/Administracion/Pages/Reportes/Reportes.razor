@@ -12,7 +12,7 @@
 <!--<h3 class="titulo-resultado">Lista de Cursos</h3>-->
 @if (isLoading)
 {
-    <SpinnerPage />
+    <SpinnerPage/>
 }
 
 <EditForm Model="newCurso">
@@ -39,38 +39,38 @@
 </EditForm>
 <table class="table table-striped table-resultado">
     <thead>
-        <tr>
-            <th scope="col">Nombre Periodo</th>
-            <th scope="col">Inicio</th>
-            <th scope="col">Fin</th>
-            <th scope="col">Nombre Curso</th>
-            <th scope="col">Acciones</th>
-        </tr>
+    <tr>
+        <th scope="col">Nombre Periodo</th>
+        <th scope="col">Inicio</th>
+        <th scope="col">Fin</th>
+        <th scope="col">Nombre Curso</th>
+        <th scope="col">Acciones</th>
+    </tr>
     </thead>
     <tbody>
-        @foreach (var en in Periodos)
-        {
-            var inputFileId = $"fileInput_{en.id_periodo}";
+    @foreach (var en in Periodos)
+    {
+        var inputFileId = $"fileInput_{en.id_periodo}";
 
-            <tr>
-                <td>@en.nombre_periodo</td>
-                <td>@en.fecha_inicio_periodo</td>
-                <td>@en.fecha_fin_periodo</td>
-                <td>@en.nombre_curso</td>
-                <td>
-                    <button type="button" class="btn btn-primary" @onclick="(() => GenerarReporte(en.id_periodo, en.nombre_periodo, en.nombre_curso))">
-                        Reporte
-                    </button>
-                </td>
-            </tr>
-        }
+        <tr>
+            <td>@en.nombre_periodo</td>
+            <td>@en.fecha_inicio_periodo</td>
+            <td>@en.fecha_fin_periodo</td>
+            <td>@en.nombre_curso</td>
+            <td>
+                <button type="button" class="btn btn-primary" @onclick="(() => GenerarReporte(en.id_periodo, en.nombre_periodo, en.nombre_curso))">
+                    Reporte
+                </button>
+            </td>
+        </tr>
+    }
     </tbody>
 </table>
 <div class="d-flex justify-content-between">
     <button @onclick="(() => BuscarPeriodos(selectedPeriodo, newPeriodocertificate, CurrentPage - 1))" class="btn btn-primary" disabled="@(CurrentPage == 1 || isLoading)">Anterior</button>
     <span>Página @CurrentPage de @TotalPages</span>
     <button @onclick="(() => BuscarPeriodos(selectedPeriodo, newPeriodocertificate, CurrentPage + 1))" class="btn btn-primary" disabled="@(CurrentPage == TotalPages || isLoading)">Siguiente</button>
-</div
+</div>
 
 <style>
     .titulo-resultado {
@@ -163,7 +163,7 @@
     public static List<UsuarioPeriodo> ListaEstudiantes = new List<UsuarioPeriodo>();
     String nombreCurso;
     String nombrePeriodo;
-    private int CurrentPage { get; set; } = 1;// propiedades para paginación
+    private int CurrentPage { get; set; } = 1; // propiedades para paginación
     private int TotalPages { get; set; }
     private int registerNumber { get; set; } = 3;
 
@@ -237,6 +237,7 @@
         isLoading = false;
         StateHasChanged();
     }
+
     //FUNCIONES PARA Periodo
     public async Task ListaNombresPeriodos()
     {
@@ -244,7 +245,7 @@
         {
             isLoading = true;
             StateHasChanged();
-        
+
             // Intenta obtener la lista de periodos
             listaPeriodos = await Http.GetFromJsonAsync<List<ListaPeriodo>>("http://localhost:5117/api/Periodo/getNamePeriodoList");
         }
@@ -252,7 +253,7 @@
         {
             // Maneja la excepción, por ejemplo, registrándola o mostrando un mensaje de error
             Console.WriteLine($"Error al obtener la lista de periodos: {ex.Message}");
-        
+
             // Puedes asignar listaPeriodos a una lista vacía en caso de error
             listaPeriodos = new List<ListaPeriodo>();
         }
@@ -262,6 +263,7 @@
             StateHasChanged();
         }
     }
+
     private async Task GenerarReporte(int idPeriodo, string nombre_periodo, string nombre_curso)
     {
         try
@@ -449,9 +451,9 @@
                     await JSRuntime.InvokeVoidAsync("DescargarExel", nombreExcel, base64);
                     isLoading = false;
                     StateHasChanged();
-
                 }
-                    await sweetAletNotify("Reporte descargado exitosamente", "success");
+
+                await sweetAletNotify("Reporte descargado exitosamente", "success");
             }
         }
         catch (HttpRequestException httpEx)
@@ -473,7 +475,6 @@
             await sweetAletNotify($"Error al generar el reporte: {ex.Message}", "error");
         }
     }
-
 
 
     private async Task sweetAletNotify(string texto, string tipo)
@@ -565,10 +566,12 @@
         public string Celular { get; set; }
         public string Telefono { get; set; }
     }
+
     public class PagedResult<T>
     {
         public List<T> Items { get; set; }
         public int TotalPages { get; set; }
         public int CurrentPage { get; set; }
     }
+
 }
