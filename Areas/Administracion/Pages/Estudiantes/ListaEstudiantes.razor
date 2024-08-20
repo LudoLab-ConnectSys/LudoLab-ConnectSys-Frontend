@@ -111,7 +111,11 @@
     {
         try
         {
-            var response = await Http.GetFromJsonAsync<PagedResponse<EstudianteConDetalles>>($"http://localhost:5117/api/Estudiante/Detalles?pageNumber={currentPage}&pageSize={pageSize}&cursoId={selectedCurso}&periodoId={selectedPeriodo}");
+            // Log de los parámetros antes de la solicitud
+            Console.WriteLine($"Cargando estudiantes con Curso: {selectedCurso}, Periodo: {selectedPeriodo}, Página: {currentPage}");
+
+            var response = await Http.GetFromJsonAsync<PagedResponse<EstudianteConDetalles>>(
+                $"http://localhost:5117/api/Estudiante/Detalles?pageNumber={currentPage}&pageSize={pageSize}&cursoId={selectedCurso}&periodoId={selectedPeriodo}");
             estudiantes = response.Items.ToList();
             totalPages = (int)Math.Ceiling((double)response.TotalCount / pageSize);
 
@@ -166,15 +170,8 @@
     private async Task OnPeriodoSeleccionadoChange(ChangeEventArgs e)
     {
         var selectedValue = e.Value.ToString();
-        if (string.IsNullOrEmpty(selectedValue))
-        {
-            selectedPeriodo = 0;
-        }
-        else
-        {
-            selectedPeriodo = int.Parse(selectedValue);
-        }
-
+        selectedPeriodo = string.IsNullOrEmpty(selectedValue) ? 0 : int.Parse(selectedValue);
+        Console.WriteLine($"Periodo seleccionado: {selectedPeriodo}");
         await LoadEstudiantes();
     }
 

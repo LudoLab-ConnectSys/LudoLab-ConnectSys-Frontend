@@ -1,86 +1,80 @@
-﻿@page "/cursos-inscritos"
+﻿@page "/grupos-del-estudiante"
 @layout EstudianteLayout
 @inject HttpClient Http
-@inject NavigationManager Navigation
 @inject IJSRuntime Js
-@inject SweetAlertService Swal
+@inject NavigationManager Navigation
 
-<h3>Mis Cursos Inscritos</h3>
+<h3>Grupos Inscritos del Estudiante</h3>
 
-@if (cursosInscritos != null && cursosInscritos.Any())
+@if (gruposDelEstudiante == null)
+{
+    <p>Cargando grupos...</p>
+}
+else if (gruposDelEstudiante.Count == 0)
+{
+    <p>No hay grupos inscritos.</p>
+}
+else
 {
     <table class="table">
         <thead>
             <tr>
-                <th>Nombre del Curso</th>
+                <th>Nombre del Grupo</th>
                 <th>Periodo</th>
+                <th>Fecha Inicio</th>
+                <th>Fecha Fin</th>
+                <th>Curso</th>
                 <th>Acciones</th>
             </tr>
         </thead>
         <tbody>
-            @foreach (var curso in cursosInscritos)
+            @foreach (var grupo in gruposDelEstudiante)
             {
                 <tr>
-                    <td>@curso.nombre_curso</td>
-                    <td>@curso.nombre_periodo</td>
+                    <td>@grupo.nombre_curso</td>
+                    <td>@grupo.nombre_grupo</td>
+                    <td>@grupo.nombre_periodo</td>
+                    <td>@grupo.fecha_inicio_periodo</td>
+                    <td>@grupo.fecha_fin_periodo</td>
                     <td>
-                        <button class="btn btn-info" @onclick="() => VerDetalleCurso(curso.id_curso)">Ver Detalle</button>
+                        <button class="btn btn-primary" @onclick="() => VerDetallesGrupo(grupo.id_grupo)">Ver Detalles</button>
                     </td>
                 </tr>
             }
         </tbody>
     </table>
 }
-else
-{
-    <p>No tienes cursos inscritos actualmente.</p>
-}
 
 @code {
-    private List<CursoInscritoEstudiante> cursosInscritos = new List<CursoInscritoEstudiante>();
-    private int idEstudiante;
+    private List<GrupoConCursoPeriodo> gruposDelEstudiante;
 
     protected override async Task OnInitializedAsync()
-    {
-        await CargarCursosInscritos();
-    }
-
-    private async Task CargarCursosInscritos()
     {
         try
         {
             var idEstudianteString = await Js.InvokeAsync<string>("localStorage.getItem", "IdEstudiante");
-            Console.WriteLine($"IdEstudiante string from local storage: {idEstudianteString}");
-            if (int.TryParse(idEstudianteString, out int estudianteId))
+            if (int.TryParse(idEstudianteString, out int idEstudiante))
             {
-                idEstudiante = estudianteId;
-                cursosInscritos = await Http.GetFromJsonAsync<List<CursoInscritoEstudiante>>($"http://localhost:5117/api/Estudiante/CursosInscritos/{idEstudiante}");
+                await CargarGrupos(idEstudiante);
             }
             else
             {
-                await sweetAletNotify("Error al obtener el ID del estudiante", "error");
+                Console.WriteLine("No se pudo obtener el ID del estudiante");
             }
         }
         catch (Exception ex)
         {
-            await sweetAletNotify($"Error al cargar los cursos inscritos: {ex.Message}", "error");
+            Console.WriteLine($"Error al obtener el ID del estudiante del local storage: {ex.Message}");
         }
     }
 
-    private void VerDetalleCurso(int idCurso)
+    private async Task CargarGrupos(int estudianteId)
     {
-        // Navegar a la página de detalles del curso
-        Navigation.NavigateTo($"/detalle-curso/{idCurso}");
+        gruposDelEstudiante = await Http.GetFromJsonAsync<List<GrupoConCursoPeriodo>>($"http://localhost:5117/api/Grupo/GruposDelEstudiante/{estudianteId}");
     }
 
-    private async Task sweetAletNotify(string texto, string tipo)
+    private void VerDetallesGrupo(int grupoId)
     {
-        var options = new
-        {
-            Title = texto,
-            Icon = tipo,
-            ConfirmButtonText = "OK"
-        };
-        await Js.InvokeVoidAsync("FireSweetAlert", options);
+        Navigation.NavigateTo($"/detalles-grupo-estudiante/{grupoId}");
     }
 }

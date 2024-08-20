@@ -13,7 +13,7 @@
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">@curso.nombre_curso</h5>
-                    <button class="btn btn-primary" @onclick="() => SeleccionarCurso(curso.id_curso)">Inscribirse</button>
+                    <button class="btn btn-primary" @onclick="() => SeleccionarCurso(curso.id_curso, curso.id_periodo)">Inscribirse</button>
                 </div>
             </div>
         }
@@ -25,16 +25,16 @@
 </div>
 
 @code {
-    private List<CursoConPeriodoActivo> cursos;
+    private List<PeriodoConCursoInfo> cursos;
 
     protected override async Task OnInitializedAsync()
     {
-        cursos = await Http.GetFromJsonAsync<List<CursoConPeriodoActivo>>("http://localhost:5117/api/Curso/CursosConPeriodosActivos");
+        cursos = await Http.GetFromJsonAsync<List<PeriodoConCursoInfo>>("http://localhost:5117/api/Periodo/Activos");
     }
 
-    private void SeleccionarCurso(int cursoId)
+    private void SeleccionarCurso(int cursoId, int periodoId)
     {
-        Navigation.NavigateTo($"/ingresar-horarios/{cursoId}");
+        Navigation.NavigateTo($"/ingresar-horarios-estudiante/{cursoId}/{periodoId}");
     }
 
 }

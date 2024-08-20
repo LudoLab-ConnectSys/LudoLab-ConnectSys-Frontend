@@ -4,6 +4,7 @@ using LudoLab_ConnectSys_Frontend.Shared.Utilities;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Graph;
 using Microsoft.Kiota.Abstractions.Authentication;
 
@@ -27,6 +28,13 @@ builder.Services.AddMsalAuthentication(options =>
     options.ProviderOptions.DefaultAccessTokenScopes.Add("https://graph.microsoft.com/sites.manage.all");
     options.ProviderOptions.DefaultAccessTokenScopes.Add("https://graph.microsoft.com/sites.read.all");
     options.ProviderOptions.DefaultAccessTokenScopes.Add("https://graph.microsoft.com/sites.readwrite.all");
+
+    options.ProviderOptions.Cache.CacheLocation = "localStorage"; // Para almacenamiento local
+    options.ProviderOptions.Cache.CacheLocation = "sessionStorage"; // Para almacenamiento en sesión
+    options.ProviderOptions.Cache.StoreAuthStateInCookie = true;
+    options.ProviderOptions.LoginMode = "popup";
+
+
 });
 
 // Configuraci�n del HttpClient para interactuar con Microsoft Graph

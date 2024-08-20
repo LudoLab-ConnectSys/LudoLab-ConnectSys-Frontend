@@ -1,5 +1,5 @@
 ﻿@page "/authentication/{action}"
-@layout AdminLayout
+@inject NavigationManager Navigation
 @using Microsoft.AspNetCore.Components.WebAssembly.Authentication
 <RemoteAuthenticatorView Action="@Action"/>
 
@@ -8,4 +8,16 @@
 @code {
     [Parameter] public string? Action { get; set; }
 
+    private void OnLoginSucceeded()
+    {
+        var returnUrl = Navigation.ToBaseRelativePath(Navigation.Uri);
+        if (returnUrl == "authentication/login")
+        {
+            Navigation.NavigateTo("/repositorio"); // Cambiar esto a la página que quieres redirigir
+        }
+        else
+        {
+            Navigation.NavigateTo(returnUrl);
+        }
+    }
 }

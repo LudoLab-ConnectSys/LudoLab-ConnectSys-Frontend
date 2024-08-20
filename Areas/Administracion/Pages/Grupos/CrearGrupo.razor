@@ -2,8 +2,14 @@
 @layout AdminLayout
 @inject HttpClient Http
 @inject NavigationManager Navigation
+@inject IJSRuntime Js
 
 <h3>Crear Grupos</h3>
+
+<div class="alert alert-info">
+    <strong>¿Prefieres crear los grupos manualmente?</strong> Haz clic en el botón a continuación para ir a la opción de creación manual de grupos.
+    <button class="btn btn-secondary ml-3" @onclick="CrearGruposManualmente">Crear Grupos Manualmente</button>
+</div>
 
 <div class="form-container section">
     <form @onsubmit="CrearGrupos">
@@ -71,7 +77,7 @@
                 {
                     <tr>
                         <td>@estudiante.id_estudiante</td>
-                        <td>@estudiante.nombre_usuario</td>
+                        <td>@estudiante.nombre_usuario @estudiante.apellidos_usuario</td>
                         <td>
                             @foreach (var horario in estudiante.horariosPreferentes)
                             {
@@ -106,7 +112,7 @@
                 {
                     <tr>
                         <td>@instructor.id_instructor</td>
-                        <td>@instructor.nombre_usuario</td>
+                        <td>@instructor.nombre_usuario @instructor.apellidos_usuario</td>
                         <td>
                             @foreach (var horario in instructor.horariosPreferentes)
                             {
@@ -124,6 +130,7 @@
     }
 </div>
 
+
 @if (grupos != null)
 {
     <div class="section">
@@ -140,7 +147,7 @@
                         {
                             @foreach (var estudiante in grupo.estudiantes)
                             {
-                                <li>@estudiante</li>
+                                <li>@estudiante</li> <!-- Aquí `estudiante` es una cadena, así que no concatenamos nombre y apellido -->
                             }
                         }
                     </ul>
@@ -170,7 +177,7 @@
             <ul>
                 @foreach (var estudiante in estudiantesSinGrupo)
                 {
-                    <li>@estudiante.nombre_usuario</li>
+                    <li>@estudiante.nombre_usuario @estudiante.apellidos_usuario</li>
                 }
             </ul>
         </div>
@@ -179,14 +186,12 @@
             <ul>
                 @foreach (var instructor in instructoresSinGrupo)
                 {
-                    <li>@instructor.nombre_usuario</li>
+                    <li>@instructor.nombre_usuario @instructor.apellidos_usuario</li>
                 }
             </ul>
         </div>
     }
 </div>
-
-<button class="btn btn-secondary" @onclick="CrearGruposManualmente">Crear Grupos Manualmente</button>
 
 @code {
     private CrearGruposParametros parametros = new CrearGruposParametros();
@@ -226,10 +231,11 @@
         if (response.IsSuccessStatusCode)
         {
             grupos = await response.Content.ReadFromJsonAsync<List<GrupoConDetalles>>();
+            await sweetAletNotify("Grupos creados exitosamente", "success");
         }
         else
         {
-            // Manejo de errores
+            await sweetAletNotify("Error al crear los grupos", "error");
         }
     }
 
@@ -238,16 +244,27 @@
         var response = await Http.PostAsJsonAsync("http://localhost:5117/api/Grupo/GuardarGrupos", grupos);
         if (response.IsSuccessStatusCode)
         {
-            // Manejo después de guardar exitosamente
+            await sweetAletNotify("Grupos guardados exitosamente", "success");
         }
         else
         {
-            // Manejo de errores
+            await sweetAletNotify("Error al guardar los grupos", "error");
         }
     }
 
     private void CrearGruposManualmente()
     {
         Navigation.NavigateTo("/crear-grupos-manualmente");
+    }
+
+    private async Task sweetAletNotify(string texto, string tipo)
+    {
+        var options = new
+        {
+            Title = texto,
+            Icon = tipo,
+            ConfirmButtonText = "OK"
+        };
+        await Js.InvokeVoidAsync("FireSweetAlert", options);
     }
 }
