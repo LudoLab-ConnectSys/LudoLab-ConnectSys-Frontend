@@ -63,6 +63,7 @@
             {
                 <div class="form-inline mb-2">
                     <select @bind="horario.dia_semana" class="form-control mr-2">
+                        <option value="">Seleccione un día</option>
                         <option value="Lunes">Lunes</option>
                         <option value="Martes">Martes</option>
                         <option value="Miércoles">Miércoles</option>
@@ -226,7 +227,7 @@ else
             if (response.IsSuccessStatusCode)
             {
                 await MostrarNotificacion("Cambios guardados exitosamente.", "success");
-                NavigationManager.NavigateTo($"/grupo/{id_grupo}");
+                NavigationManager.NavigateTo("/grupos-existentes");
             }
             else
             {

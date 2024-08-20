@@ -90,6 +90,7 @@
                 {
                     <div class="form-inline mb-2">
                         <select @bind="horario.dia_semana" class="form-control mr-2">
+                            <option value="">Seleccione un día</option>
                             <option value="Lunes">Lunes</option>
                             <option value="Martes">Martes</option>
                             <option value="Miércoles">Miércoles</option>
@@ -105,7 +106,8 @@
             </div>
         </div>
 
-        <button type="submit" class="btn btn-primary">Crear Grupo</button>
+        <button type="submit" class="btn btn-primary" disabled="@(FormularioCompleto() ? false : true)">Crear Grupo</button>
+
     </form>
 </div>
 
@@ -159,6 +161,18 @@
 
     private void AgregarHorario()
     {
+        // Validar que el último horario agregado no esté vacío ni tenga horas inconsistentes
+        if (parametros.Horarios.Count > 0)
+        {
+            var ultimoHorario = parametros.Horarios.Last();
+            if (string.IsNullOrEmpty(ultimoHorario.dia_semana) || ultimoHorario.hora_inicio >= ultimoHorario.hora_fin)
+            {
+                // Puedes mostrar un mensaje de error aquí, usando sweetAlertNotify o simplemente devolver
+                sweetAlertNotify("Por favor complete el horario anterior antes de agregar uno nuevo.", "error");
+                return;
+            }
+        }
+
         parametros.Horarios.Add(new HorarioGrupo());
     }
 
@@ -169,6 +183,16 @@
 
     private async Task CrearGrupoManual()
     {
+        // Validar que todos los horarios sean válidos
+        foreach (var horario in parametros.Horarios)
+        {
+            if (string.IsNullOrEmpty(horario.dia_semana) || horario.hora_inicio >= horario.hora_fin)
+            {
+                await sweetAlertNotify("Hay horarios incompletos o con horas inconsistentes.", "error");
+                return;
+            }
+        }
+
         var response = await Http.PostAsJsonAsync("http://localhost:5117/api/Grupo/CrearGrupoManual", parametros);
         if (response.IsSuccessStatusCode)
         {
@@ -191,5 +215,17 @@
             ConfirmButtonText = "OK"
         };
         await Js.InvokeVoidAsync("FireSweetAlert", options);
+    }
+
+
+    private bool FormularioCompleto()
+    {
+        // Verifica si los campos requeridos están completos
+        return parametros.CursoId != 0 &&
+               parametros.PeriodoId != 0 &&
+               parametros.InstructorId != 0 &&
+               parametros.EstudiantesSeleccionados.Count > 0 &&
+               parametros.Horarios.Count > 0 &&
+               parametros.Horarios.All(h => !string.IsNullOrEmpty(h.dia_semana) && h.hora_inicio < h.hora_fin);
     }
 }
