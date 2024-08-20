@@ -5,6 +5,7 @@
 @inject NavigationManager NavigationManager
 @inject SweetAlertService Swal
 @layout AdminLayout
+@inject IConfiguration Configuration
 
 <div class="contenedor-botones">
     <button @onclick="NavigateBack" class="btn btn-secondary btn-regresar">Regresar</button>
@@ -330,13 +331,16 @@
     private string titulo = string.Empty;
     private List<PreguntaModel> preguntasNew = new() { new PreguntaModel() };
 
+    private string _baseUrl;
+
     protected override async Task OnInitializedAsync()
     {
+        _baseUrl = Configuration["BaseUrl"];
         isLoading = true;
         StateHasChanged();
         try
         {
-            encuestas = await Http.GetFromJsonAsync<List<Encuesta>>("http://localhost:5117/api/Encuesta/GetTodaEncuesta");
+            encuestas = await Http.GetFromJsonAsync<List<Encuesta>>($"{_baseUrl}/api/Encuesta/GetTodaEncuesta");
             isLoading = false;
             StateHasChanged();
             if (encuestas == null)
@@ -364,7 +368,7 @@
         {
             id_pregunta = id;
             preguntasOpciones = new();
-            preguntasOpciones = await Http.GetFromJsonAsync<List<PreguntaConOpciones>>($"http://localhost:5117/api/Encuesta/preguntasporID/{id}");
+            preguntasOpciones = await Http.GetFromJsonAsync<List<PreguntaConOpciones>>($"{_baseUrl}/api/Encuesta/preguntasporID/{id}");
             isLoading = false;
             StateHasChanged();
             if (preguntasOpciones == null || !preguntasOpciones.Any())
@@ -404,7 +408,7 @@
             isLoading = true;
             StateHasChanged();
 
-            var response = await Http.PutAsJsonAsync($"http://localhost:5117/api/Encuesta/ActualizarPreguntas/{id}", preguntasOpciones);
+            var response = await Http.PutAsJsonAsync($"{_baseUrl}/api/Encuesta/ActualizarPreguntas/{id}", preguntasOpciones);
             isLoading = false;
             StateHasChanged();
             if (response.IsSuccessStatusCode)
@@ -449,7 +453,7 @@
             // Eliminar las opciones asociadas
             isLoading = true;
             StateHasChanged();
-            var eliminarOpcionesResponse = await Http.DeleteAsync($"http://localhost:5117/api/Encuesta/EliminarOpciones/{id}");
+            var eliminarOpcionesResponse = await Http.DeleteAsync($"{_baseUrl}/api/Encuesta/EliminarOpciones/{id}");
             if (!eliminarOpcionesResponse.IsSuccessStatusCode)
             {
                 await sweetAletNotify("No se pudo eliminar las opciones asociadas a la encuesta.", "error");
@@ -457,7 +461,7 @@
             }
 
             // Eliminar las preguntas asociadas
-            var eliminarPreguntasResponse = await Http.DeleteAsync($"http://localhost:5117/api/Encuesta/EliminarPreguntas/{id}");
+            var eliminarPreguntasResponse = await Http.DeleteAsync($"{_baseUrl}/api/Encuesta/EliminarPreguntas/{id}");
             if (!eliminarPreguntasResponse.IsSuccessStatusCode)
             {
                 await sweetAletNotify("No se pudo eliminar las preguntas asociadas a la encuesta.", "error");
@@ -465,7 +469,7 @@
             }
 
             // Finalmente eliminar la encuesta
-            var eliminarEncuestaResponse = await Http.DeleteAsync($"http://localhost:5117/api/Encuesta/EliminarEncuesta/{id}");
+            var eliminarEncuestaResponse = await Http.DeleteAsync($"{_baseUrl}/api/Encuesta/EliminarEncuesta/{id}");
             isLoading = false;
             StateHasChanged();
 
@@ -474,7 +478,7 @@
                 // Manejar éxito
                 await sweetAletNotify("Encuesta eliminada exitosamente.", "success");
                 // Actualizar la lista de encuestas
-                encuestas = await Http.GetFromJsonAsync<List<Encuesta>>("http://localhost:5117/api/Encuesta/GetTodaEncuesta");
+                encuestas = await Http.GetFromJsonAsync<List<Encuesta>>($"{_baseUrl}/api/Encuesta/GetTodaEncuesta");
             }
             else
             {
@@ -593,11 +597,11 @@
             isLoading = true;
             StateHasChanged();
 
-            var response = await Http.PostAsJsonAsync("http://localhost:5117/api/Encuesta/CrearEncuesta", encuesta);
+            var response = await Http.PostAsJsonAsync($"{_baseUrl}/api/Encuesta/CrearEncuesta", encuesta);
             isLoading = false;
             StateHasChanged();
 
-            encuestas = await Http.GetFromJsonAsync<List<Encuesta>>("http://localhost:5117/api/Encuesta/GetTodaEncuesta");
+            encuestas = await Http.GetFromJsonAsync<List<Encuesta>>($"{_baseUrl}/api/Encuesta/GetTodaEncuesta");
 
             if (response.IsSuccessStatusCode)
             {

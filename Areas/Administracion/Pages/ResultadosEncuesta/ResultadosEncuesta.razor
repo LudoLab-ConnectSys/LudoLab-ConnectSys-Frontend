@@ -12,6 +12,7 @@
 @using ClosedXML.Excel;
 @layout AdminLayout
 @using OfficeOpenXml;
+@inject IConfiguration Configuration
 
 <h2 class="titulo-resultado">Resultados de Encuesta de Satisfacción</h2>
 
@@ -102,7 +103,7 @@
 <style>
     .titulo-resultado {
         text-align: center;
-        color: #007bff;
+        color: black;
         margin-bottom: 30px;
         font-size: 28px;
         font-weight: bold;
@@ -232,6 +233,8 @@
     private int selectedPeriodo;
     string newPeriodocertificate;
 
+    private string _baseUrl;
+
     List<Encuesta> encuestas = new List<Encuesta>();//Lista de encuestas
     int idPeriodoF;
     String nombreCurso;
@@ -245,6 +248,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        _baseUrl = Configuration["BaseUrl"];
         await ListaNombresPeriodos();
         await BuscarPeriodos(0, "", 1);
     }

@@ -4,6 +4,7 @@
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavigationManager
 @inject SweetAlertService Swal
+@inject IConfiguration Configuration
 
 <div class="encuesta-container">
     <h3 class="titulo-encuesta">@tituloEncuesta</h3>
@@ -146,8 +147,11 @@
     private bool encuestaCompletada = false;
     private bool BotonEnviarHabilitado = false;
 
+    private string _baseUrl;
+
     protected override async Task OnInitializedAsync()
     {
+        _baseUrl = Configuration["BaseUrl"];
         isLoading = true;
         StateHasChanged(); 
         try
@@ -179,7 +183,7 @@
     {
         try
         {
-            tituloEncuesta = await Http.GetStringAsync($"http://localhost:5117/api/Encuesta/getnombreencuesta/{EncuestaId}");
+            tituloEncuesta = await Http.GetStringAsync($"{_baseUrl}/api/Encuesta/getnombreencuesta/{EncuestaId}");
         }
         catch (Exception)
         {
@@ -196,7 +200,7 @@
         }
         try
         {
-            encuestaCompletada = await Http.GetFromJsonAsync<bool>($"http://localhost:5117/api/Encuesta/verificar-respuestas/{EncuestaId}/{idEstudiante}");
+            encuestaCompletada = await Http.GetFromJsonAsync<bool>($"{_baseUrl}/api/Encuesta/verificar-respuestas/{EncuestaId}/{idEstudiante}");
         }
         catch (Exception ex)
         {
@@ -213,7 +217,7 @@
             StateHasChanged();
 
             // Llamada a la API para obtener las preguntas junto con sus opciones
-            preguntasOpciones = await Http.GetFromJsonAsync<List<PreguntaConOpciones>>($"http://localhost:5117/api/Encuesta/preguntasporID/{EncuestaId}");
+            preguntasOpciones = await Http.GetFromJsonAsync<List<PreguntaConOpciones>>($"{_baseUrl}/api/Encuesta/preguntasporID/{EncuestaId}");
 
             isLoading = false;
             StateHasChanged();
@@ -290,7 +294,7 @@
             // Enviar las respuestas al back-end
             isLoading = true;
             StateHasChanged();
-            await Http.PostAsJsonAsync("http://localhost:5117/api/Encuesta/respuestas", respuestasEnviar);
+            await Http.PostAsJsonAsync($"{_baseUrl}/api/Encuesta/respuestas", respuestasEnviar);
             isLoading = false;
             StateHasChanged();
             await sweetAletNotify("¡Respuestas registradas exitosamente!", "success");

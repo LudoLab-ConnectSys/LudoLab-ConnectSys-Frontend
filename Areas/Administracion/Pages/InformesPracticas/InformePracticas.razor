@@ -8,6 +8,7 @@
 @using OfficeOpenXml;
 @using ClosedXML.Excel;
 @using System.IO
+@inject IConfiguration Configuration
 
 <h2 class="titulo-resultado">Generar informes de prácticas profesionales</h2>
 
@@ -273,7 +274,7 @@ else
 <style>
     .titulo-resultado {
         text-align: center;
-        color: #007bff;
+        color: black;
         margin-bottom: 30px;
         font-size: 28px;
         font-weight: bold;
@@ -384,8 +385,11 @@ else
     private int TotalPages { get; set; }
     private int registerNumber { get; set; } = 3;
 
+    private string _baseUrl;
+
     protected override async Task OnInitializedAsync()
     {
+        _baseUrl = Configuration["BaseUrl"];
         await ListaNombresPeriodos();
         await BuscarPeriodos(0, "", 1);
     }
@@ -422,7 +426,7 @@ else
         try
         {
             var response = await Http.GetFromJsonAsync<InstructoresPaginadosDto>(
-                $"http://localhost:5117/api/Instructor/instructoresPracticas?pageIndex={currentPage}&pageSize={pageSize}&id_periodo={id_periodo}");
+                $"{_baseUrl}/api/Instructor/instructoresPracticas?pageIndex={currentPage}&pageSize={pageSize}&id_periodo={id_periodo}");
 
             if (response != null)
             {
@@ -667,7 +671,7 @@ else
     {
         isLoading = true;
         StateHasChanged();
-        Periodos = await Http.GetFromJsonAsync<List<PeriodoConNombreCurso>>("http://localhost:5117/api/Periodo");
+        Periodos = await Http.GetFromJsonAsync<List<PeriodoConNombreCurso>>($"{_baseUrl}/api/Periodo");
         isLoading = false;
         StateHasChanged();
     }
@@ -683,7 +687,7 @@ else
             isLoading = true;
             StateHasChanged();
 
-            var url = $"http://localhost:5117/api/Periodo/PeriodoByName?id_lista_periodo={id_lista_periodo}&nombre_curso={nombre_curso}&pageNumber={pageNumber}&pageSize={registerNumber}";
+            var url = $"{_baseUrl}/api/Periodo/PeriodoByName?id_lista_periodo={id_lista_periodo}&nombre_curso={nombre_curso}&pageNumber={pageNumber}&pageSize={registerNumber}";
             var response = await Http.GetAsync(url);
 
             isLoading = false;
@@ -734,7 +738,7 @@ else
             StateHasChanged();
 
             // Intenta obtener la lista de periodos
-            listaPeriodos = await Http.GetFromJsonAsync<List<ListaPeriodo>>("http://localhost:5117/api/Periodo/getNamePeriodoList");
+            listaPeriodos = await Http.GetFromJsonAsync<List<ListaPeriodo>>($"{_baseUrl}/api/Periodo/getNamePeriodoList");
         }
         catch (Exception ex)
         {

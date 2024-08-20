@@ -7,6 +7,7 @@
 @using ClosedXML.Excel;
 @using CurrieTechnologies.Razor.SweetAlert2
 @inject SweetAlertService Swal
+@inject IConfiguration Configuration
 
 <h2 class="titulo-resultado">Generar reportes completos de curso</h2>
 <!--<h3 class="titulo-resultado">Lista de Cursos</h3>-->
@@ -75,7 +76,7 @@
 <style>
     .titulo-resultado {
         text-align: center;
-        color: #007bff;
+        color: black;
         margin-bottom: 30px;
         font-size: 28px;
         font-weight: bold;
@@ -167,8 +168,11 @@
     private int TotalPages { get; set; }
     private int registerNumber { get; set; } = 3;
 
+    private string _baseUrl;
+
     protected override async Task OnInitializedAsync()
     {
+        _baseUrl = Configuration["BaseUrl"];
         await ListaNombresPeriodos();
         await BuscarPeriodos(0, "", 1);
     }
@@ -185,7 +189,7 @@
             isLoading = true;
             StateHasChanged();
 
-            var url = $"http://localhost:5117/api/Periodo/PeriodoByName?id_lista_periodo={id_lista_periodo}&nombre_curso={nombre_curso}&pageNumber={pageNumber}&pageSize={registerNumber}";
+            var url = $"{_baseUrl}/api/Periodo/PeriodoByName?id_lista_periodo={id_lista_periodo}&nombre_curso={nombre_curso}&pageNumber={pageNumber}&pageSize={registerNumber}";
             var response = await Http.GetAsync(url);
 
             isLoading = false;
@@ -233,7 +237,7 @@
     {
         isLoading = true;
         StateHasChanged();
-        Periodos = await Http.GetFromJsonAsync<List<PeriodoConNombreCurso>>("http://localhost:5117/api/Periodo");
+        Periodos = await Http.GetFromJsonAsync<List<PeriodoConNombreCurso>>($"{_baseUrl}/api/Periodo");
         isLoading = false;
         StateHasChanged();
     }
@@ -247,7 +251,7 @@
             StateHasChanged();
 
             // Intenta obtener la lista de periodos
-            listaPeriodos = await Http.GetFromJsonAsync<List<ListaPeriodo>>("http://localhost:5117/api/Periodo/getNamePeriodoList");
+            listaPeriodos = await Http.GetFromJsonAsync<List<ListaPeriodo>>($"{_baseUrl}/api/Periodo/getNamePeriodoList");
         }
         catch (Exception ex)
         {
@@ -272,7 +276,7 @@
             StateHasChanged();
 
             // Intentar obtener el reporte desde el API
-            var reporte = await Http.GetFromJsonAsync<ReporteCursoDTO>($"http://localhost:5117/api/File/GetReporte/{idPeriodo}");
+            var reporte = await Http.GetFromJsonAsync<ReporteCursoDTO>($"{_baseUrl}/api/File/GetReporte/{idPeriodo}");
 
             isLoading = false;
             StateHasChanged();

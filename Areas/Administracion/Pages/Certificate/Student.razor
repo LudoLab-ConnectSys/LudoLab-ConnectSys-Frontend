@@ -7,6 +7,7 @@
 @inject SweetAlertService Swal
 @inject IJSRuntime JSRuntime
 @using Microsoft.JSInterop
+@inject IConfiguration Configuration
 
 <h2 class="titulo-resultado">Generar Certificados para Estudiantes</h2>
 @if (isLoading)
@@ -207,7 +208,7 @@
 <style>
     .titulo-resultado {
         text-align: center;
-        color: #007bff;
+        color: black;
         margin-bottom: 30px;
         font-size: 28px;
         font-weight: bold;
@@ -315,35 +316,38 @@
     private int TotalPages { get; set; }
     private int registerNumber { get; set; } = 3;
 
+    private string _baseUrl;
+
     protected override async Task OnInitializedAsync()
     {
+        _baseUrl = Configuration["BaseUrl"];
         await ListaNombresPeriodos();
         await BuscarPeriodos(0, "", 1);
     }
     //FUNCIONES PARA Certificados
     public async Task CrearCertificado(Certificado certificado)
     {
-        var resultado = await Http.PostAsJsonAsync("http://localhost:5117/api/Certificado", certificado);
+        var resultado = await Http.PostAsJsonAsync($"{_baseUrl}/api/Certificado", certificado);
 
     }
     public async Task EliminarCertificado(int id_certificado)
     {
-        var resul = await Http.DeleteAsync($"http://localhost:5117/api/Certificado/{id_certificado}");
+        var resul = await Http.DeleteAsync($"{_baseUrl}/api/Certificado/{id_certificado}");
 
     }
 
     public async Task ActualizarCertificado(Certificado certificado)
     {
-        var result = await Http.PutAsJsonAsync($"http://localhost:5117/api/Certificado/{certificado.id_certificado}", certificado);
+        var result = await Http.PutAsJsonAsync($"{_baseUrl}/api/Certificado/{certificado.id_certificado}", certificado);
     }
     //FUNCIONES PARA CURSOS
     public async Task ListaCursos()
     {
-        Cursos = await Http.GetFromJsonAsync<List<Curso>>("http://localhost:5117/api/Curso");
+        Cursos = await Http.GetFromJsonAsync<List<Curso>>($"{_baseUrl}/api/Curso");
     }
     public async Task BuscarCurso(string nombre_curso)
     {
-        Cursos = await Http.GetFromJsonAsync<List<Curso>>($"http://localhost:5117/api/Curso/CursoByName/{nombre_curso}");
+        Cursos = await Http.GetFromJsonAsync<List<Curso>>($"{_baseUrl}/api/Curso/CursoByName/{nombre_curso}");
 
     }
     //FUNCIONES PARA Periodo
@@ -355,7 +359,7 @@
             StateHasChanged();
 
             // Intenta obtener la lista de periodos
-            listaPeriodos = await Http.GetFromJsonAsync<List<ListaPeriodo>>("http://localhost:5117/api/Periodo/getNamePeriodoList");
+            listaPeriodos = await Http.GetFromJsonAsync<List<ListaPeriodo>>($"{_baseUrl}/api/Periodo/getNamePeriodoList");
         }
         catch (Exception ex)
         {
@@ -376,7 +380,7 @@
     {
         isLoading = true;
         StateHasChanged();
-        Periodos = await Http.GetFromJsonAsync<List<PeriodoConNombreCurso>>("http://localhost:5117/api/Periodo");
+        Periodos = await Http.GetFromJsonAsync<List<PeriodoConNombreCurso>>($"{_baseUrl}/api/Periodo");
         isLoading = false;
         StateHasChanged();
     }
@@ -392,7 +396,7 @@
             isLoading = true;
             StateHasChanged();
 
-            var url = $"http://localhost:5117/api/Periodo/PeriodoByName?id_lista_periodo={id_lista_periodo}&nombre_curso={nombre_curso}&pageNumber={pageNumber}&pageSize={registerNumber}";
+            var url = $"{_baseUrl}/api/Periodo/PeriodoByName?id_lista_periodo={id_lista_periodo}&nombre_curso={nombre_curso}&pageNumber={pageNumber}&pageSize={registerNumber}";
             var response = await Http.GetAsync(url);
 
             isLoading = false;
@@ -480,7 +484,7 @@
                 NuevoNombreArchivo = fileName
             };
 
-            var responsefile = await Http.PutAsJsonAsync("http://localhost:5117/api/File/ActualizarNombreArchivo", updateData);
+            var responsefile = await Http.PutAsJsonAsync($"{_baseUrl}/api/File/ActualizarNombreArchivo", updateData);
 
             if (responsefile.IsSuccessStatusCode)
             {
@@ -527,7 +531,7 @@
             using var content = new MultipartFormDataContent();
             content.Add(fileContent, "files", file.Name);
 
-            var response = await Http.PostAsync("http://localhost:5117/api/File", content);
+            var response = await Http.PostAsync($"{_baseUrl}/api/File", content);
             var newUploadResults = await response.Content.ReadFromJsonAsync<List<UploadResult>>();
 
             if (newUploadResults is not null)
@@ -554,7 +558,7 @@
 
     }
 
-    var response = await Http.PostAsync("http://localhost:5117/api/File", content);
+    var response = await Http.PostAsync($"{_baseUrl}/api/File", content);
     var newUploadResults = await response.Content.ReadFromJsonAsync<List<UploadResult>>();
 
     if (newUploadResults is not null)
@@ -568,7 +572,7 @@
         isLoading = true;
         StateHasChanged();
         Console.WriteLine($"fullnameUser: {fullname}");
-        var response = await Http.GetAsync($"http://localhost:5117/api/File/{nombre_certificado}");
+        var response = await Http.GetAsync($"{_baseUrl}/api/File/{nombre_certificado}");
 
         if (!response.IsSuccessStatusCode)
         {
@@ -604,7 +608,7 @@
         isLoading = true;
         StateHasChanged();
         Console.WriteLine($"fullnameUser: {fullname}");
-        var response = await Http.GetAsync($"http://localhost:5117/api/File/{nombre_certificado}");
+        var response = await Http.GetAsync($"{_baseUrl}/api/File/{nombre_certificado}");
 
         if (!response.IsSuccessStatusCode)
         {
@@ -675,7 +679,7 @@
         nombbreCurso = curso;
         nombbrePeiodo = periodo;
         // Construir la URL con los parámetros de consulta
-        var url = $"http://localhost:5117/api/Grupo/GetTipoEstudiantesPorPeriodo/{id_periodo}?tiposEstudiante={tiposEstudiante}";
+        var url = $"{_baseUrl}/api/Grupo/GetTipoEstudiantesPorPeriodo/{id_periodo}?tiposEstudiante={tiposEstudiante}";
 
         var response = await Http.GetAsync(url);
 
@@ -727,7 +731,7 @@
         }
         else
         {
-            var url = $"http://localhost:5117/uploads/{fileName}";
+            var url = $"{_baseUrl}/uploads/{fileName}";
             JSRuntime.InvokeVoidAsync("open", url, "_blank");
         }
     }

@@ -39,6 +39,7 @@ builder.Services.AddScoped<IRegistroService, RegistroService>();
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
 builder.Services.AddSweetAlert2();
+builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 
 // Configuraci�n de la autenticaci�n MSAL
 builder.Services.AddMsalAuthentication(options =>

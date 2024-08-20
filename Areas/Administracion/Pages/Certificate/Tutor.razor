@@ -8,6 +8,7 @@
 @inject SweetAlertService Swal
 @inject IJSRuntime JSRuntime
 @using Microsoft.JSInterop
+@inject IConfiguration Configuration
 
 <h2 class="titulo-resultado">Generar Certificados para Instructores</h2>
 <!--<h3 class="titulo-resultado">Lista de Cursos</h3>-->
@@ -132,7 +133,7 @@
 <style>
     .titulo-resultado {
         text-align: center;
-        color: #007bff;
+        color: black;
         margin-bottom: 30px;
         font-size: 28px;
         font-weight: bold;
@@ -231,9 +232,12 @@
     private int TotalPages { get; set; }
     private int registerNumber { get; set; } = 3;
 
+    private string _baseUrl;
+
 
     protected override async Task OnInitializedAsync()
     {
+        _baseUrl = Configuration["BaseUrl"];
         await ListaNombresPeriodos();
         await BuscarPeriodos(0, "", 1);
     }
@@ -249,7 +253,7 @@
             isLoading = true;
             StateHasChanged();
 
-            var url = $"http://localhost:5117/api/Periodo/PeriodoByName?id_lista_periodo={id_lista_periodo}&nombre_curso={nombre_curso}&pageNumber={pageNumber}&pageSize={registerNumber}";
+            var url = $"{_baseUrl}/api/Periodo/PeriodoByName?id_lista_periodo={id_lista_periodo}&nombre_curso={nombre_curso}&pageNumber={pageNumber}&pageSize={registerNumber}";
             var response = await Http.GetAsync(url);
 
             isLoading = false;
@@ -298,7 +302,7 @@
     {
         isLoading = true;
         StateHasChanged();
-        Periodos = await Http.GetFromJsonAsync<List<PeriodoConNombreCurso>>("http://localhost:5117/api/Periodo");
+        Periodos = await Http.GetFromJsonAsync<List<PeriodoConNombreCurso>>($"{_baseUrl}/api/Periodo");
         isLoading = false;
         StateHasChanged();
     }
@@ -311,7 +315,7 @@
             StateHasChanged();
 
             // Intenta obtener la lista de periodos
-            listaPeriodos = await Http.GetFromJsonAsync<List<ListaPeriodo>>("http://localhost:5117/api/Periodo/getNamePeriodoList");
+            listaPeriodos = await Http.GetFromJsonAsync<List<ListaPeriodo>>($"{_baseUrl}/api/Periodo/getNamePeriodoList");
             isLoading = false;
             StateHasChanged();
         }
@@ -366,7 +370,7 @@
                 NuevoNombreArchivo = fileName
             };
 
-            var responsefile = await Http.PutAsJsonAsync("http://localhost:5117/api/File/ActualizarNombreArchivo", updateData);
+            var responsefile = await Http.PutAsJsonAsync($"{ _baseUrl}/ api / File / ActualizarNombreArchivo", updateData);
 
             if (responsefile.IsSuccessStatusCode)
             {
@@ -412,7 +416,7 @@
             using var content = new MultipartFormDataContent();
             content.Add(fileContent, "files", file.Name);
 
-            var response = await Http.PostAsync("http://localhost:5117/api/File", content);
+            var response = await Http.PostAsync($"{_baseUrl}/api/File", content);
             var newUploadResults = await response.Content.ReadFromJsonAsync<List<UploadResult>>();
 
             if (newUploadResults is not null)
@@ -439,7 +443,7 @@
 
         }
 
-        var response = await Http.PostAsync("http://localhost:5117/api/File", content);
+        var response = await Http.PostAsync($"{_baseUrl}/api/File", content);
         var newUploadResults = await response.Content.ReadFromJsonAsync<List<UploadResult>>();
 
         if (newUploadResults is not null)
@@ -458,7 +462,7 @@
         fecha_inicio = fecha_inicio_periodo;
         fecha_fin = fecha_fin_periodo;
         // Construir la URL con los parámetros de consulta
-        var url = $"http://localhost:5117/api/Grupo/GetInstructoresPorPeriodo/{id_periodo}";
+        var url = $"{_baseUrl}/api/Grupo/GetInstructoresPorPeriodo/{id_periodo}";
 
         var response = await Http.GetAsync(url);
 
@@ -495,7 +499,7 @@
         }
         else
         {
-            var url = $"http://localhost:5117/uploads/{fileName}";
+            var url = $"{_baseUrl}/uploads/{fileName}";
             await JSRuntime.InvokeVoidAsync("open", url, "_blank");
         }
     }
@@ -509,7 +513,7 @@
         //Console.WriteLine($"nombre curso: {nombbreCurso}");
         //Console.WriteLine($"Nombre Certificado: {nombre_certificado}");
         //Console.WriteLine($"horas de estudiante: {horasAsignadas}");
-        var response = await Http.GetAsync($"http://localhost:5117/api/File/{nombre_certificado}");
+        var response = await Http.GetAsync($"{_baseUrl}/api/File/{nombre_certificado}");
 
         if (!response.IsSuccessStatusCode)
         {

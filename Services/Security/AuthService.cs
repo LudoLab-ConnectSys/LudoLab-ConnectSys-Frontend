@@ -68,13 +68,13 @@ namespace LudoLab_ConnectSys_Frontend.Services.Security
             await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "NombreUsuario", respuestaLogin?.NombreUsuario);
 
             // Verificar si el usuario ha iniciado sesión alguna vez
-            var haIniciadoAntes = await HaIniciadoSesionAntesAsync(respuestaLogin!.IdUsuario);
+            /*var haIniciadoAntes = await HaIniciadoSesionAntesAsync(respuestaLogin!.IdUsuario);
 
             if (!haIniciadoAntes)
             {
                 _navigationManager.NavigateTo("/password");
                 return;
-            }
+            }*/
 
             // Redirigir al usuario a la página correspondiente según el rol
             switch (solicitudLogin.Rol)
