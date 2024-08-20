@@ -32,7 +32,7 @@ builder.Services.AddMsalAuthentication(options =>
     options.ProviderOptions.Cache.CacheLocation = "localStorage"; // Para almacenamiento local
     options.ProviderOptions.Cache.CacheLocation = "sessionStorage"; // Para almacenamiento en sesión
     options.ProviderOptions.Cache.StoreAuthStateInCookie = true;
-    options.ProviderOptions.LoginMode = "redirect";
+    options.ProviderOptions.LoginMode = "popup";
 
 
 });

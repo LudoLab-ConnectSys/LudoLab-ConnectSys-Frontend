@@ -17,32 +17,52 @@
                 <div class="card-body">
                     <!-- Datos del Usuario -->
                     <div class="form-group mb-3">
+                        <input type="hidden" id="formIsValid" value="true" />
                         <label for="cedula">Cédula:</label>
-                        <InputText id="cedula" class="form-control" @bind-Value="nuevoUsuario.cedula_usuario" />
+                        <InputText id="cedula" class="form-control" @bind-Value="nuevoUsuario.cedula_usuario"
+                                   @oninput="ValidarCedula" />
+                        <ValidationMessage For="@(() => nuevoUsuario.cedula_usuario)" />
+                        <span class="text-danger" id="cedulaError"></span>
                     </div>
                     <div class="form-group mb-3">
                         <label for="nombre">Nombre:</label>
-                        <InputText id="nombre" class="form-control" @bind-Value="nuevoUsuario.nombre_usuario" />
+                        <InputText id="nombre" class="form-control" @bind-Value="nuevoUsuario.nombre_usuario"
+                                   @oninput="ValidarNombre" />
+                        <ValidationMessage For="@(() => nuevoUsuario.nombre_usuario)" />
+                        <span class="text-danger" id="nombreError"></span>
                     </div>
                     <div class="form-group mb-3">
                         <label for="apellidos">Apellidos:</label>
-                        <InputText id="apellidos" class="form-control" @bind-Value="nuevoUsuario.apellidos_usuario" />
+                        <InputText id="apellidos" class="form-control" @bind-Value="nuevoUsuario.apellidos_usuario"
+                                   @oninput="ValidarApellidos" />
+                        <ValidationMessage For="@(() => nuevoUsuario.apellidos_usuario)" />
+                        <span class="text-danger" id="apellidosError"></span>
                     </div>
                     <div class="form-group mb-3">
                         <label for="edad">Edad:</label>
                         <InputNumber id="edad" class="form-control" @bind-Value="nuevoUsuario.edad_usuario" />
+                        <span class="text-danger" id="edadError"></span>
                     </div>
                     <div class="form-group mb-3">
                         <label for="correo">Correo Electrónico:</label>
-                        <InputText id="correo" class="form-control" @bind-Value="nuevoUsuario.correo_usuario" />
+                        <InputText id="correo" class="form-control" @bind-Value="nuevoUsuario.correo_usuario"
+                                   @oninput="ValidarCorreo" />
+                        <ValidationMessage For="@(() => nuevoUsuario.correo_usuario)" />
+                        <span class="text-danger" id="correoError"></span>
                     </div>
                     <div class="form-group mb-3">
                         <label for="celular">Número de Celular:</label>
-                        <InputText id="celular" class="form-control" @bind-Value="nuevoUsuario.celular_usuario" />
+                        <InputText id="celular" class="form-control" @bind-Value="nuevoUsuario.celular_usuario"
+                                   @oninput="ValidarCelular" />
+                        <ValidationMessage For="@(() => nuevoUsuario.celular_usuario)" />
+                        <span class="text-danger" id="celularError"></span>
                     </div>
                     <div class="form-group mb-3">
                         <label for="telefono">Número de Teléfono:</label>
-                        <InputText id="telefono" class="form-control" @bind-Value="nuevoUsuario.telefono_usuario" />
+                        <InputText id="telefono" class="form-control" @bind-Value="nuevoUsuario.telefono_usuario"
+                                   @oninput="ValidarTelefono" />
+                        <ValidationMessage For="@(() => nuevoUsuario.telefono_usuario)" />
+                        <span class="text-danger" id="telefonoError"></span>
                     </div>
 
                     <!-- Datos del Estudiante -->
@@ -100,6 +120,7 @@
     private int idCursoSeleccionado;
     private int idPeriodoSeleccionado;
     private string errorMessage;
+    private bool FormIsValid { get; set; } = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -152,30 +173,46 @@
 
     private async Task HandleValidSubmit()
     {
-        try
+        // Llama a la función de JavaScript que valida todos los campos
+        await JSRuntime.InvokeVoidAsync("validarTodosLosCampos");
+
+        // Recupera el valor de formIsValid para determinar si el formulario es válido
+        bool formIsValid = await JSRuntime.InvokeAsync<bool>("eval", "window.formIsValid");
+
+        if (!formIsValid)
         {
-            // Guardar el usuario y obtener su ID, especificando que es un Estudiante
-            var usuarioId = await GuardarUsuario();
-
-            // Guardar los datos del estudiante
-            nuevoEstudiante.id_usuario = usuarioId;
-            var estudianteId = await GuardarEstudiante(nuevoEstudiante);
-
-            // Registrar la matrícula del estudiante
-            await RegistrarMatricula(estudianteId, idCursoSeleccionado, idPeriodoSeleccionado);
-
-            await sweetAletNotify("Estudiante creado y matriculado exitosamente", "success");
-
-            NavigationManager.NavigateTo("/estudiantes");
+            await HandleErrorAsync("Hay errores en el formulario. Por favor, corrígelos antes de continuar.");
+            return;
         }
-        catch (HttpRequestException)
+        else
         {
-            await HandleErrorAsync("Hubo un problema al comunicarse con el servidor. Por favor, inténtalo de nuevo más tarde.");
+            try
+            {
+                // Guardar el usuario y obtener su ID, especificando que es un Estudiante
+                var usuarioId = await GuardarUsuario();
+
+                // Guardar los datos del estudiante
+                nuevoEstudiante.id_usuario = usuarioId;
+                var estudianteId = await GuardarEstudiante(nuevoEstudiante);
+
+                // Registrar la matrícula del estudiante
+                await RegistrarMatricula(estudianteId, idCursoSeleccionado, idPeriodoSeleccionado);
+
+                await sweetAletNotify("Estudiante creado y matriculado exitosamente", "success");
+
+                NavigationManager.NavigateTo("/estudiantes");
+            }
+            catch (HttpRequestException)
+            {
+                await HandleErrorAsync("Hubo un problema al comunicarse con el servidor. Por favor, inténtalo de nuevo más tarde.");
+            }
+            catch (Exception)
+            {
+                await HandleErrorAsync("Ocurrió un error inesperado. Por favor, inténtalo de nuevo más tarde.");
+            }
         }
-        catch (Exception)
-        {
-            await HandleErrorAsync("Ocurrió un error inesperado. Por favor, inténtalo de nuevo más tarde.");
-        }
+
+        
     }
 
     private async Task<int> GuardarUsuario()
@@ -229,4 +266,44 @@
         errorMessage = friendlyMessage;
         await sweetAletNotify(errorMessage, "error");
     }
+
+    private void ValidarCedula(ChangeEventArgs e)
+    {
+        string cedula = e.Value?.ToString();
+        JSRuntime.InvokeVoidAsync("validarCedula", cedula);
+    }
+
+    private void ValidarNombre(ChangeEventArgs e)
+    {
+        string nombre = e.Value?.ToString();  // Captura el valor directamente del evento
+        JSRuntime.InvokeVoidAsync("validarNombre", nombre);
+    }
+
+    private void ValidarApellidos(ChangeEventArgs e)
+    {
+        string apellidos = e.Value?.ToString();
+        JSRuntime.InvokeVoidAsync("validarApellidos", apellidos);
+    }
+
+
+
+    private void ValidarCorreo(ChangeEventArgs e)
+    {
+        string correo = e.Value?.ToString();
+        JSRuntime.InvokeVoidAsync("validarCorreo", correo);
+    }
+
+    private void ValidarCelular(ChangeEventArgs e)
+    {
+        string celular = e.Value?.ToString();
+        JSRuntime.InvokeVoidAsync("validarCelular", celular);
+    }
+
+    private void ValidarTelefono(ChangeEventArgs e)
+    {
+        string telefono = e.Value?.ToString();
+        JSRuntime.InvokeVoidAsync("validarTelefono", telefono);
+    }
+
+
 }

@@ -3,33 +3,47 @@
 @inject HttpClient Http
 @inject NavigationManager Navigation
 
-<h3>Detalles del Grupo</h3>
+<div style="max-width: 800px; margin: 20px auto; padding: 20px; background-color: #f9f9f9; border-radius: 10px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
+    <h2 style="text-align: center; color: #4a4a4a;">Detalles del Grupo</h2>
 
-@if (grupoDetalles == null)
-{
-    <p>Cargando detalles del grupo...</p>
-}
-else
-{
-    <h4>Nombre del Grupo: @grupoDetalles.nombre_grupo</h4>
-    <h5>Instructor: @grupoDetalles.nombre_instructor</h5>
+    @if (grupoDetalles == null)
+    {
+        <div style="text-align: center; padding: 20px;">
+            <p style="color: #888;">Cargando detalles del grupo...</p>
+        </div>
+    }
+    else
+    {
+        <div style="margin-bottom: 20px;">
+            <h3 style="color: #333;">Nombre del Grupo: <span style="color: #007acc;">@grupoDetalles.nombre_grupo</span></h3>
+            <p style="color: #555;">Instructor: <span style="font-weight: bold;">@grupoDetalles.nombre_instructor</span></p>
+        </div>
 
-    <h5>Horarios</h5>
-    <ul>
-        @foreach (var horario in grupoDetalles.horarios)
-        {
-            <li>@horario.dia_semana: @horario.hora_inicio - @horario.hora_fin</li>
-        }
-    </ul>
+        <div style="margin-bottom: 20px;">
+            <h4 style="color: #4a4a4a; border-bottom: 2px solid #007acc; padding-bottom: 5px;">Horarios</h4>
+            <ul style="list-style-type: none; padding: 0;">
+                @foreach (var horario in grupoDetalles.horarios)
+                {
+                    <li style="padding: 8px 0; border-bottom: 1px solid #ddd;">
+                        <span style="color: #333; font-weight: bold;">@horario.dia_semana:</span> @horario.hora_inicio - @horario.hora_fin
+                    </li>
+                }
+            </ul>
+        </div>
 
-    <h5>Estudiantes</h5>
-    <ul>
-        @foreach (var estudiante in grupoDetalles.estudiantes)
-        {
-            <li>@estudiante</li>
-        }
-    </ul>
-}
+        <div>
+            <h4 style="color: #4a4a4a; border-bottom: 2px solid #007acc; padding-bottom: 5px;">Estudiantes</h4>
+            <ul style="list-style-type: none; padding: 0;">
+                @foreach (var estudiante in grupoDetalles.estudiantes)
+                {
+                    <li style="padding: 8px 0; border-bottom: 1px solid #ddd;">
+                        <span style="color: #555;">@estudiante</span>
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+</div>
 
 @code {
     [Parameter] public int grupoId { get; set; }
