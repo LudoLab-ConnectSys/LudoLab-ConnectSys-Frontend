@@ -1,0 +1,391 @@
+﻿@page "/register"
+@using LudoLab_ConnectSys_Frontend.Services.Registro
+@inject IRegistroService RegistroService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+
+<style>
+    html, body {
+        height: 100%;
+        margin: 0;
+    }
+
+    body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: url('img/fondo.jpg') no-repeat center center fixed;
+        background-size: cover;
+        filter: brightness(0.6) blur(5px);
+        z-index: -1;
+    }
+</style>
+
+<div class="container">
+<div class="card shadow-box">
+<div class="card-body">
+<h3 class="text-center mb-4">Registro de Usuario</h3>
+
+<p class="mb-4">
+    Toma en cuenta que su registro nos permitirá facilitar la toma de datos, mas no tendrá su cuenta activa de forma inmediata.
+    El administrador del sistema verificará los datos y después de ello se le enviarán las credenciales para que pueda ingresar al sistema.
+    Ahora para su registro es importante que seleccione el tipo de usuario que va a ser dentro del sistema.
+</p>
+
+<EditForm Model="@registerModel" OnValidSubmit="HandleSubmit">
+<DataAnnotationsValidator/>
+<ValidationSummary/>
+
+<!-- Tipo de Usuario y ¿Es estudiante de la EPN? -->
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <label for="tipoUsuario" class="form-label">Tipo de Usuario</label>
+        <InputSelect id="tipoUsuario" class="form-select" @bind-Value="registerModel.RolId" TValue="int">
+            <option value="2">Estudiante</option>
+            <option value="3">Instructor</option>
+        </InputSelect>
+    </div>
+
+    <div class="col-md-6 mb-3">
+        <label for="esEstudianteEpn" class="form-label">¿Es estudiante de la EPN?</label>
+        <InputSelect id="esEstudianteEpn" class="form-select" @bind-Value="esEstudianteEpn" TValue="bool">
+            <option value="false">No</option>
+            <option value="true">Sí</option>
+        </InputSelect>
+    </div>
+</div>
+
+<!-- Datos Personales -->
+<div class="section">
+    <h4 class="section-title">Datos Personales</h4>
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="identificacion" class="form-label">Identificación</label>
+            <InputText id="identificacion" class="form-control" @bind-Value="registerModel.CedulaUsuario"/>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label for="nombres" class="form-label">Nombres</label>
+            <InputText id="nombres" class="form-control" @bind-Value="registerModel.NombreUsuario"/>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label for="apellidos" class="form-label">Apellidos</label>
+            <InputText id="apellidos" class="form-control" @bind-Value="registerModel.ApellidosUsuario"/>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label for="etnica" class="form-label">Autodefinición Étnica</label>
+            <InputSelect id="etnica" class="form-select" @bind-Value="registerModel.DefinicionEtnica" TValue="int">
+                <option value="">Seleccione una etnia</option>
+                @foreach (var etnia in Etnias)
+                {
+                    <option value="@etnia.Id">@etnia.NombreEtnia</option>
+                }
+            </InputSelect>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label for="genero" class="form-label">Género</label>
+            <InputSelect id="genero" class="form-select" @bind-Value="registerModel.Genero" TValue="string">
+                <option value="">Seleccione un género</option> <!-- Añadir una opción vacía como predeterminado -->
+                <option value="Masculino">Masculino</option>
+                <option value="Femenino">Femenino</option>
+                <option value="No especificado">No especificado</option>
+            </InputSelect>
+        </div>
+
+
+        <div class="col-md-6 mb-3">
+            <label for="fechaNacimiento" class="form-label">Fecha de nacimiento</label>
+            <InputDate id="fechaNacimiento" class="form-control" @bind-Value="registerModel.FechaNacimiento"/>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label for="nacionalidad" class="form-label">Nacionalidad</label>
+            <InputSelect id="nacionalidad" class="form-select" @bind-Value="selectedPaisId" TValue="int">
+                <option value="">Seleccione una nacionalidad</option>
+                @foreach (var pais in Paises)
+                {
+                    <option value="@pais.PaisId">@pais.NombrePais</option>
+                }
+            </InputSelect>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label for="correoElectronico" class="form-label">Correo Electrónico</label>
+            <InputText id="correoElectronico" type="email" class="form-control" @bind-Value="registerModel.CorreoUsuario"/>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label for="confirmarCorreo" class="form-label">Confirmar Correo</label>
+            <InputText id="confirmarCorreo" type="email" class="form-control" @bind-Value="confirmarCorreo"/>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label for="celular" class="form-label">Celular</label>
+            <InputText id="celular" class="form-control" @bind-Value="registerModel.CelularUsuario"/>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label for="telefonoConvencional" class="form-label">Teléfono Convencional</label>
+            <InputText id="telefonoConvencional" class="form-control" @bind-Value="registerModel.TelefonoUsuario"/>
+        </div>
+    </div>
+</div>
+
+<!-- Datos de Residencia -->
+<div class="section">
+    <h4 class="section-title">Datos de Residencia</h4>
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="pais" class="form-label">País</label>
+            <InputSelect id="pais" class="form-select" @bind-Value="selectedPaisId" TValue="int">
+                <option value="">Seleccione un país</option>
+                @foreach (var pais in Paises)
+                {
+                    <option value="@pais.PaisId">@pais.NombrePais</option>
+                }
+            </InputSelect>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label for="provincia" class="form-label">Provincia</label>
+            <InputSelect id="provincia" class="form-select" @bind-Value="selectedProvinciaId" TValue="int">
+                <option value="">Seleccione una provincia</option>
+                @foreach (var provincia in Provincias)
+                {
+                    <option value="@provincia.ProvinciaId">@provincia.NombreProvincia</option>
+                }
+            </InputSelect>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label for="canton" class="form-label">Cantón</label>
+            <InputSelect id="canton" class="form-select" @bind-Value="selectedCantonId" TValue="int">
+                <option value="">Seleccione un cantón</option>
+                @foreach (var canton in Cantones)
+                {
+                    <option value="@canton.CantonId">@canton.NombreCanton</option>
+                }
+            </InputSelect>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label for="parroquia" class="form-label">Parroquia</label>
+            <InputSelect id="parroquia" class="form-select" @bind-Value="registerModel.ParroquiaId" TValue="int">
+                <option value="">Seleccione una parroquia</option>
+                @foreach (var parroquia in Parroquias)
+                {
+                    <option value="@parroquia.ParroquiaId">@parroquia.NombreParroquia</option>
+                }
+            </InputSelect>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label for="callePrincipal" class="form-label">Calle Principal</label>
+            <InputText id="callePrincipal" class="form-control" @bind-Value="registerModel.CallePrincipal"/>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label for="numeracion" class="form-label">Numeración</label>
+            <InputText id="numeracion" class="form-control" @bind-Value="registerModel.Numeracion"/>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label for="calleSecundaria" class="form-label">Calle Secundaria</label>
+            <InputText id="calleSecundaria" class="form-control" @bind-Value="registerModel.CalleSecundaria"/>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label for="sector" class="form-label">Sector</label>
+            <InputText id="sector" class="form-control" @bind-Value="registerModel.Sector"/>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label for="referencia" class="form-label">Referencia</label>
+            <InputText id="referencia" class="form-control" @bind-Value="registerModel.Referencia"/>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label for="codigoPostal" class="form-label">Código Postal</label>
+            <InputText id="codigoPostal" class="form-control" @bind-Value="registerModel.CodigoPostal"/>
+        </div>
+    </div>
+</div>
+
+<!-- Discapacidad -->
+<div class="section">
+    <h4 class="section-title">Discapacidad</h4>
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="tieneDiscapacidad" class="form-label">¿Tiene alguna discapacidad?</label>
+            <InputSelect id="tieneDiscapacidad" class="form-select" @bind-Value="registerModel.TieneDiscapacidad" TValue="bool">
+                <option value="false">No</option>
+                <option value="true">Sí</option>
+            </InputSelect>
+        </div>
+
+        <div class="col-md-6 mb-3" hidden="@(registerModel.TieneDiscapacidad == false)">
+            <label for="carnetConadis" class="form-label">Carnet Conadis</label>
+            <InputText id="carnetConadis" class="form-control" @bind-Value="registerModel.NumeroCarnetConadis"/>
+        </div>
+    </div>
+</div>
+
+<!-- Datos de la Escuela Politécnica Nacional -->
+@if (esEstudianteEpn)
+{
+    <div class="section">
+        <h4 class="section-title">Datos de la Escuela Politécnica Nacional</h4>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="codigoUnico" class="form-label">Código único</label>
+                <InputText id="codigoUnico" class="form-control" @bind-Value="registerModel.NumeroUnico"/>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label for="correoInstitucional" class="form-label">Correo institucional</label>
+                <InputText id="correoInstitucional" type="email" class="form-control" @bind-Value="registerModel.CorreoInstitucional"/>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label for="facultad" class="form-label">Facultad</label>
+                <InputText id="facultad" class="form-control" @bind-Value="registerModel.Facultad"/>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label for="carrera" class="form-label">Carrera</label>
+                <InputText id="carrera" class="form-control" @bind-Value="registerModel.Carrera"/>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label for="semestreActual" class="form-label">Semestre Actual</label>
+                <InputNumber id="semestreActual" class="form-control" @bind-Value="registerModel.Semestre"/>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Botón de envío -->
+<div class="text-center mt-4">
+    <button type="submit" class="btn btn-primary">
+        Enviar
+    </button>
+</div>
+</EditForm>
+</div>
+</div>
+</div>
+
+@code {
+    private RegistroUsuarioRequest registerModel = new RegistroUsuarioRequest();
+    private List<Pais> Paises = new();
+    private List<Provincia> Provincias = new();
+    private List<Canton> Cantones = new();
+    private List<Parroquia> Parroquias = new();
+    private List<Etnia> Etnias = new();
+
+    private bool esEstudianteEpn = false; // Inicialmente el tipo de usuario es Estudiante
+    private int selectedPaisId;
+    private int selectedProvinciaId;
+    private int selectedCantonId;
+    private string confirmarCorreo;
+
+    private string successMessage;
+    private string errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Paises = await RegistroService.ObtenerPaisesAsync();
+        Etnias = await RegistroService.ObtenerEtniasAsync();
+        Provincias = await RegistroService.ObtenerProvinciasAsync();
+        Cantones = await RegistroService.ObtenerCantonesAsync();
+        Parroquias = await RegistroService.ObtenerParroquiasAsync();
+
+        registerModel.RolId = 2; // Estudiante
+        esEstudianteEpn = false; // No por defecto
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (registerModel.CorreoUsuario != confirmarCorreo)
+        {
+            errorMessage = "Los correos electrónicos no coinciden.";
+            await ShowErrorAlert(errorMessage);
+            return;
+        }
+
+        if (!registerModel.TieneDiscapacidad)
+        {
+            registerModel.NumeroCarnetConadis = null;
+        }
+
+        if (!esEstudianteEpn)
+        {
+            registerModel.NumeroUnico = null;
+            registerModel.CorreoInstitucional = null;
+            registerModel.Facultad = null;
+            registerModel.Carrera = null;
+            registerModel.Semestre = 0;
+        }
+
+        try
+        {
+            var response = await RegistroService.RegistrarUsuarioAsync(registerModel);
+
+            if (response)
+            {
+                successMessage = "Usuario creado con éxito. Estará en la lista de espera para aprobación. Redirigiendo a la pantalla de inicio de sesión...";
+                errorMessage = string.Empty;
+
+                await ShowSuccessAlert(successMessage);
+
+                Navigation.NavigateTo("/login");
+            }
+            else
+            {
+                errorMessage = "Ocurrió un error al intentar crear el usuario. Por favor, inténtelo de nuevo.";
+                await ShowErrorAlert(errorMessage);
+            }
+        }
+        catch (HttpRequestException httpEx)
+        {
+            // Manejar errores HTTP, como problemas de red
+            errorMessage = $"Error en la solicitud HTTP: {httpEx.Message}";
+            await ShowErrorAlert(errorMessage);
+        }
+        catch (Exception ex)
+        {
+            // Mostrar errores detallados si existen
+            errorMessage = $"Ocurrió un error: {ex.Message}\nDetalles: {ex.StackTrace}";
+            await ShowErrorAlert(errorMessage);
+        }
+    }
+
+    private async Task ShowSuccessAlert(string message)
+    {
+        await JSRuntime.InvokeVoidAsync("Swal.fire", new
+        {
+            title = "Registro Exitoso",
+            text = message,
+            icon = "success",
+            confirmButtonText = "OK"
+        });
+    }
+
+    private async Task ShowErrorAlert(string message)
+    {
+        await JSRuntime.InvokeVoidAsync("Swal.fire", new
+        {
+            title = "Error en el Registro",
+            text = message,
+            icon = "error",
+            confirmButtonText = "OK"
+        });
+    }
+
+}

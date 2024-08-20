@@ -1,0 +1,97 @@
+﻿/* Contenedor central */
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    padding: 20px;
+}
+
+/* Tarjeta principal */
+.card {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    background-color: rgba(255, 255, 255, 0.85);
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Contenido del formulario */
+.card .card-body {
+    padding: 30px;
+}
+
+/* Estilos para los campos del formulario */
+.form-control, .form-select {
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    padding: 10px;
+    transition: border-color 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #1CA3DE;
+    box-shadow: 0 0 5px rgba(28, 163, 222, 0.5);
+}
+
+/* Secciones del formulario */
+.section {
+    padding: 15px 0;
+    border-top: 1px solid #e0e0e0;
+    margin-top: 20px;
+}
+
+.section:first-of-type {
+    border-top: none;
+    margin-top: 0;
+}
+
+.section-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 15px;
+}
+
+/* Estilos para el botón de envío */
+.btn-primary {
+    background-color: #F28D1E;
+    border-color: #F28D1E;
+    padding: 12px 30px;
+    font-size: 1rem;
+    border-radius: 50px;
+    width: 100%;
+    transition: background-color 0.3s ease;
+}
+
+.btn-primary:hover {
+    background-color: #e0760b;
+    border-color: #e0760b;
+}
+
+/* Centrar y separar el contenido */
+.text-center {
+    text-align: center;
+    margin-top: 20px;
+}
+
+/* Estilos responsivos para pantallas pequeñas */
+@media (max-width: 768px) {
+    .card {
+        flex-direction: column;
+    }
+
+    .container {
+        padding: 10px;
+    }
+
+    .card .card-body {
+        padding: 20px;
+    }
+
+    .btn-primary {
+        font-size: 1.2rem;
+        padding: 12px 0;
+    }
+}
