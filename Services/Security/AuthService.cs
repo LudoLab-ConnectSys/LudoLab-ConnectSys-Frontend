@@ -1,10 +1,8 @@
-﻿using System.Net.Http;
-using System.Net.Http.Json;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
+﻿using System.Net.Http.Json;
 using Microsoft.JSInterop;
 using Microsoft.AspNetCore.Components;
 using LudoLab_ConnectSys_Frontend.Areas.Principal.Models;
+using LudoLab_ConnectSys_Frontend.Services.Contrasena; // Importar el namespace del servicio de contraseña
 
 namespace LudoLab_ConnectSys_Frontend.Services.Security
 {
@@ -14,14 +12,16 @@ namespace LudoLab_ConnectSys_Frontend.Services.Security
         private readonly IConfiguration _configuration;
         private readonly IJSRuntime _jsRuntime;
         private readonly NavigationManager _navigationManager;
+        private readonly IContrasenaService _contrasenaService;
 
         public AuthService(HttpClient httpClient, IConfiguration configuration, IJSRuntime jsRuntime,
-            NavigationManager navigationManager)
+            NavigationManager navigationManager, IContrasenaService contrasenaService)
         {
             _httpClient = httpClient;
             _configuration = configuration;
             _jsRuntime = jsRuntime;
             _navigationManager = navigationManager;
+            _contrasenaService = contrasenaService; // Inyectar el servicio de contraseña
         }
 
         public async Task<LoginResponse> IniciarSesionAsync(LoginRequest solicitudLogin)
@@ -40,22 +40,6 @@ namespace LudoLab_ConnectSys_Frontend.Services.Security
             }
         }
 
-        public async Task<bool> HaIniciadoSesionAntesAsync(int idUsuario)
-        {
-            var passwordServiceBaseUrl = _configuration["PasswordServiceBaseUrl"];
-            var respuestaUltimoInicio =
-                await _httpClient.GetAsync($"{passwordServiceBaseUrl}/password/lastlogin/{idUsuario}");
-
-            if (respuestaUltimoInicio.IsSuccessStatusCode)
-            {
-                return await respuestaUltimoInicio.Content.ReadFromJsonAsync<bool>();
-            }
-            else
-            {
-                return false;
-            }
-        }
-
         public async Task ManejarInicioSesionAsync(LoginRequest solicitudLogin)
         {
             var respuestaLogin = await IniciarSesionAsync(solicitudLogin);
@@ -67,29 +51,37 @@ namespace LudoLab_ConnectSys_Frontend.Services.Security
             await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "IdEstudiante", respuestaLogin?.IdEstudiante);
             await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "NombreUsuario", respuestaLogin?.NombreUsuario);
 
-            // Verificar si el usuario ha iniciado sesión alguna vez
-            /*var haIniciadoAntes = await HaIniciadoSesionAntesAsync(respuestaLogin!.IdUsuario);
-
-            if (!haIniciadoAntes)
+            try
             {
-                _navigationManager.NavigateTo("/password");
-                return;
-            }*/
+                // Verificar si el usuario ha iniciado sesión alguna vez utilizando el servicio de contraseña
+                var haIniciadoAntes = await _contrasenaService.HaIniciadoSesionAsync(respuestaLogin.IdUsuario);
 
-            // Redirigir al usuario a la página correspondiente según el rol
-            switch (solicitudLogin.Rol)
+                if (!haIniciadoAntes)
+                {
+                    _navigationManager.NavigateTo("/password");
+                    return;
+                }
+
+                // Redirigir al usuario a la página correspondiente según el rol
+                switch (solicitudLogin.Rol)
+                {
+                    case "Administrador":
+                        _navigationManager.NavigateTo("/adminDashboard");
+                        break;
+                    case "Estudiante":
+                        _navigationManager.NavigateTo("/studentDashboard");
+                        break;
+                    case "Instructor":
+                        _navigationManager.NavigateTo("/instructorDashboard");
+                        break;
+                    default:
+                        throw new HttpRequestException("Rol no válido");
+                }
+            }
+            catch (Exception ex)
             {
-                case "Administrador":
-                    _navigationManager.NavigateTo("/adminDashboard");
-                    break;
-                case "Estudiante":
-                    _navigationManager.NavigateTo("/studentDashboard");
-                    break;
-                case "Instructor":
-                    _navigationManager.NavigateTo("/instructorDashboard");
-                    break;
-                default:
-                    throw new HttpRequestException("Rol no válido");
+                throw new HttpRequestException("Error al verificar el estado de inicio de sesión del usuario. " +
+                                               ex.Message);
             }
         }
 

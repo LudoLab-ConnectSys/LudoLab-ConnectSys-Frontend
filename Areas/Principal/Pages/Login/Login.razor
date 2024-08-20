@@ -91,12 +91,30 @@
     {
         try
         {
+// Validar que el rol esté seleccionado
+            if (string.IsNullOrEmpty(_loginRequest.Rol))
+            {
+                await SweetAlertNotify("Por favor, seleccione un rol.", "warning");
+                return;
+            }
+
             await AuthService.ManejarInicioSesionAsync(_loginRequest);
         }
         catch (HttpRequestException ex)
         {
             Console.WriteLine(ex.Message);
-            await SweetAlertNotify("Credenciales incorrectas", "error");
+            if (ex.Message.Contains("Error al verificar el estado de inicio de sesión del usuario"))
+            {
+                await SweetAlertNotify("Error en la autenticación: No se pudo determinar el estado de inicio de sesión. " + ex.Message, "error");
+            }
+            else if (ex.Message.Contains("Rol no válido"))
+            {
+                await SweetAlertNotify("Error en la autenticación: Rol no válido.", "error");
+            }
+            else
+            {
+                await SweetAlertNotify("Credenciales incorrectas", "error");
+            }
         }
     }
 

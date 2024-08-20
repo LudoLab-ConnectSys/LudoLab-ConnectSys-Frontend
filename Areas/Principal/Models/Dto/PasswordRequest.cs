@@ -4,6 +4,8 @@ using System.ComponentModel.DataAnnotations;
 
 public class PasswordRequest
 {
+    public string Cedula { get; set; } = string.Empty;
+
     [Required(ErrorMessage = "El campo de nueva contraseña es obligatorio.")]
     [MinLength(8, ErrorMessage = "La contraseña debe tener al menos 8 caracteres.")]
     [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$",

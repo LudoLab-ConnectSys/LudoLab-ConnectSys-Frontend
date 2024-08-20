@@ -2,6 +2,8 @@ using Blazored.LocalStorage;
 using CurrieTechnologies.Razor.SweetAlert2;
 using LudoLab_ConnectSys_Frontend;
 using LudoLab_ConnectSys_Frontend.Services.Auditoria;
+using LudoLab_ConnectSys_Frontend.Services.Contrasena;
+using LudoLab_ConnectSys_Frontend.Services.Cuentas;
 using LudoLab_ConnectSys_Frontend.Services.Registro;
 using LudoLab_ConnectSys_Frontend.Services.Security;
 using LudoLab_ConnectSys_Frontend.Shared.Utilities;
@@ -34,6 +36,9 @@ builder.Services.AddHttpClient("AuthenticatedClient")
 // Registrar AuthService usando la interfaz IAuthService
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IRegistroService, RegistroService>();
+builder.Services.AddScoped<IContrasenaService, ContrasenaService>();
+builder.Services.AddScoped<ICuentaService, CuentaService>();
+
 
 // Configuraci�n del HttpClient para interactuar con tu backend
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
