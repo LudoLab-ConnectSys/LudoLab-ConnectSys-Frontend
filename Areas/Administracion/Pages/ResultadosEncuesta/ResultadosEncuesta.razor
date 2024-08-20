@@ -11,6 +11,7 @@
 @using OfficeOpenXml;
 @using ClosedXML.Excel;
 @layout AdminLayout
+@using OfficeOpenXml;
 
 <h2 class="titulo-resultado">Resultados de Encuesta de Satisfacción</h2>
 
@@ -44,7 +45,6 @@
             <th>Inicio</th>
             <th>Fin</th>
             <th>Nombre Curso</th>
-            <th>Certificado</th>
             <th>Acciones</th>
         </tr>
     </thead>
@@ -56,7 +56,6 @@
                 <td>@en.fecha_inicio_periodo</td>
                 <td>@en.fecha_fin_periodo</td>
                 <td>@en.nombre_curso</td>
-                <td>@(string.IsNullOrEmpty(en.nombre_certificado) ? "No asignado" : en.nombre_certificado)</td>
                 <td>
                     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" @onclick="(() => OntenerEncuestas(en.id_periodo, en.nombre_curso))">
                         Descargar
@@ -238,7 +237,7 @@
     String nombreCurso;
 
     public static List<PeriodoConNombreCurso> Periodos = new List<PeriodoConNombreCurso>();
-    private SumatoriaRespuestasModel sumatoriaRespuestas = new SumatoriaRespuestasModel();// resultado de encuestas
+    //private SumatoriaRespuestasModel sumatoriaRespuestas = new SumatoriaRespuestasModel();// resultado de encuestas
     private int CurrentPage { get; set; } = 1;// propiedades para paginación
     private int TotalPages { get; set; }
     private int registerNumber { get; set; } = 3;
@@ -345,56 +344,73 @@
 
     private async Task ImprimirResultadosEncuestas(int id_encuesta)
     {
-        Console.WriteLine($"PERIODO LLAMADO {idPeriodoF} && {id_encuesta}");
+        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+        //Console.WriteLine($"PERIODO LLAMADO {idPeriodoF} && {id_encuesta}");
         try
         {
             isLoading = true;
+            StateHasChanged();
             var response = await Http.GetAsync($"http://localhost:5117/api/Encuesta/SumatoriaRespuestasPorPeriodo?idPeriodoF={idPeriodoF}&id_encuesta={id_encuesta}");
+            isLoading = false;
+            StateHasChanged();
+            await sweetAletNotify("Resultados de la encuesta descargados exitosamente.", "success");
 
             if (response.IsSuccessStatusCode)
             {
-                sumatoriaRespuestas = await response.Content.ReadFromJsonAsync<SumatoriaRespuestasModel>();
+                // Deserializar la respuesta en el modelo tipado
+                var data = await response.Content.ReadFromJsonAsync<ResultadoEncuesta>();
 
-                using (var workbook = new XLWorkbook())
+                using (var package = new ExcelPackage())
                 {
-                    var worksheet = workbook.Worksheets.Add("Resultados");
+                    var worksheet = package.Workbook.Worksheets.Add("Resultados");
 
-                    // Encabezados generales
-                    worksheet.Cell(1, 1).Value = "Nombre Completo del Tutor";
-                    worksheet.Cell(1, 2).Value = "Pregunta";
-                    worksheet.Cell(1, 3).Value = "Nota";
-                    worksheet.Cell(1, 4).Value = "Sumatoria";
+                    // Escribir información adicional
+                    worksheet.Cells[1, 1].Value = "Número de Personas:";
+                    worksheet.Cells[1, 2].Value = data.numeroDePersonas;
+                    worksheet.Cells[2, 1].Value = "Sumatoria Total del Periodo:";
+                    worksheet.Cells[2, 2].Value = data.sumatoriaTotalPeriodo;
 
-                    int currentRow = 2;
+                    // Escribir encabezados para las preguntas y opciones
+                    worksheet.Cells[4, 1].Value = "Pregunta";
+                    worksheet.Cells[4, 2].Value = "Opción";
+                    worksheet.Cells[4, 3].Value = "Sumatoria";
+                    worksheet.Cells[4, 4].Value = "Número de Respuestas";
 
-                    // Iterar sobre los tutores y sus preguntas
-                    foreach (var tutor in sumatoriaRespuestas.SumatoriaTutores)
+                    int currentRow = 5;
+
+                    // Iterar sobre cada pregunta y sus opciones
+                    foreach (var pregunta in data.sumatoriaPorPregunta)
                     {
-                        int initialRow = currentRow;
+                        var textoPregunta = pregunta.texto_pregunta;
+                        var opciones = pregunta.sumatoriaPorOpcion;
 
-                        // Escribir las preguntas y notas para cada tutor
-                        foreach (var notaPorPregunta in tutor.NotasPorPregunta)
+                        foreach (var opcion in opciones)
                         {
-                            worksheet.Cell(currentRow, 1).Value = tutor.NombreCompletoTutor;
-                            worksheet.Cell(currentRow, 2).Value = notaPorPregunta.texto_pregunta;
-                            worksheet.Cell(currentRow, 3).Value = notaPorPregunta.Nota;
+                            worksheet.Cells[currentRow, 1].Value = textoPregunta;
+                            worksheet.Cells[currentRow, 2].Value = opcion.texto_opcion;
+                            worksheet.Cells[currentRow, 3].Value = opcion.sumatoria;
+                            worksheet.Cells[currentRow, 4].Value = opcion.numeroDeRespuestas;
                             currentRow++;
                         }
-
-                        // Escribir la sumatoria del tutor
-                        worksheet.Cell(initialRow, 4).Value = tutor.Sumatoria;
-
-                        // Dejar una fila en blanco después de cada tutor
-                        currentRow++;
                     }
 
-                    // Agregar la sumatoria total del periodo
-                    worksheet.Cell(currentRow + 1, 1).Value = "Sumatoria Total del Periodo";
-                    worksheet.Cell(currentRow + 1, 2).Value = sumatoriaRespuestas.SumatoriaTotalPeriodo;
+                    // Crear la gráfica
+                    var chart = worksheet.Drawings.AddChart("chart", OfficeOpenXml.Drawing.Chart.eChartType.ColumnClustered);
+                    chart.Title.Text = "Resultados de la Encuesta";
+                    chart.SetPosition(currentRow + 2, 0, 1, 0);
+                    chart.SetSize(800, 400);
 
+                    // Rango de datos para la gráfica
+                    var series = chart.Series.Add(worksheet.Cells[5, 3, currentRow - 1, 3], worksheet.Cells[5, 2, currentRow - 1, 2]);
+                    series.Header = "Sumatoria de Opciones";
+
+                    // Ajustar el ancho de las columnas
+                    worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+
+                    // Guardar el archivo Excel
                     using (var stream = new MemoryStream())
                     {
-                        workbook.SaveAs(stream);
+                        package.SaveAs(stream);
                         var base64 = Convert.ToBase64String(stream.ToArray());
                         await JSRuntime.InvokeVoidAsync("DescargarExel", $"ResultadosEncuesta_{nombreCurso}.xlsx", base64);
                     }
@@ -402,23 +418,21 @@
             }
             else
             {
-                //error = $"Error: {response.ReasonPhrase}";
+                // Manejo de errores en caso de que la API no responda exitosamente
+                Console.WriteLine($"Error en la respuesta: {response.StatusCode}");
             }
         }
         catch (Exception ex)
         {
-            //error = $"Error: {ex.Message}";
+            // Manejo de excepciones
+            Console.WriteLine($"Excepción: {ex.Message}");
         }
         finally
         {
             isLoading = false;
+            StateHasChanged();
         }
     }
-
-
-
-
-
 
 
     private async Task OntenerEncuestas(int id_periodo, string nombre_curso)
@@ -458,24 +472,29 @@
         NavigationManager.NavigateTo("/todas-encuestas");
     }
 
-    public class SumatoriaRespuestasModel
+    public class SumatoriaPorOpcion
     {
-        public List<SumatoriaTutor> SumatoriaTutores { get; set; }
-        public int SumatoriaTotalPeriodo { get; set; }
+        public int id_opcion { get; set; }
+        public string texto_opcion { get; set; }
+        public int sumatoria { get; set; }
+        public int numeroDeRespuestas { get; set; }
     }
 
-    public class SumatoriaTutor
+    public class SumatoriaPorPregunta
     {
-        public string NombreCompletoTutor { get; set; }
-        public int Sumatoria { get; set; }
-        public List<NotaPorPregunta> NotasPorPregunta { get; set; }
-    }
-
-    public class NotaPorPregunta
-    {
+        public int id_pregunta { get; set; }
         public string texto_pregunta { get; set; }
-        public int Nota { get; set; }
+        public int sumatoriaPorPregunta { get; set; }
+        public List<SumatoriaPorOpcion> sumatoriaPorOpcion { get; set; }
     }
+
+    public class ResultadoEncuesta
+    {
+        public int numeroDePersonas { get; set; }
+        public int sumatoriaTotalPeriodo { get; set; }
+        public List<SumatoriaPorPregunta> sumatoriaPorPregunta { get; set; }
+    }
+
 
     public class PagedResult<T>
     {

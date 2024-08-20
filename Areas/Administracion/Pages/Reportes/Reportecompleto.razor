@@ -68,7 +68,6 @@
             <th scope="col">Inicio</th>
             <th scope="col">Fin</th>
             <th scope="col">Nombre Curso</th>
-            <th scope="col">Certificado</th>
             <th scope="col">Acciones</th>
         </tr>
     </thead>
@@ -82,7 +81,6 @@
                 <td>@en.fecha_inicio_periodo</td>
                 <td>@en.fecha_fin_periodo</td>
                 <td>@en.nombre_curso</td>
-                <td>@(string.IsNullOrEmpty(en.nombre_certificado) ? "No asignado" : en.nombre_certificado)</td>
                 <td>
                     <button type="button" class="btn btn-primary" @onclick="(() => GenerarReporte(en.id_periodo, en.nombre_periodo, en.nombre_curso, incluirTutores, incluirEstudiantes))">
                         Reporte
@@ -258,7 +256,6 @@
         catch (Exception ex)
         {
             // Maneja la excepción, por ejemplo, registrándola o mostrando un mensaje de error
-            Console.WriteLine($"Error al buscar los periodos: {ex.Message}");
             await sweetAletNotify("Error al buscar los periodos", "error");
 
             // Puedes asignar Periodos a una lista vacía en caso de error
@@ -526,7 +523,7 @@
         {
             isLoading = false;
             StateHasChanged();
-            Console.WriteLine($"Error al generar el reporte: {ex.Message}");
+            await sweetAletNotify($"Error al generar el reporte: {ex.Message}", "error");
         }
     }
 

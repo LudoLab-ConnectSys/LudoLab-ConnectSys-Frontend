@@ -76,9 +76,12 @@
 </style>
 
 @code {
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "yhdfgyh")]
+    public string IdStudent { get; set; }
+
     private bool isLoading = false;
     List<Encuesta> encuestas = new List<Encuesta>();
-    private int id_estudiante = 1;
 
     protected override async Task OnInitializedAsync()
     {
@@ -108,8 +111,8 @@
 
     void VerDetalles(int encuestaId)
     {
-        string encryptedId = Encrypt(id_estudiante);
-        NavigationManager.NavigateTo($"/encuestas/{encuestaId}?x9zQmP={encryptedId}");
+        //string encryptedId = Encrypt(IdStudent);
+        NavigationManager.NavigateTo($"/encuestas/{encuestaId}?x9zQmP={IdStudent}");
     }
     private async Task sweetAletNotify(string texto, string tipo)
     {
