@@ -6,11 +6,11 @@
 
 <h3>Grupos Inscritos del Estudiante</h3>
 
-@if (gruposDelEstudiante == null)
+@if (grupos == null)
 {
     <p>Cargando grupos...</p>
 }
-else if (gruposDelEstudiante.Count == 0)
+else if (grupos.Count == 0)
 {
     <p>No hay grupos inscritos.</p>
 }
@@ -28,16 +28,17 @@ else
             </tr>
         </thead>
         <tbody>
-            @foreach (var grupo in gruposDelEstudiante)
+            @foreach (var grupo in grupos)
             {
                 <tr>
-                    <td>@grupo.nombre_curso</td>
-                    <td>@grupo.nombre_grupo</td>
-                    <td>@grupo.nombre_periodo</td>
-                    <td>@grupo.fecha_inicio_periodo</td>
-                    <td>@grupo.fecha_fin_periodo</td>
+                    <td>@grupo.NombreCurso</td>
+                    <td>@grupo.NombreGrupo</td>
+                    <td>@grupo.NombrePeriodo</td>
+                    <td>@grupo.FechaInicio</td>
+                    <td>@grupo.FechaFin</td>
                     <td>
-                        <button class="btn btn-primary" @onclick="() => VerDetallesGrupo(grupo.id_grupo)">Ver Detalles</button>
+                        <button class="btn btn-primary" @onclick="() => VerDetallesGrupo(grupo.IdGrupo)">Ver Detalles</button>
+                        <button class="btn btn-primary" @onclick="() => IrEncuesta(grupo.IdEstudiante)">Ver Encuestas</button>
                     </td>
                 </tr>
             }
@@ -48,14 +49,17 @@ else
 @code {
     private List<GrupoConCursoPeriodo> gruposDelEstudiante;
 
+    private List<GrupoEstudianteDTO> grupos = new List<GrupoEstudianteDTO>();
+
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            var idEstudianteString = await Js.InvokeAsync<string>("localStorage.getItem", "IdEstudiante");
-            if (int.TryParse(idEstudianteString, out int idEstudiante))
+            var idEstudianteString = await Js.InvokeAsync<string>("localStorage.getItem", "IdUsuario");
+            if (int.TryParse(idEstudianteString, out int IdUsuario))
             {
-                await CargarGrupos(idEstudiante);
+                Console.WriteLine($"id_user = {IdUsuario}");
+                await CargarGrupos(IdUsuario);
             }
             else
             {
@@ -68,13 +72,33 @@ else
         }
     }
 
-    private async Task CargarGrupos(int estudianteId)
+    private async Task CargarGrupos(int id_usuario)
     {
-        gruposDelEstudiante = await Http.GetFromJsonAsync<List<GrupoConCursoPeriodo>>($"http://localhost:5117/api/Grupo/GruposDelEstudiante/{estudianteId}");
+        grupos = await Http.GetFromJsonAsync<List<GrupoEstudianteDTO>>($"http://localhost:5117/api/Grupo/GruposDelEstudiantePorUsuairo/{id_usuario}");
     }
 
     private void VerDetallesGrupo(int grupoId)
     {
         Navigation.NavigateTo($"/detalles-grupo-estudiante/{grupoId}");
+    }
+    private void IrEncuesta(int id_student)
+    {
+        Navigation.NavigateTo($"encuestas?yhdfgyh={Encrypt(id_student)}");
+    }
+    private string Encrypt(int id)
+    {
+        // Implementa tu lógica de cifrado aquí
+        return Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(id.ToString()));
+    }
+
+    public class GrupoEstudianteDTO
+    {
+        public int IdGrupo { get; set; }
+        public string? NombreGrupo { get; set; }
+        public string? NombreCurso { get; set; }
+        public string? NombrePeriodo { get; set; }
+        public string? FechaInicio { get; set; }
+        public string? FechaFin { get; set; }
+        public int IdEstudiante { get; set; }
     }
 }
