@@ -55,18 +55,26 @@
 </div>
 <!-- Modal para lista de preguntas de una encuesta-->
 <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
                 <h1 class="modal-title fs-5" id="exampleModalLabel">Preguntas de la Encuesta</h1>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
-            <div class="modal-contentpreguntas">
+            <div class="modal-body">
                 <ul>
-                    @foreach (var pregunta in preguntas)
+                    @foreach (var pregunta in preguntasOpciones)
                     {
-                        <li>@pregunta.texto_pregunta</li>
+                        <li>
+                            <strong>@pregunta.TextoPregunta</strong>
+                            <ul>
+                                @foreach (var opcion in pregunta.Opciones)
+                                {
+                                    <li>@opcion.Texto - Valor: @opcion.Valor</li>
+                                }
+                            </ul>
+                        </li>
                     }
                 </ul>
             </div>
@@ -87,23 +95,39 @@
             </div>
 
             <div class="modal-body">
-                @if (preguntas == null)
+                @if (preguntasOpciones == null)
                 {
                     <p>Cargando preguntas...</p>
                 }
-                else if (preguntas.Count == 0)
+                else if (preguntasOpciones.Count == 0)
                 {
                     <p>No hay preguntas disponibles para editar.</p>
                 }
                 else
                 {
                     <form>
-                        @foreach (var pregunta in preguntas)
+                        @foreach (var pregunta in preguntasOpciones)
                         {
                             <div class="form-group">
-                                <label for="pregunta_@pregunta.id_pregunta">Pregunta @pregunta.id_pregunta</label>
-                                <input type="text" class="form-control" id="pregunta_@pregunta.id_pregunta" @bind="pregunta.texto_pregunta" />
-                            </div>
+                                <div class="container-questions">
+                                    <label for="pregunta_@pregunta.IdPregunta">Pregunta: </label>
+                                    <input type="text" class="form-control" id="pregunta_@pregunta.IdPregunta" @bind="pregunta.TextoPregunta" />
+
+                                </div>
+
+                                <ul>
+                                    @foreach (var opcion in pregunta.Opciones)
+                                    {
+                                        <li>
+                                            <div class="form-group">
+                                                <label for="opcion_@opcion.Texto">@opcion.Texto</label>
+                                                <input type="text" class="form-control" id="opcion_@opcion.Texto" @bind="opcion.Texto" />
+                                                <input type="number" min="1" class="form-control" @bind="opcion.Valor" />
+                                            </div>
+                                        </li>
+                                    }
+                                </ul>
+                            </div><br/>
                         }
                     </form>
                 }
@@ -133,15 +157,36 @@
                     <div id="preguntas-container">
                         @for (int i = 0; i < preguntasNew.Count; i++)
                         {
-                            <div class="input-group mb-3">
-                                <input type="text" class="form-control" value="@preguntasNew[i]" @oninput="(e) => UpdatePregunta(i, e.Value.ToString())" placeholder="Pregunta" required />
-                                <button type="button" class="btn btn-danger" @onclick="() => EliminarPregunta(i)">x</button>
+                            var preguntaIndex = i;  // Capturar el índice actual de la pregunta
+
+                            <div class="card mb-4">
+                                <div class="card-body">
+                                    <div class="input-group mb-3">
+                                        <input type="text" class="form-control" @bind="preguntasNew[preguntaIndex].TextoPregunta" placeholder="Pregunta" required />
+                                        <button type="button" class="btn btn-danger" @onclick="() => EliminarPregunta(preguntaIndex)">x</button>
+                                    </div>
+
+                                    <div class="ml-4">
+                                        @for (int j = 0; j < preguntasNew[preguntaIndex].Opciones.Count; j++)
+                                        {
+                                            var opcionIndex = j; // Capturar el índice actual de la opción
+                                            <div class="input-group mb-3">
+                                                <input type="text" class="form-control" placeholder="Texto de Opción" @oninput="(e) => UpdateOpcionTexto(preguntaIndex, opcionIndex, e.Value.ToString())" />
+                                                <input type="number" min="1" class="form-control" placeholder="Valor de Opción" @oninput="(e) => UpdateOpcionValor(preguntaIndex, opcionIndex, Convert.ToInt32(e.Value))" />
+                                                <button type="button" class="btn btn-danger" @onclick="() => EliminarOpcion(preguntaIndex, j)">x</button>
+                                            </div>
+                                        }
+                                        <button type="button" class="btn btn-secondary mb-3" @onclick="() => AgregarOpcion(preguntaIndex)">Agregar Opción</button>
+                                    </div>
+                                </div>
                             </div>
                         }
                     </div>
                     <button type="button" class="btn btn-primary" @onclick="AgregarPregunta">Agregar Pregunta</button>
                     <button type="submit" class="btn btn-success">Crear Encuesta</button>
                 </form>
+
+
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
@@ -151,6 +196,9 @@
 </div>
 
 <style>
+    .container-questions{
+        display: flex;
+    }
     .titulo-resultado {
         text-align: center;
         color: #333;
@@ -224,19 +272,14 @@
             opacity: 0.8;
         }
 
-    .modal-contentpreguntas {
-        padding: 10px;
-        width: 90%;
-    }
-
     ul {
         list-style-type: none;
         padding: 0;
     }
 
     li {
-        margin: 10px 0;
-        padding: 10px;
+        margin: 5px 0;
+        padding: 5px;
         background-color: #f4f4f4;
         border-radius: 5px;
     }
@@ -280,10 +323,11 @@
 @code {
     private List<Encuesta> encuestas = new();
     private List<Pregunta> preguntas = new();
+    private List<PreguntaConOpciones> preguntasOpciones = new();
     private int id_pregunta;
     private bool isLoading = false;
     private string titulo = string.Empty;
-    private List<string> preguntasNew = new() { string.Empty };
+    private List<PreguntaModel> preguntasNew = new() { new PreguntaModel() };
 
     protected override async Task OnInitializedAsync()
     {
@@ -318,26 +362,26 @@
         try
         {
             id_pregunta = id;
-            preguntas = new();
-            preguntas = await Http.GetFromJsonAsync<List<Pregunta>>($"http://localhost:5117/api/Encuesta/preguntasporID/{id}");
+            preguntasOpciones = new();
+            preguntasOpciones = await Http.GetFromJsonAsync<List<PreguntaConOpciones>>($"http://localhost:5117/api/Encuesta/preguntasporID/{id}");
             isLoading = false;
             StateHasChanged();
-            if (preguntas == null)
-            {// Manejar el caso en que no se obtienen preguntas
+            if (preguntasOpciones == null || !preguntasOpciones.Any())
+            {
                 await sweetAletNotify("No se encontraron preguntas para esta encuesta.", "warning");
             }
         }
         catch (HttpRequestException httpEx)
-        {// Manejar errores específicos de la solicitud HTTP
+        {
             Console.WriteLine($"Error al obtener preguntas: {httpEx.Message}");
         }
         catch (Exception ex)
-        {// Manejar errores generales
+        {
             Console.WriteLine($"Error inesperado: {ex.Message}");
         }
         isLoading = false;
         StateHasChanged();
-     }
+    }
 
     private async Task EditarEncuesta(int id)
     {
@@ -345,7 +389,7 @@
         {
             var options = new
             {
-                Title = "¿Esta seguro de querer editar esta encuesta?",
+                Title = "¿Está seguro de querer editar esta encuesta?",
                 Icon = "question",
                 ShowCancelButton = true,
                 ConfirmButtonText = "Sí",
@@ -359,10 +403,7 @@
             isLoading = true;
             StateHasChanged();
 
-            // Asignar id_encuesta a cada pregunta antes de enviar
-            preguntas.ForEach(p => p.id_encuesta = id);
-
-            var response = await Http.PutAsJsonAsync($"http://localhost:5117/api/Encuesta/ActualizarPreguntas/{id}", preguntas);
+            var response = await Http.PutAsJsonAsync($"http://localhost:5117/api/Encuesta/ActualizarPreguntas/{id}", preguntasOpciones);
             isLoading = false;
             StateHasChanged();
             if (response.IsSuccessStatusCode)
@@ -404,28 +445,26 @@
                 return; // Termina la ejecución si el usuario selecciona "No"
             }
 
-            // Eliminar las preguntas asociadas
+            // Eliminar las opciones asociadas
             isLoading = true;
             StateHasChanged();
+            var eliminarOpcionesResponse = await Http.DeleteAsync($"http://localhost:5117/api/Encuesta/EliminarOpciones/{id}");
+            if (!eliminarOpcionesResponse.IsSuccessStatusCode)
+            {
+                await sweetAletNotify("No se pudo eliminar las opciones asociadas a la encuesta.", "error");
+                return;
+            }
+
+            // Eliminar las preguntas asociadas
             var eliminarPreguntasResponse = await Http.DeleteAsync($"http://localhost:5117/api/Encuesta/EliminarPreguntas/{id}");
-            isLoading = false;
-            StateHasChanged();
             if (!eliminarPreguntasResponse.IsSuccessStatusCode)
             {
                 await sweetAletNotify("No se pudo eliminar las preguntas asociadas a la encuesta.", "error");
                 return;
             }
 
-            // Luego eliminar la encuesta
-            isLoading = true;
-            StateHasChanged();
+            // Finalmente eliminar la encuesta
             var eliminarEncuestaResponse = await Http.DeleteAsync($"http://localhost:5117/api/Encuesta/EliminarEncuesta/{id}");
-            isLoading = false;
-            StateHasChanged();
-
-            isLoading = true;
-            StateHasChanged();
-            encuestas = await Http.GetFromJsonAsync<List<Encuesta>>("http://localhost:5117/api/Encuesta/GetTodaEncuesta");
             isLoading = false;
             StateHasChanged();
 
@@ -450,8 +489,6 @@
         }
     }
 
-
-
     private void NavigateBack()
     {
         NavigationManager.NavigateTo("/resultados-encuestas"); // Reemplaza "/ruta-anterior" con la URL de la página anterior
@@ -469,27 +506,55 @@
     /*------------------------------------- Crear encuestas -------------------------------------*/
     private void AgregarPregunta()
     {
-        preguntasNew.Add(string.Empty);
-        //Console.WriteLine("Pregunta agregada: " + System.Text.Json.JsonSerializer.Serialize(preguntasNew));
-        StateHasChanged(); // Forzar renderizado
+        preguntasNew.Add(new PreguntaModel { TextoPregunta = string.Empty });
+        StateHasChanged();
     }
 
     private void EliminarPregunta(int index)
     {
-        preguntasNew.RemoveAt(index-1);
+        preguntasNew.RemoveAt(index);
         StateHasChanged(); // Forzar renderizado
     }
 
-    private void UpdatePregunta(int index, string value)
+    private void UpdatePreguntaTexto(int index, string texto)
     {
-        preguntasNew[index-1] = value;
-        //Console.WriteLine($"Preguntas actualizadas: {System.Text.Json.JsonSerializer.Serialize(preguntasNew)}");
+        preguntasNew[index - 1].TextoPregunta = texto;
+        StateHasChanged();
+    }
+    private void AgregarOpcion(int preguntaIndex)
+    {
+        Console.WriteLine($"preguntaIndex: {preguntaIndex}");
+        preguntasNew[preguntaIndex].Opciones.Add(new OpcionModel { Texto = string.Empty, Valor = 0 });
+        //StateHasChanged(); // Forzar renderizado
+    }
+
+    private void EliminarOpcion(int preguntaIndex, int opcionIndex)
+    {
+        Console.WriteLine($"EliminarOpcion - preguntaIndex: {preguntaIndex}, opcionIndex: {opcionIndex}");
+
+            preguntasNew[preguntaIndex].Opciones.RemoveAt(opcionIndex-1);
+            StateHasChanged(); // Forzar renderizado
+    }
+
+
+    private void UpdateOpcionTexto(int preguntaIndex, int opcionIndex, string nuevoTexto)
+    {
+        Console.WriteLine($"UpdateOpcionTexto - preguntaIndex: {preguntaIndex}, opcionIndex: {opcionIndex}, nuevoTexto: {nuevoTexto}");
+            preguntasNew[preguntaIndex].Opciones[opcionIndex].Texto = nuevoTexto;
+            StateHasChanged(); // Forzar renderizado
+    }
+
+    private void UpdateOpcionValor(int preguntaIndex, int opcionIndex, int nuevoValor)
+    {
+        Console.WriteLine($"UpdateOpcionValor - preguntaIndex: {preguntaIndex}, opcionIndex: {opcionIndex}, nuevoValor: {nuevoValor}");
+            preguntasNew[preguntaIndex].Opciones[opcionIndex].Valor = nuevoValor;
+            StateHasChanged(); // Forzar renderizado
     }
 
     private async Task CrearEncuesta()
     {
         // Eliminar preguntas vacías
-        var preguntasValidas = preguntasNew.Where(p => !string.IsNullOrWhiteSpace(p)).ToList();
+        var preguntasValidas = preguntasNew.Where(p => !string.IsNullOrWhiteSpace(p.TextoPregunta)).ToList();
 
         // Verificar que al menos haya una pregunta
         if (!preguntasValidas.Any())
@@ -504,15 +569,15 @@
                 Preguntas = preguntasValidas
             };
 
-        // Imprimir la estructura del objeto encuesta
-        //Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(preguntasNew));
-        //Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(encuesta));
+        // Imprimir lo que se va a enviar al backend
+        var json = System.Text.Json.JsonSerializer.Serialize(encuesta);
+        Console.WriteLine(json);
 
         try
         {
             var options = new
             {
-                Title = "¿Esta seguro de crear esta encuesta?",
+                Title = "¿Está seguro de crear esta encuesta?",
                 Icon = "question",
                 ShowCancelButton = true,
                 ConfirmButtonText = "Sí",
@@ -523,34 +588,29 @@
             {
                 return; // Termina la ejecución de la función si el usuario selecciona "No"
             }
+
             isLoading = true;
             StateHasChanged();
+
             var response = await Http.PostAsJsonAsync("http://localhost:5117/api/Encuesta/CrearEncuesta", encuesta);
             isLoading = false;
             StateHasChanged();
 
-            isLoading = true;
-            StateHasChanged();
             encuestas = await Http.GetFromJsonAsync<List<Encuesta>>("http://localhost:5117/api/Encuesta/GetTodaEncuesta");
-            isLoading = false;
-            StateHasChanged();
+
             if (response.IsSuccessStatusCode)
             {
-                // Manejar éxito
                 await sweetAletNotify("Encuesta creada exitosamente.", "success");
-                // Cerrar el modal y limpiar el formulario si es necesario
                 await JSRuntime.InvokeVoidAsync("$('#crearEncuestaModal').modal('hide')");
                 ResetForm();
             }
             else
             {
-                // Manejar errores
                 await sweetAletNotify("Error al crear la encuesta.", "error");
             }
         }
         catch (Exception ex)
         {
-            // Manejar excepciones
             Console.WriteLine($"Error: {ex.Message}");
         }
 
@@ -558,18 +618,43 @@
         StateHasChanged();
     }
 
+    // Modelo para la solicitud de creación de encuesta con preguntas y opciones
+    public class EncuestaConPreguntasModel
+    {
+        public string Titulo { get; set; }
+        public List<PreguntaModel> Preguntas { get; set; } = new List<PreguntaModel>();
+    }
+
+    // Modelo para Pregunta con Opciones
+    public class PreguntaModel
+    {
+        public string TextoPregunta { get; set; }
+        public List<OpcionModel> Opciones { get; set; } = new List<OpcionModel>();
+    }
+
+    // Modelo para Opción
+    public class OpcionModel
+    {
+        public string Texto { get; set; }
+        public int Valor { get; set; }
+    }
     private void ResetForm()
     {
         titulo = string.Empty;
         preguntasNew.Clear();
-        preguntasNew.Add(string.Empty);
+        preguntasNew.Add(new PreguntaModel { TextoPregunta = string.Empty });
         StateHasChanged(); // Forzar renderizado
     }
-
-    // Modelo para la solicitud de creación de encuesta
-    public class EncuestaConPreguntasModel
+    public class OpcionDto
     {
-        public string Titulo { get; set; }
-        public List<string> Preguntas { get; set; }
+        public string Texto { get; set; }
+        public int Valor { get; set; }
+    }
+
+    public class PreguntaConOpciones
+    {
+        public int IdPregunta { get; set; }
+        public string TextoPregunta { get; set; }
+        public List<OpcionDto> Opciones { get; set; }
     }
 }

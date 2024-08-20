@@ -83,10 +83,10 @@
                         </label>
                     <InputFile id="@inputFileId" OnChange="@(e => OnInputFileChange(e, en.id_periodo, en.nombre_certificado))" class="d-none" accept=".pdf" />
 
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModalGAP" @onclick="(() => EstudiantesPorPeriodo(en.id_periodo, en.nombre_curso, en.nombre_periodo, 1))" >
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModalGAP" @onclick="(() => EstudiantesPorPeriodo(en.id_periodo, en.nombre_curso, en.nombre_periodo, 1, en.fecha_inicio_periodo, en.fecha_fin_periodo, en.duracion_periodo_horas))">
                         GAP
                     </button>
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" @onclick="(() => EstudiantesPorPeriodo(en.id_periodo, en.nombre_curso, en.nombre_periodo, 2))" >
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" @onclick="(() => EstudiantesPorPeriodo(en.id_periodo, en.nombre_curso, en.nombre_periodo, 2, en.fecha_inicio_periodo, en.fecha_fin_periodo, en.duracion_periodo_horas))">
                         Docentes
                     </button>
                     <button type="button" class="btn btn-info" @onclick="(()=> OpenPdf(en.nombre_certificado))">Ver</button>
@@ -307,6 +307,9 @@
     string NombreBuscado = "";
     string nombbreCurso;
     string nombbrePeiodo;
+    string fecha_inicio = "";
+    string fecha_fin = "";
+    int duracion_horas = 0;
     private int CurrentPage { get; set; } = 1;// propiedades para paginación
     private int TotalPages { get; set; }
     private int registerNumber { get; set; } = 3;
@@ -501,15 +504,15 @@
             //textos y sus posiciones para insertar en el pdf
             var texts = new List<object>
             {
-                new { content = "LA ESCUELA POLITÉCNICA NACIONAL Y LA FACULTAD DE INGENIERÍA DE SISTEMAS", x = 0, y = 0, size = 18 },
-                new { content = "CONFIERE EL PRESENTE", x = 0, y = 0, size = 18 },
-                new { content = "CERTIFICADO A:", x = 0, y = 0, size = 18 },
-                new { content = "Dra. Mayra Carrión", x = 0, y = 0, size = 14 },
-                new { content = "DIRECTORA:", x = 0, y = 0, size = 14 },
-                new { content = "PROYECTO INCLUSIÓN DIGITAL", x = 0, y = 0, size = 14 },
-                new { content = "Dr. Jose Lucio", x = 0, y = 0, size = 14 },
-                new { content = "DECANO", x = 0, y = 0, size = 14 },
-                new { content = "FACULTAD DE INGENIERÍA DE SISTEMAS", x = 0, y = 0, size = 14 }
+                new { content = "LA ESCUELA POLITÉCNICA NACIONAL Y LA FACULTAD DE INGENIERÍA DE SISTEMAS", x = 0, y = 0, size = 18, marginX = 0 },
+                new { content = "CONFIERE EL PRESENTE", x = 0, y = 0, size = 18, marginX = 0 },
+                new { content = "CERTIFICADO A:", x = 0, y = 0, size = 18, marginX = 0 },
+                new { content = "Dra. Mayra Carrión", x = 0, y = 0, size = 14, marginX = 50 }, // Márgenes horizontales personalizados
+                new { content = "DIRECTORA", x = 0, y = 0, size = 14, marginX = 70 },
+                new { content = "PROYECTO INCLUSIÓN DIGITAL", x = 0, y = 0, size = 14, marginX = 0 },
+                new { content = "Dr. Jose Lucio", x = 0, y = 0, size = 14, marginX = 90 },
+                new { content = "DECANO", x = 0, y = 0, size = 14, marginX = 100 },
+                new { content = "FACULTAD DE INGENIERÍA DE SISTEMAS", x = 0, y = 0, size = 14, marginX = 0 }
             };
             // Llamar a la función de JavaScript para modificar el PDF
             var pdfBytes = await JSRuntime.InvokeAsync<byte[]>("modificarPDF", memoryStream.ToArray(), texts);
@@ -533,7 +536,7 @@
         }
         isLoading = false;
         StateHasChanged();
-        await sweetAletNotify("Archivo actualizado correctamente", "info");
+        await sweetAletNotify("Archivo actualizado correctamente", "success");
         /*using var content = new MultipartFormDataContent();
 
         foreach (var file in e.GetMultipleFiles(maxAllowedFiles))
@@ -580,10 +583,10 @@
             {
                 new { content = fullname, x = 400, y = 150, size = 30 },
                 new { content = "Por haber participado en el Proyecto de “Inclusión Digital” 18ava edición de la Escuela Politécnica Nacional", x = 0, y = 0, size = 14 },
-                new { content = "desarrollado del 19 de abril de 2023 al 08 de septiembre, con una duración de 40 horas.", x = 0, y = 0, size = 14 },
+                new { content = $"desarrollado {fecha_inicio} al {fecha_fin}, con una duración de {duracion_horas} horas.", x = 0, y = 0, size = 14 },
                 new { content = " ", x = 0, y = 0, size = 14 },
-                new { content = Convert.ToString(horasAsignadas), x = 0, y = 0, size = 14 }
-            };
+                new { content = "", x = 0, y = 0, size = 14 }
+            };//Convert.ToString(horasAsignadas)
             var fileStream = response.Content.ReadAsStream();
             using var streamRef = new DotNetStreamReference(stream: fileStream);
             await JSRuntime.InvokeVoidAsync("downloadFileFromStream", "GAP_" + fullname, streamRef, texts);
@@ -617,9 +620,9 @@
                 new { content = fullname, x = 400, y = 150, size = 30 },
                 new { content = "Por haber aprobado el Curso de herramientas TIC para la Educación", x = 0, y = 0, size = 14 },
                 new { content = "impartido en el marco del Proyecto de “Inclusión Digital” 18ava edición de la Escuela Politécnica Nacional", x = 0, y = 0, size = 14 },
-                new { content = "desarrollado del 19 de abril de 2023 al 08 de septiembre, con una duración de 40 horas.", x = 0, y = 0, size = 14 },
-                new { content = Convert.ToString(horasAsignadas), x = 0, y = 0, size = 14 }
-            };
+                new { content = $"desarrollado {fecha_inicio} al {fecha_fin}, con una duración de {duracion_horas} horas.", x = 0, y = 0, size = 14 },
+                new { content = "", x = 0, y = 0, size = 14 }
+            };//Convert.ToString(horasAsignadas)
             var fileStream = response.Content.ReadAsStream();
             using var streamRef = new DotNetStreamReference(stream: fileStream);
             await JSRuntime.InvokeVoidAsync("downloadFileFromStream", "Docente_" + fullname, streamRef, texts);
@@ -649,9 +652,13 @@
         await sweetAletNotify("Certificados descargados exitosamente.", "success");
     }
 
-    public async Task EstudiantesPorPeriodo(int id_periodo, string curso, string periodo, int InttiposEstudiante)
+    public async Task EstudiantesPorPeriodo(int id_periodo, string curso, string periodo, int InttiposEstudiante, string fecha_inicio_periodo, string fecha_fin_periodo, int duracion_perido_horas)
     {
         ListaEstudiantes = new List<UsuarioPeriodo>();
+        fecha_inicio = fecha_inicio_periodo;
+        fecha_fin = fecha_fin_periodo;
+        duracion_horas = duracion_perido_horas;
+
         string tiposEstudiante = "GAP";
         if (InttiposEstudiante == 1)
         {
@@ -689,7 +696,6 @@
         {
             isLoading = false;
             StateHasChanged();
-            Console.WriteLine("Error al buscar los periodos.");
             await sweetAletNotify("Error al buscar los periodos", "error");
         }
     }

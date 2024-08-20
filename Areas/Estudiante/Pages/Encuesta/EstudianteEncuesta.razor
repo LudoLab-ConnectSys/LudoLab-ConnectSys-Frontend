@@ -12,27 +12,35 @@
     }
     @if (!encuestaCompletada)
     {
-        @if (preguntas != null)
+        @if (preguntasOpciones != null && preguntasOpciones.Any())
         {
-            @foreach (var pregunta in preguntas)
+            foreach (var pregunta in preguntasOpciones)
             {
+                if (!respuestas.ContainsKey(pregunta.IdPregunta))
+                {
+                    respuestas[pregunta.IdPregunta] = 0; // Asegura que cada pregunta tenga un valor por defecto
+                }
+
                 <div class="pregunta-container">
-                    <label class="pregunta-label">@pregunta.texto_pregunta</label>
-                    <select class="pregunta-select" @bind="respuestas[pregunta.id_pregunta]">
-                        <option value="">Selecciona una opción</option>
-                        @for (int i = 1; i <= 5; i++)
+                    <label class="pregunta-label">@pregunta.TextoPregunta</label>
+                    <select class="pregunta-select" @bind="respuestas[pregunta.IdPregunta]">
+                        <option value="0">Selecciona una opción</option>
+                        @foreach (var opcion in pregunta.Opciones)
                         {
-                            <option value="@i">@i</option>
+                            <option value="@opcion.idOption">@opcion.Texto</option>
                         }
                     </select>
                 </div>
             }
-            <button class="boton-enviar" @onclick="EnviarRespuestas" disabled="@(preguntas.Count < 1)">Enviar</button>
+
+            <button class="boton-enviar" @onclick="EnviarRespuestas" disabled="@(preguntasOpciones.Count < 1)">Enviar</button>
         }
         else
         {
             <p class="cargando-texto">Cargando preguntas...</p>
         }
+
+
     }
     else
     {
@@ -128,12 +136,12 @@
     public string EncryptedIdEstudiante { get; set; }
 
     public int Id_Estudiantedes { get; set; }
-
+    private List<PreguntaConOpciones> preguntasOpciones = new List<PreguntaConOpciones>();
+    private Dictionary<int, int> respuestas = new Dictionary<int, int>();
 
     private string tituloEncuesta = "Cargando...";
     private bool isLoading = false;
     private List<Pregunta> preguntas = new List<Pregunta>();
-    private Dictionary<int, string> respuestas = new Dictionary<int, string>();
     private bool encuestaCompletada = false;
     private bool BotonEnviarHabilitado = false;
 
@@ -180,7 +188,7 @@
 
     private async Task VerificarEncuestaCompletada(int idEstudiante)
     {
-        Console.WriteLine($"id est a enviar {idEstudiante}");
+        //Console.WriteLine($"id est a enviar {idEstudiante}");
         if (idEstudiante <= 0)
         {
             NavigationManager.NavigateTo("./");
@@ -200,14 +208,35 @@
     {
         try
         {
-            preguntas = await Http.GetFromJsonAsync<List<Pregunta>>($"http://localhost:5117/api/Encuesta/preguntas/{EncuestaId}");
-            // Inicializar el diccionario de respuestas para cada pregunta
-            foreach (var pregunta in preguntas)
+            isLoading = true;
+            StateHasChanged();
+
+            // Llamada a la API para obtener las preguntas junto con sus opciones
+            preguntasOpciones = await Http.GetFromJsonAsync<List<PreguntaConOpciones>>($"http://localhost:5117/api/Encuesta/preguntasporID/{EncuestaId}");
+
+            isLoading = false;
+            StateHasChanged();
+
+            if (preguntasOpciones == null || !preguntasOpciones.Any())
             {
-                if (!respuestas.ContainsKey(pregunta.id_pregunta))
+                Console.WriteLine("No se encontraron preguntas para esta encuesta.");
+                return;
+            }
+
+            // Inicializar el diccionario de respuestas para cada pregunta
+            foreach (var pregunta in preguntasOpciones)
+            {
+                if (!respuestas.ContainsKey(pregunta.IdPregunta))
                 {
-                    respuestas[pregunta.id_pregunta] = string.Empty;
+                    respuestas[pregunta.IdPregunta] = 0; // Valor por defecto para opciones no seleccionadas
                 }
+
+                // Imprimir la pregunta y sus opciones en la consola para depuración
+                /*Console.WriteLine($"Pregunta: {pregunta.TextoPregunta}");
+                foreach (var opcion in pregunta.Opciones)
+                {
+                    Console.WriteLine($"\tOpción: {opcion.Texto} (Valor: {opcion.Valor})");
+                }*/
             }
         }
         catch (Exception ex)
@@ -217,14 +246,16 @@
         }
     }
 
+
     private async Task EnviarRespuestas()
     {
         // Verificar si todas las respuestas están completas
-        if (respuestas.Values.Any(r => string.IsNullOrEmpty(r)))
+        if (respuestas.Values.Any(r => r == 0))
         {
             await sweetAletNotify("Por favor, complete todas las respuestas antes de enviar.", "warning");
             return; // Termina la ejecución de la función si hay respuestas incompletas
         }
+
         var options = new
         {
             Title = "¿Desea enviar sus respuestas?",
@@ -233,43 +264,48 @@
             ConfirmButtonText = "Sí",
             CancelButtonText = "No"
         };
+
         var result = await JSRuntime.InvokeAsync<bool>("FireSweetAlertConfirm", options);
 
         if (!result)
         {
             return; // Termina la ejecución de la función si el usuario selecciona "No"
         }
-        isLoading = true;
-        StateHasChanged();
-        // Espera de 5 segundos para verificar si el Spinner aparece
-        //await Task.Delay(5000);
-        foreach (var pregunta in respuestas)
-        {
-            Console.WriteLine($"pos {pregunta.Key}, respuesta {pregunta.Value}");
-        }
+
+
+        // Mapear las respuestas a RespuestaDto
         var respuestasEnviar = respuestas.Select(r => new RespuestaDto
             {
                 id_estudiante = Id_Estudiantedes,
                 id_pregunta = r.Key,
-                texto_respuesta = r.Value
+                id_opcion = r.Value
             }).ToList();
+        // Imprimir lo que se va a enviar al backend
+        //var json = System.Text.Json.JsonSerializer.Serialize(respuestasEnviar);
+        //Console.WriteLine(json);
 
         try
         {
-            isLoading = false;
+            // Enviar las respuestas al back-end
+            isLoading = true;
             StateHasChanged();
             await Http.PostAsJsonAsync("http://localhost:5117/api/Encuesta/respuestas", respuestasEnviar);
-            await sweetAletNotify("¡Respuestas registradas exitosamente!", "info");
-            //await JSRuntime.InvokeVoidAsync("refreshPage");
-
+            isLoading = false;
+            StateHasChanged();
+            await sweetAletNotify("¡Respuestas registradas exitosamente!", "success");
+            NavigationManager.NavigateTo("./");
         }
         catch (Exception ex)
         {
-            await sweetAletNotify("Error al guardar respuestas", "error");
+            await sweetAletNotify($"Error al guardar respuestas: {ex.Message}", "error");
         }
-        isLoading = false;
-        StateHasChanged();
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
     }
+
 
     private async Task sweetAletNotify(string texto, string tipo)
     {
@@ -284,8 +320,22 @@
 
     public class RespuestaDto
     {
-        public int id_estudiante { get; set; }
-        public int id_pregunta { get; set; }
-        public string texto_respuesta { get; set; }
+        public int id_estudiante { get; set; }  // ID del estudiante que está respondiendo
+        public int id_pregunta { get; set; }    // ID de la pregunta que se está respondiendo
+        public int id_opcion { get; set; }      // ID de la opción seleccionada
+    }
+
+    public class OpcionDto
+    {
+        public int idOption { get; set; }
+        public string Texto { get; set; }
+        public int Valor { get; set; }
+    }
+
+    public class PreguntaConOpciones
+    {
+        public int IdPregunta { get; set; }
+        public string TextoPregunta { get; set; }
+        public List<OpcionDto> Opciones { get; set; }
     }
 }

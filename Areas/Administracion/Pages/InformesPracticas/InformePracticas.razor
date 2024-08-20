@@ -713,7 +713,6 @@ else
         catch (Exception ex)
         {
             // Maneja la excepción, por ejemplo, registrándola o mostrando un mensaje de error
-            Console.WriteLine($"Error al buscar los periodos: {ex.Message}");
             await sweetAletNotify("Error al buscar los periodos", "error");
 
             // Puedes asignar Periodos a una lista vacía en caso de error

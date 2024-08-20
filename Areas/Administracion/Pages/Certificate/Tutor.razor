@@ -64,7 +64,7 @@
                     </label>
                     <InputFile id="@inputFileId" OnChange="@(e => OnInputFileChange(e, en.id_periodo, en.nombre_certificado))" class="d-none" accept=".pdf" />
 
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" @onclick="(() => InstructoresPorPeriodo(en.id_periodo, en.nombre_curso, en.nombre_periodo))">
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" @onclick="(() => InstructoresPorPeriodo(en.id_periodo, en.nombre_curso, en.nombre_periodo, en.fecha_inicio_periodo, en.fecha_fin_periodo))">
                         Instructores
                     </button>
                     <button type="button" class="btn btn-info" @onclick="(()=> OpenPdf(en.nombre_certificado))">Ver</button>
@@ -220,6 +220,8 @@
     public static List<InstructorPeriodo> ListaTutores = new List<InstructorPeriodo>();
     string nombbreCurso = "";
     string nombbrePeiodo = "";
+    string fecha_inicio = "";
+    string fecha_fin = "";
     //carga de archivos
     private int maxAllowedFiles = int.MaxValue;
     private long maxFileSize = long.MaxValue;
@@ -373,7 +375,6 @@
             {
                 isLoading = false;
                 StateHasChanged();
-                Console.WriteLine("Error al actualizar el nombre del archivo");
                 await sweetAletNotify("Error al actualizar el nombre del archivo", "error");
             }
         }
@@ -388,15 +389,15 @@
             //textos y sus posiciones para insertar en el pdf
             var texts = new List<object>
             {
-                new { content = "LA ESCUELA POLITÉCNICA NACIONAL Y LA FACULTAD DE INGENIERÍA DE SISTEMAS", x = 0, y = 0, size = 18 },
-                new { content = "CONFIERE EL PRESENTE", x = 0, y = 0, size = 18 },
-                new { content = "CERTIFICADO A:", x = 0, y = 0, size = 18 },
-                new { content = "Dra. Mayra Carrión", x = 0, y = 0, size = 14 },
-                new { content = "DIRECTORA:", x = 0, y = 0, size = 14 },
-                new { content = "PROYECTO INCLUSIÓN DIGITAL", x = 0, y = 0, size = 14 },
-                new { content = "Dr. Jose Lucio", x = 0, y = 0, size = 14 },
-                new { content = "DECANO", x = 0, y = 0, size = 14 },
-                new { content = "FACULTAD DE INGENIERÍA DE SISTEMAS", x = 0, y = 0, size = 14 }
+                new { content = "LA ESCUELA POLITÉCNICA NACIONAL Y LA FACULTAD DE INGENIERÍA DE SISTEMAS", x = 0, y = 0, size = 18, marginX = 0 },
+                new { content = "CONFIERE EL PRESENTE", x = 0, y = 0, size = 18, marginX = 0 },
+                new { content = "CERTIFICADO A:", x = 0, y = 0, size = 18, marginX = 0 },
+                new { content = "Dra. Mayra Carrión", x = 0, y = 0, size = 14, marginX = 50 }, // Márgenes horizontales personalizados
+                new { content = "DIRECTORA", x = 0, y = 0, size = 14, marginX = 70 },
+                new { content = "PROYECTO INCLUSIÓN DIGITAL", x = 0, y = 0, size = 14, marginX = 0 },
+                new { content = "Dr. Jose Lucio", x = 0, y = 0, size = 14, marginX = 90 },
+                new { content = "DECANO", x = 0, y = 0, size = 14, marginX = 100 },
+                new { content = "FACULTAD DE INGENIERÍA DE SISTEMAS", x = 0, y = 0, size = 14, marginX = 0 }
             };
             // Llamar a la función de JavaScript para modificar el PDF
             var pdfBytes = await JSRuntime.InvokeAsync<byte[]>("modificarPDF", memoryStream.ToArray(), texts);
@@ -420,7 +421,7 @@
         }
         isLoading = false;
         StateHasChanged();
-        await sweetAletNotify("Archivo actualizado correctamente", "info");
+        await sweetAletNotify("Archivo actualizado correctamente", "success");
         /*using var content = new MultipartFormDataContent();
 
             foreach (var file in e.GetMultipleFiles(maxAllowedFiles))
@@ -430,7 +431,7 @@
 
                 fileNames.Add(file.Name);
 
-                content.Add(
+        content.Add(
         content: fileContent,
         name: "\"files\"",
         fileName: file.Name);
@@ -447,12 +448,14 @@
     }
 
 
-    public async Task InstructoresPorPeriodo(int id_periodo, string curso, string periodo)
+    public async Task InstructoresPorPeriodo(int id_periodo, string curso, string periodo, string fecha_inicio_periodo, string fecha_fin_periodo)
     {
         isLoading = true;
         StateHasChanged();
         nombbreCurso = curso;
         nombbrePeiodo = periodo;
+        fecha_inicio = fecha_inicio_periodo;
+        fecha_fin = fecha_fin_periodo;
         // Construir la URL con los parámetros de consulta
         var url = $"http://localhost:5117/api/Grupo/GetInstructoresPorPeriodo/{id_periodo}";
 
@@ -521,10 +524,10 @@
             {
                 new { content = fullname, x = 400, y = 150, size = 30 },
                 new { content = "Por haber participado en el Proyecto de “Inclusión Digital” 18ava edición de la Escuela Politécnica Nacional", x = 400, y = 150, size = 14 },
-                new { content = "desarrollado del 19 de abril de 2023 al 08 de septiembre.", x = 300, y = 120, size = 14 },
+                new { content = $"desarrollado del {fecha_inicio} al {fecha_fin}.", x = 300, y = 120, size = 14 },
                 new { content = " ", x = 300, y = 90, size = 14 },
-                new { content = Convert.ToString(horasAsignadas), x = 300, y = 60, size = 18 }
-            };
+                new { content = "", x = 300, y = 60, size = 18 }
+            };//Convert.ToString(horasAsignadas)
             var fileStream = response.Content.ReadAsStream();
             using var streamRef = new DotNetStreamReference(stream: fileStream);
             await JSRuntime.InvokeVoidAsync("downloadFileFromStream", "Tutor_" + fullname, streamRef, texts);
