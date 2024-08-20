@@ -1,0 +1,63 @@
+﻿@page "/audit-logs"
+@using LudoLab_ConnectSys_Frontend.Services.Auditoria
+@inject AuditLogService AuditLogService
+@layout AdminLayout
+
+<h3>Registros de Auditoría</h3>
+
+@if (auditLogs == null)
+{
+    <p>
+        <em>Cargando...</em>
+    </p>
+}
+else if (auditLogs.Count == 0)
+{
+    <p>No hay registros de auditoría.</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                <th>Id</th>
+                <th>Timestamp</th>
+                <th>Acción</th>
+                <th>Id Usuario</th>
+                <th>Nombre Usuario</th>
+                <th>Nombre Tabla</th>
+                <th>Claves Primarias</th>
+                <th>Valores Antiguos</th>
+                <th>Valores Nuevos</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var log in auditLogs)
+            {
+                <tr>
+                    <td>@log.Id</td>
+                    <td>@log.Timestamp</td>
+                    <td>@log.Accion</td>
+                    <td>@log.IdUsuario</td>
+                    <td>@log.NombreUsuario</td>
+                    <td>@log.NombreTabla</td>
+                    <td>@log.ClavesPrimarias</td>
+                    <td>@log.ValoresAntiguos</td>
+                    <td>@log.ValoresNuevos</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private List<AuditLog> auditLogs;
+
+    protected override async Task OnInitializedAsync()
+    {
+        auditLogs = await AuditLogService.GetAuditLogsAsync();
+    }
+
+}

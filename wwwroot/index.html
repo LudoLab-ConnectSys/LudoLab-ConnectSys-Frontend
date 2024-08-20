@@ -72,16 +72,17 @@
             // Coordenadas para los textos inferiores izquierdos
             const bottomLeftTexts = texts.slice(3, 6);
             bottomLeftTexts.forEach((text, index) => {
-                text.x = 50;
-                text.y = 100 - (index * 20); // Espaciado entre líneas de 30
+                const textWidth = getTextWidth(text.content, text.size);
+                text.x = 50 + text.marginX; // Aplicar margen horizontal
+                text.y = 160 - (index * 20); // Espaciado entre líneas de 20
             });
 
             // Coordenadas para los textos inferiores derechos
             const bottomRightTexts = texts.slice(6, 9);
             bottomRightTexts.forEach((text, index) => {
                 const textWidth = getTextWidth(text.content, text.size);
-                text.x = width - textWidth - 50;
-                text.y = 100 - (index * 20); // Espaciado entre líneas de 30
+                text.x = width - textWidth - 50 - text.marginX; // Aplicar margen horizontal desde el borde derecho
+                text.y = 160 - (index * 20); // Espaciado entre líneas de 20
             });
 
             // Dibujar cada texto en las posiciones especificadas
@@ -99,16 +100,16 @@
             // Dibujar líneas para las firmas
             // Línea para la firma en la parte inferior izquierda
             firstPage.drawLine({
-                start: { x: 50, y: 120 },
-                end: { x: 250, y: 120 },
+                start: { x: 60, y: 180 },
+                end: { x: 260, y: 180 },
                 thickness: 1,
                 color: rgb(0, 0, 0)
             });
 
             // Línea para la firma en la parte inferior derecha
             firstPage.drawLine({
-                start: { x: width - 250, y: 120 },
-                end: { x: width - 50, y: 120 },
+                start: { x: width - 280, y: 180 },
+                end: { x: width - 80, y: 180 },
                 thickness: 1,
                 color: rgb(0, 0, 0)
             });

@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DirectorioDeArchivos.Shared
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LudoLab-ConnectSys-Server", "..\LudoLab-ConnectSys-Server\LudoLab-ConnectSys-Server.csproj", "{1BDD3E3C-2FC9-496C-A71B-60ADDC1082D6}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AuthService", "..\AuthService\AuthService.csproj", "{F3C2135E-8843-44EE-AF2C-1DF0BC986FA0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AuthService", "..\AuthService\AuthService.csproj", "{FE4CA9FD-1284-4709-B4BB-C950A9AF851D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,10 +29,10 @@ Global
 		{1BDD3E3C-2FC9-496C-A71B-60ADDC1082D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1BDD3E3C-2FC9-496C-A71B-60ADDC1082D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1BDD3E3C-2FC9-496C-A71B-60ADDC1082D6}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F3C2135E-8843-44EE-AF2C-1DF0BC986FA0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F3C2135E-8843-44EE-AF2C-1DF0BC986FA0}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F3C2135E-8843-44EE-AF2C-1DF0BC986FA0}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F3C2135E-8843-44EE-AF2C-1DF0BC986FA0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FE4CA9FD-1284-4709-B4BB-C950A9AF851D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FE4CA9FD-1284-4709-B4BB-C950A9AF851D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FE4CA9FD-1284-4709-B4BB-C950A9AF851D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FE4CA9FD-1284-4709-B4BB-C950A9AF851D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
